@@ -1,0 +1,13 @@
+dagrs:
+  a:
+    name: "任务1"
+    run:
+      type: sh
+      script: ls README.md
+  b:
+    name: "任务2"
+    after: [a]
+    from: [a]
+    run:
+      type: sh
+      script: cat > ./test/test_value_pass2.txt

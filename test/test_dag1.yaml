@@ -1,0 +1,12 @@
+dagrs:
+  a:
+    name: "任务1"
+    after: [b]
+    run:
+      type: sh
+      script: ./test/test.sh
+  b:
+    name: "任务2"
+    run:
+      type: deno
+      script: Deno.core.print("Hello!")

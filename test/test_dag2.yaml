@@ -1,0 +1,48 @@
+dagrs:
+  a:
+    name: "任务1"
+    after: [b, c]
+    run:
+      type: sh
+      script: echo a
+  b:
+    name: "任务2"
+    after: [c, f, g]
+    run:
+      type: sh
+      script: echo b
+  c:
+    name: "任务3"
+    after: [e, g]
+    run:
+      type: sh
+      script: echo c
+  d:
+    name: "任务4"
+    after: [c, e]
+    run:
+      type: sh
+      script: echo d
+  e:
+    name: "任务5"
+    after: [h]
+    run:
+      type: sh
+      script: echo e
+  f:
+    name: "任务6"
+    after: [g]
+    run:
+      type: deno
+      script: Deno.core.print("f\n")
+  g:
+    name: "任务7"
+    after: [h]
+    run:
+      type: deno
+      script: Deno.core.print("g\n")
+  h:
+    name: "任务8"
+    run:
+      type: sh
+      script: ./test/test.sh
