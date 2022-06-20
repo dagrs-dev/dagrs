@@ -1,0 +1,7 @@
+dagrs:
+  a:
+    name: "任务1"
+    after: [b]
+    run:
+      type: sh
+      script: echo x

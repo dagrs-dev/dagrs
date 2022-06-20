@@ -1,0 +1,31 @@
+dagrs:
+  a:
+    name: "任务1"
+    after: [b, c]
+    run:
+      type: sh
+      script: echo x
+  b:
+    name: "任务2"
+    after: [c]
+    run:
+      type: sh
+      script: echo x
+  c:
+    name: "任务3"
+    after: [d]
+    run:
+      type: sh
+      script: echo x
+  d:
+    name: "任务4"
+    after: [e]
+    run:
+      type: sh
+      script: echo x
+  e:
+    name: "任务5"
+    after: [c]
+    run:
+      type: sh
+      script: echo x
