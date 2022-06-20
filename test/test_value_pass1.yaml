@@ -1,0 +1,13 @@
+dagrs:
+  a:
+    name: "任务1"
+    after: [b]
+    from: [b]
+    run:
+      type: sh
+      script: echo > ./test/test_value_pass1.txt
+  b:
+    name: "任务2"
+    run:
+      type: deno
+      script: let a = 1+4; a*2

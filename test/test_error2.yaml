@@ -1,0 +1,6 @@
+a:
+  name: "任务1"
+  after: [a]
+  run:
+    type: sh
+    script: echo x
