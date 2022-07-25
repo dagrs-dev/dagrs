@@ -11,7 +11,6 @@
 - 普通用户 - 通过 `YAML` 文件对任务进行定义和调度运行。
 - 程序员 - 通过实现 `Task Trait` 进行任务的定义和调度运行。
 
-
 ## YAML
 
 此部分是面向普通用户的，即用户并不通过 rust 编程，而是利用 YAML 文件对任务进行描述并调度运行。YAML 文件的一个示例如下：
@@ -42,8 +41,6 @@ dagrs:
   - `type` 是任务的执行方式，当前支持 shell 执行（sh），和 deno 执行（deno）。
   - `script` 是任务的执行内容，可以是具体的命令，也可以是一个文件。
 
-
-
 另一个实际涉及输入输出的例子：
 
 ```yaml
@@ -61,6 +58,7 @@ dagrs:
       type: deno
       script: let a = 1+4; a*2
 ```
+
 在上面的描述中：
 - 任务 `b` 是一个用内置 `deno` 来执行的任务，其返回值显然是 `10`
 - 随后 `a` 会被执行，输入值将以字符串的形式拼接到 `script` 的最后面，即以下指令被执行：
@@ -117,8 +115,6 @@ $ cat ~/.dagrs/dagrs.log
 08:31:43 [INFO] Finish Task[name: 任务1], success: true
 ```
 
-
-
 ## TaskTrait
 
 Rust Programmer 可以通过实现 `TaskTrait` 来更灵活的定义自己的任务。 `TaskTrait` 的定义如下：
@@ -137,9 +133,7 @@ pub trait TaskTrait {
 - `env` 是整个 `dagrs` 的全局变量，所有任务可见。
 - `Retval` 是任务的返回值。
 
-
 程序员实现的 task struct 需要放到 `TaskWrapper` 中进行使用，并通过其提供的 `exec_after` 和 `input_from` 函数进行依赖设置，具体可见下方的例子。
-
 
 **如何使用？**
 
@@ -184,7 +178,6 @@ fn main() {
     dagrs.add_tasks(vec![t1, t2]);
     assert!(dagrs.run().unwrap())
 }
-
 ```
 
 运行的输出如下：
@@ -209,7 +202,6 @@ Hello Dagrs!
 
 **Notice:** 整个自定义的任务都应该是 `Sync` 和 `Send` 的，原因是：任务是被放到一个线程中执行调度的。
 
-
 **如何运行脚本？**
 
 程序员可以通过 `RunScript` 结构来实现脚本的运行（当然也可以直接在代码里自行运行而不通过该结构体），定义如下：
@@ -219,7 +211,6 @@ pub struct RunScript {
     script: String,
     executor: RunType,
 }
-
 ```
 
 这里：
@@ -233,12 +224,15 @@ pub struct RunScript {
   ```
 
 `RunScript` 提供了 `exec` 函数：
+
 ```rust
 pub fn exec(&self, input: Inputval) -> Result<String, DagError> {}
 ```
+
 如果执行正常，则将结果以 `String` 的形式返回，否则返回一个 `DagError` 的错误类型。
 
 一个简单的[例子](./examples/hello_script.rs)：
+
 ```rust
 extern crate dagrs;
 
@@ -269,6 +263,7 @@ fn main() {
 ```
 
 其执行结果为：
+
 ```bash
 09:12:48 [INFO] [Start] -> Task -> [End]
 09:12:48 [INFO] Executing Task[name: Task]
