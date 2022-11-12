@@ -52,7 +52,7 @@ impl Retval {
     ///
     /// # Example
     /// ```rust
-    /// let retval = Retval::new(123);
+    /// let retval = dagrs::Retval::new(123);
     /// ```
     pub fn new<H: Send + Sync + CloneAny>(val: H) -> Self {
         let mut map = DMap::new();
@@ -64,7 +64,7 @@ impl Retval {
     ///
     /// # Example
     /// ```rust
-    /// let retval = Retval::empty();
+    /// let retval = dagrs::Retval::empty();
     /// ```
     pub fn empty() -> Self {
         Self(None)
@@ -89,11 +89,8 @@ impl Inputval {
     ///
     /// # Example
     /// ```rust
-    /// // previous definition of `t3`
-    /// t3.input_from(&[&t1, &t2]);
-    /// // then you wanna get input
-    /// let input_from_t1 = input.get(0);
-    /// let input_from_t2 = input.get(1);
+    /// let mut input = dagrs::Inputval::new( vec![ None ] );
+    /// let input_from_t1:Option<String> = input.get(0);
     /// ```
     pub fn get<H: Send + Sync + CloneAny>(&mut self, index: usize) -> Option<H> {
         if let Some(Some(dmap)) = self.0.get_mut(index) {

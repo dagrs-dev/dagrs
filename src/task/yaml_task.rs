@@ -149,7 +149,7 @@ impl YamlTask {
     ///
     /// # Example
     /// ```
-    /// let tasks = YamlTask::from_yaml(filename)?;
+    /// let tasks = dagrs::YamlTask::from_yaml("test/test_dag1.yaml")?;
     /// ```
     ///
     /// Used in [`crate::DagEngine`].

@@ -27,7 +27,13 @@ impl TaskWrapper {
     ///
     /// # Example
     /// ```
-    /// let t = TaskWrapper::new(Task{}, "Demo Task")
+    /// struct Task {};
+    /// impl dagrs::TaskTrait for Task {
+    ///     fn run(&self, input: dagrs::Inputval, env: dagrs::EnvVar) -> dagrs::Retval {
+    ///         dagrs::Retval::empty()
+    ///     }
+    /// }
+    /// let t = dagrs::TaskWrapper::new(Task{}, "Demo Task");
     /// ```
     ///
     /// `Task` is a struct that impl [`TaskTrait`]. Since task will be
@@ -49,8 +55,14 @@ impl TaskWrapper {
     ///
     /// # Example
     /// ```rust
-    /// let mut t1 = TaskWrapper::new(T1{}, "Task 1");
-    /// let mut t2 = TaskWrapper::new(T2{}, "Task 2");
+    /// struct Task {};
+    /// impl dagrs::TaskTrait for Task {
+    ///     fn run(&self, input: dagrs::Inputval, env: dagrs::EnvVar) -> dagrs::Retval {
+    ///         dagrs::Retval::empty()
+    ///     }
+    /// }
+    /// let mut t1 = dagrs::TaskWrapper::new(Task{}, "Task 1");
+    /// let mut t2 = dagrs::TaskWrapper::new(Task{}, "Task 2");
     /// t2.exec_after(&[&t1]);
     /// ```
     /// In above code, `t1` will be executed before `t2`.
@@ -62,7 +74,15 @@ impl TaskWrapper {
     ///
     /// # Example
     /// ```rust
-    /// t3.exec_after(&[&t1, &t2, &t4])
+    /// struct Task {};
+    /// impl dagrs::TaskTrait for Task {
+    ///     fn run(&self, input: dagrs::Inputval, env: dagrs::EnvVar) -> dagrs::Retval {
+    ///         dagrs::Retval::empty()
+    ///     }
+    /// }
+    /// let mut t1 = dagrs::TaskWrapper::new(Task{}, "Task 1");
+    /// let mut t2 = dagrs::TaskWrapper::new(Task{}, "Task 2");
+    /// let mut t3 = dagrs::TaskWrapper::new(Task{}, "Task 3");
     /// t3.input_from(&[&t1, &t2]);
     /// ```
     ///
@@ -145,12 +165,10 @@ impl RunScript {
     /// # Example
     /// ```
     /// // `script` can be a commnad
-    /// let r = RunScript::new("echo Hello", RunType::SH);
-    /// r.exec();
+    /// let r = dagrs::RunScript::new("echo Hello", dagrs::RunType::SH);
     ///
     /// // or a script path
-    /// let r = RunScript::new("test/test.sh", RunType::SH);
-    /// r.exec();
+    /// let r = dagrs::RunScript::new("test/test.sh", dagrs::RunType::SH);
     /// ```
     pub fn new(script: &str, executor: RunType) -> Self {
         Self {
@@ -163,8 +181,8 @@ impl RunScript {
     ///
     /// # Example
     /// ```
-    /// let r = RunScript::new("echo Hello", RunType::SH);
-    /// r.exec();
+    /// let r = dagrs::RunScript::new("echo Hello", dagrs::RunType::SH);
+    /// r.exec(None);
     /// ```
     /// If execution succeeds, it returns the result in [`String`] type, or it
     /// returns a [`DagError`].

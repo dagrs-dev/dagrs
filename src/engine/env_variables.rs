@@ -9,8 +9,8 @@ use std::{
 
 /// Global environment variables.
 /// 
-/// Since it will be shared between tasks, [`Arc`] and [`Mutex`] 
-/// are needed.
+/// Since it will be shared between tasks,
+/// [`Arc`] and [`Mutex`] are needed.
 pub struct EnvVar(Arc<Mutex<HashMap<String, DMap>>>);
 
 impl EnvVar {
@@ -24,6 +24,7 @@ impl EnvVar {
     /// 
     /// # Example
     /// ```rust
+    /// let mut env = dagrs::EnvVar::new();
     /// env.set("Hello", "World".to_string());
     /// ```
     /// 
@@ -39,8 +40,10 @@ impl EnvVar {
     /// 
     /// # Example
     /// ```rust
+    /// let mut env = dagrs::EnvVar::new();
     /// env.set("Hello", "World".to_string());
-    /// let res = env.get("Hello").unwrap();
+    /// let res:Option<String> = env.get("Hello");
+    /// let res = if let Some(tmp) = res { tmp } else { String::new() };
     /// assert_eq!(res, "World".to_string());
     /// ```
     pub fn get<H: Send + Sync + CloneAny>(&self, name: &str) -> Option<H> {

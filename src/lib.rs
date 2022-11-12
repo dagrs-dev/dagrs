@@ -25,9 +25,9 @@ use std::{
 /// # Example
 /// ```rust
 /// // Default path (HOME/.dagrs/dagrs.log)
-/// init_logger(None);
+/// dagrs::init_logger(None);
 /// // or
-/// init_logger(Some("./dagrs.log"));
+/// dagrs::init_logger(Some("./dagrs.log"));
 /// ```
 ///
 /// **Note**, this function shall only be called once.
