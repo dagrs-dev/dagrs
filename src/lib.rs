@@ -26,6 +26,8 @@ use std::{
 /// ```rust
 /// // Default path (HOME/.dagrs/dagrs.log)
 /// dagrs::init_logger(None);
+/// ```
+/// ```rust
 /// // or
 /// dagrs::init_logger(Some("./dagrs.log"));
 /// ```

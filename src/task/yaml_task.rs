@@ -43,17 +43,13 @@ impl YamlTask {
     ///
     /// # Example
     /// ```
-    /// let task = Task::parse_one(id, yaml);
-    /// ```
-    /// Here `id` and `yaml` comes from:
-    /// ```
-    /// let yaml_tasks = YamlLoader::load_from_str(&yaml_cont)?;
+    /// let yaml_tasks = yaml_rust::YamlLoader::load_from_str("test/test_dag.yaml");
     /// let yaml_tasks = yaml_tasks[0]["dagrs"]
     /// .as_hash()
-    /// .ok_or(DagError::format_error("", FormatErrorMark::StartWordError))?;
+    /// .ok_or(dagrs::DagError::format_error(dagrs::FormatErrorMark::StartWordError));
     ///
     /// for(id, yaml) in yaml_tasks{
-    ///     ...
+    ///     let task = dagrs::Task::parse_one(id, yaml);
     /// }
     /// ```
     fn parse_one(id: &str, info: &Yaml) -> Result<YamlTask, DagError> {
@@ -119,7 +115,7 @@ impl YamlTask {
     ///
     /// # Example
     /// ```
-    /// let tasks = YamlTask::parse_tasks("test/test_dag.yaml")?;
+    /// let tasks = dagrs::YamlTask::parse_tasks("test/test_dag.yaml");
     /// ```
     fn parse_tasks(filename: &str) -> Result<Vec<Self>, DagError> {
         let mut yaml_cont = String::new();
@@ -149,7 +145,7 @@ impl YamlTask {
     ///
     /// # Example
     /// ```
-    /// let tasks = dagrs::YamlTask::from_yaml("test/test_dag1.yaml")?;
+    /// let tasks = dagrs::YamlTask::from_yaml("test/test_dag1.yaml");
     /// ```
     ///
     /// Used in [`crate::DagEngine`].

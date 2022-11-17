@@ -1,35 +1,11 @@
 
-running 2 tests
-test test_value_pass1 ... ok
-test test_value_pass2 ... ok
-
-test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
-
-
-running 10 tests
-test test_format_error2 ... ok
-test test_format_error1 ... ok
-test test_no_runscript ... ok
-test test_rely_error ... ok
-test test_complex_loop ... ok
-test test_loop ... ok
-test test_value_pass2 ... ok
-g
-Hello!test test_value_pass1 ... ok
-test test_runscript ... ok
-f
-test test_dag ... ok
-
-test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
-
-
-running 25 tests
+running 26 tests
 test src/engine/dag_engine.rs - engine::dag_engine::DagEngine::new (line 31) ... ok
 test src/engine/dag_engine.rs - engine::dag_engine::DagEngine::add_tasks (line 46) ... ok
 test src/engine/dag_engine.rs - engine::dag_engine::DagEngine::run (line 70) ... ok
 test src/engine/dag_engine.rs - engine::dag_engine::DagEngine::run_from_yaml (line 86) ... ok
-test src/engine/env_variables.rs - engine::env_variables::EnvVar::get (line 42) ... ok
 test src/engine/env_variables.rs - engine::env_variables::EnvVar::set (line 26) ... ok
+test src/engine/env_variables.rs - engine::env_variables::EnvVar::get (line 42) ... ok
 test src/engine/error_handler.rs - engine::error_handler::DagError::format_error (line 52) ... ok
 test src/engine/graph.rs - engine::graph::Graph::add_edge (line 65) ... FAILED
 test src/engine/graph.rs - engine::graph::Graph::add_node (line 51) ... FAILED
@@ -37,17 +13,18 @@ test src/engine/graph.rs - engine::graph::Graph::new (line 21) ... FAILED
 test src/engine/graph.rs - engine::graph::Graph::set_graph_size (line 36) ... FAILED
 test src/engine/graph.rs - engine::graph::Graph::topo_sort (line 89) ... FAILED
 test src/engine/error_handler.rs - engine::error_handler::DagError::running_error (line 63) ... ok
-test src/task/state.rs - task::state::Retval::empty (line 66) ... ok
 test src/task/state.rs - task::state::Inputval::get (line 91) ... ok
-test src/lib.rs - init_logger (line 26) ... FAILED
-test src/task/state.rs - task::state::Retval::new (line 54) ... ok
+test src/lib.rs - init_logger (line 26) ... ok
+test src/lib.rs - init_logger (line 30) ... ok
+test src/task/state.rs - task::state::Retval::empty (line 66) ... ok
 test src/task/task.rs - task::task::RunScript::new (line 166) ... ok
+test src/task/state.rs - task::state::Retval::new (line 54) ... ok
 test src/task/task.rs - task::task::TaskWrapper::exec_after (line 57) ... ok
 test src/task/yaml_task.rs - task::yaml_task::YamlTask::from_yaml (line 147) ... FAILED
 test src/task/yaml_task.rs - task::yaml_task::YamlTask::parse_one (line 45) ... FAILED
 test src/task/yaml_task.rs - task::yaml_task::YamlTask::parse_tasks (line 117) ... FAILED
-test src/task/task.rs - task::task::TaskWrapper::input_from (line 76) ... ok
 test src/task/task.rs - task::task::RunScript::exec (line 183) ... ok
+test src/task/task.rs - task::task::TaskWrapper::input_from (line 76) ... ok
 test src/task/task.rs - task::task::TaskWrapper::new (line 29) ... ok
 
 failures:
@@ -107,194 +84,51 @@ Couldn't compile the test.
 
 [0m[1mFor more information about this error, try `rustc --explain E0433`.[0m
 Couldn't compile the test.
----- src/lib.rs - init_logger (line 26) stdout ----
-Test executable failed (exit status: 101).
-
-stderr:
-thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: SetLoggerError(())', src/lib.rs:63:6
-stack backtrace:
-   0:     0x556d4f32a61d - std::backtrace_rs::backtrace::libunwind::trace::h9135f25bc195152c
-                               at /rustc/a55dd71d5fb0ec5a6a3a9e8c27b2127ba491ce52/library/std/src/../../backtrace/src/backtrace/libunwind.rs:93:5
-   1:     0x556d4f32a61d - std::backtrace_rs::backtrace::trace_unsynchronized::h015ee85be510df51
-                               at /rustc/a55dd71d5fb0ec5a6a3a9e8c27b2127ba491ce52/library/std/src/../../backtrace/src/backtrace/mod.rs:66:5
-   2:     0x556d4f32a61d - std::sys_common::backtrace::_print_fmt::h5fad03caa9652a2c
-                               at /rustc/a55dd71d5fb0ec5a6a3a9e8c27b2127ba491ce52/library/std/src/sys_common/backtrace.rs:66:5
-   3:     0x556d4f32a61d - <std::sys_common::backtrace::_print::DisplayBacktrace as core::fmt::Display>::fmt::h2b42ca28d244e5c7
-                               at /rustc/a55dd71d5fb0ec5a6a3a9e8c27b2127ba491ce52/library/std/src/sys_common/backtrace.rs:45:22
-   4:     0x556d4f34513c - core::fmt::write::h401e827d053130ed
-                               at /rustc/a55dd71d5fb0ec5a6a3a9e8c27b2127ba491ce52/library/core/src/fmt/mod.rs:1198:17
-   5:     0x556d4f3286c1 - std::io::Write::write_fmt::hffec93268f5cde32
-                               at /rustc/a55dd71d5fb0ec5a6a3a9e8c27b2127ba491ce52/library/std/src/io/mod.rs:1672:15
-   6:     0x556d4f32bcf5 - std::sys_common::backtrace::_print::h180c4c706ee1d3fb
-                               at /rustc/a55dd71d5fb0ec5a6a3a9e8c27b2127ba491ce52/library/std/src/sys_common/backtrace.rs:48:5
-   7:     0x556d4f32bcf5 - std::sys_common::backtrace::print::hd0c35d18765761c9
-                               at /rustc/a55dd71d5fb0ec5a6a3a9e8c27b2127ba491ce52/library/std/src/sys_common/backtrace.rs:35:9
-   8:     0x556d4f32bcf5 - std::panicking::default_hook::{{closure}}::h1f023310983bc730
-                               at /rustc/a55dd71d5fb0ec5a6a3a9e8c27b2127ba491ce52/library/std/src/panicking.rs:295:22
-   9:     0x556d4f32ba11 - std::panicking::default_hook::h188fec3334afd5be
-                               at /rustc/a55dd71d5fb0ec5a6a3a9e8c27b2127ba491ce52/library/std/src/panicking.rs:314:9
-  10:     0x556d4f32c286 - std::panicking::rust_panic_with_hook::hf26e9d4f97b40096
-                               at /rustc/a55dd71d5fb0ec5a6a3a9e8c27b2127ba491ce52/library/std/src/panicking.rs:698:17
-  11:     0x556d4f32c177 - std::panicking::begin_panic_handler::{{closure}}::hfab912107608087a
-                               at /rustc/a55dd71d5fb0ec5a6a3a9e8c27b2127ba491ce52/library/std/src/panicking.rs:588:13
-  12:     0x556d4f32ab14 - std::sys_common::backtrace::__rust_end_short_backtrace::h434b685ce8d9965b
-                               at /rustc/a55dd71d5fb0ec5a6a3a9e8c27b2127ba491ce52/library/std/src/sys_common/backtrace.rs:138:18
-  13:     0x556d4f32bea9 - rust_begin_unwind
-                               at /rustc/a55dd71d5fb0ec5a6a3a9e8c27b2127ba491ce52/library/std/src/panicking.rs:584:5
-  14:     0x556d4f2a4a53 - core::panicking::panic_fmt::ha6dc7f2ab2479463
-                               at /rustc/a55dd71d5fb0ec5a6a3a9e8c27b2127ba491ce52/library/core/src/panicking.rs:142:14
-  15:     0x556d4f2a4ae3 - core::result::unwrap_failed::h42ad8e915aa0a906
-                               at /rustc/a55dd71d5fb0ec5a6a3a9e8c27b2127ba491ce52/library/core/src/result.rs:1814:5
-  16:     0x556d4f2ae50c - core::result::Result<T,E>::unwrap::hf71fb648e1ffa238
-                               at /rustc/a55dd71d5fb0ec5a6a3a9e8c27b2127ba491ce52/library/core/src/result.rs:1107:23
-  17:     0x556d4f2a5af9 - dagrs::init_logger::h10ca49c43d7d1475
-                               at /home/dagrs/src/lib.rs:50:5
-  18:     0x556d4f2a54b2 - rust_out::main::_doctest_main_src_lib_rs_26_0::hf471003c8bdd8cb0
-  19:     0x556d4f2a5466 - rust_out::main::h59ea92b7fbc4a5e9
-  20:     0x556d4f2a5433 - core::ops::function::FnOnce::call_once::h8ec445bf910499a4
-  21:     0x556d4f2a52f9 - std::sys_common::backtrace::__rust_begin_short_backtrace::hcafcadf8f1cf0688
-  22:     0x556d4f2a5369 - std::rt::lang_start::{{closure}}::hb340c2104b74f303
-  23:     0x556d4f32526e - core::ops::function::impls::<impl core::ops::function::FnOnce<A> for &F>::call_once::hcdfee62722e5e4b8
-                               at /rustc/a55dd71d5fb0ec5a6a3a9e8c27b2127ba491ce52/library/core/src/ops/function.rs:280:13
-  24:     0x556d4f32526e - std::panicking::try::do_call::h84ca51609826746f
-                               at /rustc/a55dd71d5fb0ec5a6a3a9e8c27b2127ba491ce52/library/std/src/panicking.rs:492:40
-  25:     0x556d4f32526e - std::panicking::try::hd58075e533b8e0cb
-                               at /rustc/a55dd71d5fb0ec5a6a3a9e8c27b2127ba491ce52/library/std/src/panicking.rs:456:19
-  26:     0x556d4f32526e - std::panic::catch_unwind::h1ebac24d83cb6ce2
-                               at /rustc/a55dd71d5fb0ec5a6a3a9e8c27b2127ba491ce52/library/std/src/panic.rs:137:14
-  27:     0x556d4f32526e - std::rt::lang_start_internal::{{closure}}::h0145388a1edd1640
-                               at /rustc/a55dd71d5fb0ec5a6a3a9e8c27b2127ba491ce52/library/std/src/rt.rs:128:48
-  28:     0x556d4f32526e - std::panicking::try::do_call::h7630182e534a0a32
-                               at /rustc/a55dd71d5fb0ec5a6a3a9e8c27b2127ba491ce52/library/std/src/panicking.rs:492:40
-  29:     0x556d4f32526e - std::panicking::try::h05b6544f0c6331dc
-                               at /rustc/a55dd71d5fb0ec5a6a3a9e8c27b2127ba491ce52/library/std/src/panicking.rs:456:19
-  30:     0x556d4f32526e - std::panic::catch_unwind::h77b2ba8fd3309f34
-                               at /rustc/a55dd71d5fb0ec5a6a3a9e8c27b2127ba491ce52/library/std/src/panic.rs:137:14
-  31:     0x556d4f32526e - std::rt::lang_start_internal::h6612c8a7a6861b8b
-                               at /rustc/a55dd71d5fb0ec5a6a3a9e8c27b2127ba491ce52/library/std/src/rt.rs:128:20
-  32:     0x556d4f2a5351 - std::rt::lang_start::h28b5598debb3fe06
-  33:     0x556d4f2a54d3 - main
-  34:     0x7f01325a320a - <unknown>
-  35:     0x7f01325a32bc - __libc_start_main
-  36:     0x556d4f2a5221 - _start
-  37:                0x0 - <unknown>
-
-
 ---- src/task/yaml_task.rs - task::yaml_task::YamlTask::from_yaml (line 147) stdout ----
 [0m[1m[38;5;9merror[E0433][0m[0m[1m: failed to resolve: could not find `YamlTask` in `dagrs`[0m
 [0m [0m[0m[1m[38;5;12m--> [0m[0msrc/task/yaml_task.rs:148:20[0m
 [0m  [0m[0m[1m[38;5;12m|[0m
-[0m[1m[38;5;12m4[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0mlet tasks = dagrs::YamlTask::from_yaml("test/test_dag1.yaml")?;[0m
+[0m[1m[38;5;12m4[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0mlet tasks = dagrs::YamlTask::from_yaml("test/test_dag1.yaml");[0m
 [0m  [0m[0m[1m[38;5;12m| [0m[0m                   [0m[0m[1m[38;5;9m^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mcould not find `YamlTask` in `dagrs`[0m
 
-[0m[1m[38;5;9merror[E0277][0m[0m[1m: the `?` operator can only be used in a function that returns `Result` or `Option` (or another type that implements `FromResidual`)[0m
-[0m [0m[0m[1m[38;5;12m--> [0m[0msrc/task/yaml_task.rs:148:62[0m
-[0m  [0m[0m[1m[38;5;12m|[0m
-[0m[1m[38;5;12m3[0m[0m [0m[0m[1m[38;5;12m|[0m[0m   [0m[0mfn main() { #[allow(non_snake_case)] fn _doctest_main_src_task_yaml_task_rs_147_0() {[0m
-[0m  [0m[0m[1m[38;5;12m| [0m[0m [0m[0m[1m[38;5;12m______________________________________-[0m
-[0m[1m[38;5;12m4[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0mlet tasks = dagrs::YamlTask::from_yaml("test/test_dag1.yaml")?;[0m
-[0m  [0m[0m[1m[38;5;12m| [0m[0m[1m[38;5;12m|[0m[0m                                                              [0m[0m[1m[38;5;9m^[0m[0m [0m[0m[1m[38;5;9mcannot use the `?` operator in a function that returns `()`[0m
-[0m[1m[38;5;12m5[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m} _doctest_main_src_task_yaml_task_rs_147_0() }[0m
-[0m  [0m[0m[1m[38;5;12m| [0m[0m[1m[38;5;12m|_-[0m[0m [0m[0m[1m[38;5;12mthis function should return `Result` or `Option` to accept `?`[0m
-[0m  [0m[0m[1m[38;5;12m|[0m
-[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: the trait `FromResidual<_>` is not implemented for `()`[0m
+[0m[1m[38;5;9merror[0m[0m[1m: aborting due to previous error[0m
 
-[0m[1m[38;5;9merror[0m[0m[1m: aborting due to 2 previous errors[0m
-
-[0m[1mSome errors have detailed explanations: E0277, E0433.[0m
-[0m[1mFor more information about an error, try `rustc --explain E0277`.[0m
+[0m[1mFor more information about this error, try `rustc --explain E0433`.[0m
 Couldn't compile the test.
 ---- src/task/yaml_task.rs - task::yaml_task::YamlTask::parse_one (line 45) stdout ----
-[0m[1m[38;5;9merror[E0433][0m[0m[1m: failed to resolve: use of undeclared type `FormatErrorMark`[0m
-[0m [0m[0m[1m[38;5;12m--> [0m[0msrc/task/yaml_task.rs:49:35[0m
+[0m[1m[38;5;9merror[E0433][0m[0m[1m: failed to resolve: could not find `FormatErrorMark` in `dagrs`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0msrc/task/yaml_task.rs:49:45[0m
 [0m  [0m[0m[1m[38;5;12m|[0m
-[0m[1m[38;5;12m7[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m.ok_or(DagError::format_error("", FormatErrorMark::StartWordError))?;[0m
-[0m  [0m[0m[1m[38;5;12m| [0m[0m                                  [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9muse of undeclared type `FormatErrorMark`[0m
+[0m[1m[38;5;12m7[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m.ok_or(dagrs::DagError::format_error(dagrs::FormatErrorMark::StartWordError));[0m
+[0m  [0m[0m[1m[38;5;12m| [0m[0m                                            [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mcould not find `FormatErrorMark` in `dagrs`[0m
 
-[0m[1m[38;5;9merror[E0433][0m[0m[1m: failed to resolve: use of undeclared type `Task`[0m
-[0m  [0m[0m[1m[38;5;12m--> [0m[0msrc/task/yaml_task.rs:52:16[0m
+[0m[1m[38;5;9merror[E0433][0m[0m[1m: failed to resolve: could not find `Task` in `dagrs`[0m
+[0m  [0m[0m[1m[38;5;12m--> [0m[0msrc/task/yaml_task.rs:52:23[0m
 [0m   [0m[0m[1m[38;5;12m|[0m
-[0m[1m[38;5;12m10[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m    let task = Task::parse_one(id, yaml);[0m
-[0m   [0m[0m[1m[38;5;12m| [0m[0m               [0m[0m[1m[38;5;9m^^^^[0m[0m [0m[0m[1m[38;5;9muse of undeclared type `Task`[0m
+[0m[1m[38;5;12m10[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m    let task = dagrs::Task::parse_one(id, yaml);[0m
+[0m   [0m[0m[1m[38;5;12m| [0m[0m                      [0m[0m[1m[38;5;9m^^^^[0m[0m [0m[0m[1m[38;5;9mcould not find `Task` in `dagrs`[0m
 
-[0m[1m[38;5;9merror[E0425][0m[0m[1m: cannot find value `yaml_cont` in this scope[0m
-[0m [0m[0m[1m[38;5;12m--> [0m[0msrc/task/yaml_task.rs:46:56[0m
+[0m[1m[38;5;9merror[E0608][0m[0m[1m: cannot index into a value of type `Result<Vec<Yaml>, ScanError>`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0msrc/task/yaml_task.rs:47:18[0m
 [0m  [0m[0m[1m[38;5;12m|[0m
-[0m[1m[38;5;12m4[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0mlet yaml_tasks = yaml_rust::YamlLoader::load_from_str(&yaml_cont)?;[0m
-[0m  [0m[0m[1m[38;5;12m| [0m[0m                                                       [0m[0m[1m[38;5;9m^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mnot found in this scope[0m
+[0m[1m[38;5;12m5[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0mlet yaml_tasks = yaml_tasks[0]["dagrs"][0m
+[0m  [0m[0m[1m[38;5;12m| [0m[0m                 [0m[0m[1m[38;5;9m^^^^^^^^^^^^^[0m
 
-[0m[1m[38;5;9merror[E0433][0m[0m[1m: failed to resolve: use of undeclared type `DagError`[0m
-[0m [0m[0m[1m[38;5;12m--> [0m[0msrc/task/yaml_task.rs:49:8[0m
-[0m  [0m[0m[1m[38;5;12m|[0m
-[0m[1m[38;5;12m7[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m.ok_or(DagError::format_error("", FormatErrorMark::StartWordError))?;[0m
-[0m  [0m[0m[1m[38;5;12m| [0m[0m       [0m[0m[1m[38;5;9m^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mnot found in this scope[0m
-[0m  [0m[0m[1m[38;5;12m|[0m
-[0m[1m[38;5;14mhelp[0m[0m: consider importing this enum[0m
-[0m  [0m[0m[1m[38;5;12m|[0m
-[0m[1m[38;5;12m2[0m[0m [0m[0m[1m[38;5;12m| [0m[0m[38;5;10muse dagrs::DagError;[0m
-[0m  [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;9merror[0m[0m[1m: aborting due to 3 previous errors[0m
 
-[0m[1m[38;5;9merror[E0277][0m[0m[1m: the `?` operator can only be used in a function that returns `Result` or `Option` (or another type that implements `FromResidual`)[0m
-[0m  [0m[0m[1m[38;5;12m--> [0m[0msrc/task/yaml_task.rs:46:66[0m
-[0m   [0m[0m[1m[38;5;12m|[0m
-[0m[1m[38;5;12m3[0m[0m  [0m[0m[1m[38;5;12m|[0m[0m   [0m[0mfn main() { #[allow(non_snake_case)] fn _doctest_main_src_task_yaml_task_rs_45_0() {[0m
-[0m   [0m[0m[1m[38;5;12m| [0m[0m [0m[0m[1m[38;5;12m______________________________________-[0m
-[0m[1m[38;5;12m4[0m[0m  [0m[0m[1m[38;5;12m|[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0mlet yaml_tasks = yaml_rust::YamlLoader::load_from_str(&yaml_cont)?;[0m
-[0m   [0m[0m[1m[38;5;12m| [0m[0m[1m[38;5;12m|[0m[0m                                                                  [0m[0m[1m[38;5;9m^[0m[0m [0m[0m[1m[38;5;9mcannot use the `?` operator in a function that returns `()`[0m
-[0m[1m[38;5;12m5[0m[0m  [0m[0m[1m[38;5;12m|[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0mlet yaml_tasks = yaml_tasks[0]["dagrs"][0m
-[0m[1m[38;5;12m6[0m[0m  [0m[0m[1m[38;5;12m|[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m.as_hash()[0m
-[0m[1m[38;5;12m...[0m[0m  [0m[0m[1m[38;5;12m|[0m
-[0m[1m[38;5;12m11[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m}[0m
-[0m[1m[38;5;12m12[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m} _doctest_main_src_task_yaml_task_rs_45_0() }[0m
-[0m   [0m[0m[1m[38;5;12m| [0m[0m[1m[38;5;12m|_-[0m[0m [0m[0m[1m[38;5;12mthis function should return `Result` or `Option` to accept `?`[0m
-[0m   [0m[0m[1m[38;5;12m|[0m
-[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: the trait `FromResidual<Result<Infallible, ScanError>>` is not implemented for `()`[0m
-
-[0m[1m[38;5;9merror[E0277][0m[0m[1m: the `?` operator can only be used in a function that returns `Result` or `Option` (or another type that implements `FromResidual`)[0m
-[0m  [0m[0m[1m[38;5;12m--> [0m[0msrc/task/yaml_task.rs:49:68[0m
-[0m   [0m[0m[1m[38;5;12m|[0m
-[0m[1m[38;5;12m3[0m[0m  [0m[0m[1m[38;5;12m|[0m[0m   [0m[0mfn main() { #[allow(non_snake_case)] fn _doctest_main_src_task_yaml_task_rs_45_0() {[0m
-[0m   [0m[0m[1m[38;5;12m| [0m[0m [0m[0m[1m[38;5;12m______________________________________-[0m
-[0m[1m[38;5;12m4[0m[0m  [0m[0m[1m[38;5;12m|[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0mlet yaml_tasks = yaml_rust::YamlLoader::load_from_str(&yaml_cont)?;[0m
-[0m[1m[38;5;12m5[0m[0m  [0m[0m[1m[38;5;12m|[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0mlet yaml_tasks = yaml_tasks[0]["dagrs"][0m
-[0m[1m[38;5;12m6[0m[0m  [0m[0m[1m[38;5;12m|[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m.as_hash()[0m
-[0m[1m[38;5;12m7[0m[0m  [0m[0m[1m[38;5;12m|[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m.ok_or(DagError::format_error("", FormatErrorMark::StartWordError))?;[0m
-[0m   [0m[0m[1m[38;5;12m| [0m[0m[1m[38;5;12m|[0m[0m                                                                    [0m[0m[1m[38;5;9m^[0m[0m [0m[0m[1m[38;5;9mcannot use the `?` operator in a function that returns `()`[0m
-[0m[1m[38;5;12m...[0m[0m  [0m[0m[1m[38;5;12m|[0m
-[0m[1m[38;5;12m11[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m}[0m
-[0m[1m[38;5;12m12[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m} _doctest_main_src_task_yaml_task_rs_45_0() }[0m
-[0m   [0m[0m[1m[38;5;12m| [0m[0m[1m[38;5;12m|_-[0m[0m [0m[0m[1m[38;5;12mthis function should return `Result` or `Option` to accept `?`[0m
-[0m   [0m[0m[1m[38;5;12m|[0m
-[0m   [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: the trait `FromResidual<Result<Infallible, _>>` is not implemented for `()`[0m
-
-[0m[1m[38;5;9merror[0m[0m[1m: aborting due to 6 previous errors[0m
-
-[0m[1mSome errors have detailed explanations: E0277, E0425, E0433.[0m
-[0m[1mFor more information about an error, try `rustc --explain E0277`.[0m
+[0m[1mSome errors have detailed explanations: E0433, E0608.[0m
+[0m[1mFor more information about an error, try `rustc --explain E0433`.[0m
 Couldn't compile the test.
 ---- src/task/yaml_task.rs - task::yaml_task::YamlTask::parse_tasks (line 117) stdout ----
 [0m[1m[38;5;9merror[E0433][0m[0m[1m: failed to resolve: could not find `YamlTask` in `dagrs`[0m
 [0m [0m[0m[1m[38;5;12m--> [0m[0msrc/task/yaml_task.rs:118:20[0m
 [0m  [0m[0m[1m[38;5;12m|[0m
-[0m[1m[38;5;12m4[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0mlet tasks = dagrs::YamlTask::parse_tasks("test/test_dag1.yaml")?;[0m
+[0m[1m[38;5;12m4[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0mlet tasks = dagrs::YamlTask::parse_tasks("test/test_dag.yaml");[0m
 [0m  [0m[0m[1m[38;5;12m| [0m[0m                   [0m[0m[1m[38;5;9m^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mcould not find `YamlTask` in `dagrs`[0m
 
-[0m[1m[38;5;9merror[E0277][0m[0m[1m: the `?` operator can only be used in a function that returns `Result` or `Option` (or another type that implements `FromResidual`)[0m
-[0m [0m[0m[1m[38;5;12m--> [0m[0msrc/task/yaml_task.rs:118:64[0m
-[0m  [0m[0m[1m[38;5;12m|[0m
-[0m[1m[38;5;12m3[0m[0m [0m[0m[1m[38;5;12m|[0m[0m   [0m[0mfn main() { #[allow(non_snake_case)] fn _doctest_main_src_task_yaml_task_rs_117_0() {[0m
-[0m  [0m[0m[1m[38;5;12m| [0m[0m [0m[0m[1m[38;5;12m______________________________________-[0m
-[0m[1m[38;5;12m4[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0mlet tasks = dagrs::YamlTask::parse_tasks("test/test_dag1.yaml")?;[0m
-[0m  [0m[0m[1m[38;5;12m| [0m[0m[1m[38;5;12m|[0m[0m                                                                [0m[0m[1m[38;5;9m^[0m[0m [0m[0m[1m[38;5;9mcannot use the `?` operator in a function that returns `()`[0m
-[0m[1m[38;5;12m5[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m} _doctest_main_src_task_yaml_task_rs_117_0() }[0m
-[0m  [0m[0m[1m[38;5;12m| [0m[0m[1m[38;5;12m|_-[0m[0m [0m[0m[1m[38;5;12mthis function should return `Result` or `Option` to accept `?`[0m
-[0m  [0m[0m[1m[38;5;12m|[0m
-[0m  [0m[0m[1m[38;5;12m= [0m[0m[1mhelp[0m[0m: the trait `FromResidual<_>` is not implemented for `()`[0m
+[0m[1m[38;5;9merror[0m[0m[1m: aborting due to previous error[0m
 
-[0m[1m[38;5;9merror[0m[0m[1m: aborting due to 2 previous errors[0m
-
-[0m[1mSome errors have detailed explanations: E0277, E0433.[0m
-[0m[1mFor more information about an error, try `rustc --explain E0277`.[0m
+[0m[1mFor more information about this error, try `rustc --explain E0433`.[0m
 Couldn't compile the test.
 
 failures:
@@ -303,10 +137,9 @@ failures:
     src/engine/graph.rs - engine::graph::Graph::new (line 21)
     src/engine/graph.rs - engine::graph::Graph::set_graph_size (line 36)
     src/engine/graph.rs - engine::graph::Graph::topo_sort (line 89)
-    src/lib.rs - init_logger (line 26)
     src/task/yaml_task.rs - task::yaml_task::YamlTask::from_yaml (line 147)
     src/task/yaml_task.rs - task::yaml_task::YamlTask::parse_one (line 45)
     src/task/yaml_task.rs - task::yaml_task::YamlTask::parse_tasks (line 117)
 
-test result: FAILED. 16 passed; 9 failed; 0 ignored; 0 measured; 0 filtered out; finished in 40.31s
+test result: FAILED. 18 passed; 8 failed; 0 ignored; 0 measured; 0 filtered out; finished in 40.62s
 
