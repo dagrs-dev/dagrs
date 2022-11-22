@@ -89,7 +89,7 @@ impl Inputval {
     ///
     /// # Example
     /// ```rust
-    /// let mut input = dagrs::Inputval::new( vec![ None ] );
+    /// # let mut input = dagrs::Inputval::new( vec![ None ] );
     /// let input_from_t1:Option<String> = input.get(0);
     /// ```
     pub fn get<H: Send + Sync + CloneAny>(&mut self, index: usize) -> Option<H> {

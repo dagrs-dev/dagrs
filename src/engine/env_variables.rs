@@ -24,7 +24,7 @@ impl EnvVar {
     /// 
     /// # Example
     /// ```rust
-    /// let mut env = dagrs::EnvVar::new();
+    /// # let mut env = dagrs::EnvVar::new();
     /// env.set("Hello", "World".to_string());
     /// ```
     /// 
@@ -40,11 +40,11 @@ impl EnvVar {
     /// 
     /// # Example
     /// ```rust
-    /// let mut env = dagrs::EnvVar::new();
-    /// env.set("Hello", "World".to_string());
+    /// # let mut env = dagrs::EnvVar::new();
+    /// # env.set("Hello", "World".to_string());
     /// let res:Option<String> = env.get("Hello");
-    /// let res = if let Some(tmp) = res { tmp } else { String::new() };
-    /// assert_eq!(res, "World".to_string());
+    /// # let res = if let Some(tmp) = res { tmp } else { String::new() };
+    /// # assert_eq!(res, "World".to_string());
     /// ```
     pub fn get<H: Send + Sync + CloneAny>(&self, name: &str) -> Option<H> {
         if let Some(dmap) = self.0.lock().unwrap().get(name) {

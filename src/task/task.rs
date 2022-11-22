@@ -27,12 +27,12 @@ impl TaskWrapper {
     ///
     /// # Example
     /// ```
-    /// struct Task {};
-    /// impl dagrs::TaskTrait for Task {
-    ///     fn run(&self, input: dagrs::Inputval, env: dagrs::EnvVar) -> dagrs::Retval {
-    ///         dagrs::Retval::empty()
-    ///     }
-    /// }
+    /// # struct Task {};
+    /// # impl dagrs::TaskTrait for Task {
+    /// #     fn run(&self, input: dagrs::Inputval, env: dagrs::EnvVar) -> dagrs::Retval {
+    /// #         dagrs::Retval::empty()
+    /// #     }
+    /// # }
     /// let t = dagrs::TaskWrapper::new(Task{}, "Demo Task");
     /// ```
     ///
@@ -55,14 +55,14 @@ impl TaskWrapper {
     ///
     /// # Example
     /// ```rust
-    /// struct Task {};
-    /// impl dagrs::TaskTrait for Task {
-    ///     fn run(&self, input: dagrs::Inputval, env: dagrs::EnvVar) -> dagrs::Retval {
-    ///         dagrs::Retval::empty()
-    ///     }
-    /// }
-    /// let mut t1 = dagrs::TaskWrapper::new(Task{}, "Task 1");
-    /// let mut t2 = dagrs::TaskWrapper::new(Task{}, "Task 2");
+    /// # struct Task {};
+    /// # impl dagrs::TaskTrait for Task {
+    /// #     fn run(&self, input: dagrs::Inputval, env: dagrs::EnvVar) -> dagrs::Retval {
+    /// #         dagrs::Retval::empty()
+    /// #     }
+    /// # }
+    /// # let mut t1 = dagrs::TaskWrapper::new(Task{}, "Task 1");
+    /// # let mut t2 = dagrs::TaskWrapper::new(Task{}, "Task 2");
     /// t2.exec_after(&[&t1]);
     /// ```
     /// In above code, `t1` will be executed before `t2`.
@@ -74,15 +74,15 @@ impl TaskWrapper {
     ///
     /// # Example
     /// ```rust
-    /// struct Task {};
-    /// impl dagrs::TaskTrait for Task {
-    ///     fn run(&self, input: dagrs::Inputval, env: dagrs::EnvVar) -> dagrs::Retval {
-    ///         dagrs::Retval::empty()
-    ///     }
-    /// }
-    /// let mut t1 = dagrs::TaskWrapper::new(Task{}, "Task 1");
-    /// let mut t2 = dagrs::TaskWrapper::new(Task{}, "Task 2");
-    /// let mut t3 = dagrs::TaskWrapper::new(Task{}, "Task 3");
+    /// # struct Task {};
+    /// # impl dagrs::TaskTrait for Task {
+    /// #     fn run(&self, input: dagrs::Inputval, env: dagrs::EnvVar) -> dagrs::Retval {
+    /// #         dagrs::Retval::empty()
+    /// #     }
+    /// # }
+    /// # let mut t1 = dagrs::TaskWrapper::new(Task{}, "Task 1");
+    /// # let mut t2 = dagrs::TaskWrapper::new(Task{}, "Task 2");
+    /// # let mut t3 = dagrs::TaskWrapper::new(Task{}, "Task 3");
     /// t3.input_from(&[&t1, &t2]);
     /// ```
     ///

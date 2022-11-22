@@ -44,15 +44,15 @@ impl DagEngine {
     ///
     /// # Example
     /// ```
-    /// let mut dagrs = dagrs::DagEngine::new();
-    /// struct T {};
-    /// impl dagrs::TaskTrait for T {
-    ///     fn run( &self, input: dagrs::Inputval, env: dagrs::EnvVar ) -> dagrs::Retval {
-    ///         dagrs::Retval::empty()
-    ///     }
-    /// }
-    /// let task1 = dagrs::TaskWrapper::new( T{}, "name1" );
-    /// let task2 = dagrs::TaskWrapper::new( T{}, "name2" );
+    /// # let mut dagrs = dagrs::DagEngine::new();
+    /// # struct T {};
+    /// # impl dagrs::TaskTrait for T {
+    /// #     fn run( &self, input: dagrs::Inputval, env: dagrs::EnvVar ) -> dagrs::Retval {
+    /// #         dagrs::Retval::empty()
+    /// #     }
+    /// # }
+    /// # let task1 = dagrs::TaskWrapper::new( T{}, "name1" );
+    /// # let task2 = dagrs::TaskWrapper::new( T{}, "name2" );
     /// dagrs.add_tasks(vec![task1, task2]);
     /// ```
     ///
@@ -68,8 +68,8 @@ impl DagEngine {
     ///
     /// # Example
     /// ```
-    /// let mut dagrs = dagrs::DagEngine::new();
-    /// //Add some tasks to dagrs.
+    /// # let mut dagrs = dagrs::DagEngine::new();
+    /// # //Add some tasks to dagrs.
     /// dagrs.run();
     /// ```
     ///
@@ -84,7 +84,7 @@ impl DagEngine {
     ///
     /// # Example
     /// ```
-    /// let dagrs = dagrs::DagEngine::new();
+    /// # let dagrs = dagrs::DagEngine::new();
     /// dagrs.run_from_yaml("test/test_dag1.yaml");
     /// ```
     ///
