@@ -1,136 +1,46 @@
 
-running 2 tests
-test test_value_pass1 ... ok
-test test_value_pass2 ... ok
-
-test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
-
-
-running 10 tests
-test test_format_error2 ... ok
-test test_format_error1 ... ok
-test test_no_runscript ... ok
-test test_rely_error ... ok
-test test_complex_loop ... ok
-test test_loop ... ok
-test test_value_pass2 ... ok
-g
-Hello!test test_value_pass1 ... ok
-test test_runscript ... ok
-f
-test test_dag ... ok
-
-test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
-
-
 running 26 tests
 test src/engine/dag_engine.rs - engine::dag_engine::DagEngine::new (line 31) ... ok
 test src/engine/dag_engine.rs - engine::dag_engine::DagEngine::add_tasks (line 46) ... ok
 test src/engine/dag_engine.rs - engine::dag_engine::DagEngine::run (line 70) ... ok
 test src/engine/dag_engine.rs - engine::dag_engine::DagEngine::run_from_yaml (line 86) ... ok
 test src/engine/env_variables.rs - engine::env_variables::EnvVar::get (line 42) ... ok
-test src/engine/error_handler.rs - engine::error_handler::DagError::format_error (line 52) ... ok
 test src/engine/env_variables.rs - engine::env_variables::EnvVar::set (line 26) ... ok
-test src/engine/graph.rs - engine::graph::Graph::add_edge (line 65) ... FAILED
-test src/engine/graph.rs - engine::graph::Graph::add_node (line 51) ... FAILED
-test src/engine/graph.rs - engine::graph::Graph::new (line 21) ... FAILED
-test src/engine/graph.rs - engine::graph::Graph::set_graph_size (line 36) ... FAILED
-test src/engine/graph.rs - engine::graph::Graph::topo_sort (line 89) ... FAILED
+test src/engine/error_handler.rs - engine::error_handler::DagError::format_error (line 52) ... ok
 test src/engine/error_handler.rs - engine::error_handler::DagError::running_error (line 63) ... ok
+test src/engine/graph.rs - engine::graph::Graph::add_edge (line 66) ... ok
+test src/engine/graph.rs - engine::graph::Graph::add_node (line 51) ... ok
+test src/engine/graph.rs - engine::graph::Graph::new (line 21) ... ok
+test src/engine/graph.rs - engine::graph::Graph::set_graph_size (line 36) ... ok
+test src/engine/graph.rs - engine::graph::Graph::topo_sort (line 91) ... ok
 test src/lib.rs - init_logger (line 26) ... ok
-test src/task/state.rs - task::state::Inputval::get (line 91) ... ok
 test src/lib.rs - init_logger (line 30) ... ok
+test src/task/state.rs - task::state::Inputval::get (line 91) ... ok
 test src/task/state.rs - task::state::Retval::empty (line 66) ... ok
 test src/task/state.rs - task::state::Retval::new (line 54) ... ok
 test src/task/task.rs - task::task::RunScript::new (line 166) ... ok
+test src/task/task.rs - task::task::RunScript::exec (line 183) ... ok
 test src/task/task.rs - task::task::TaskWrapper::exec_after (line 57) ... ok
-test src/task/yaml_task.rs - task::yaml_task::YamlTask::from_yaml (line 146) ... FAILED
 test src/task/yaml_task.rs - task::yaml_task::YamlTask::parse_one (line 45) ... FAILED
 test src/task/yaml_task.rs - task::yaml_task::YamlTask::parse_tasks (line 116) ... FAILED
-test src/task/task.rs - task::task::RunScript::exec (line 183) ... ok
 test src/task/task.rs - task::task::TaskWrapper::input_from (line 76) ... ok
 test src/task/task.rs - task::task::TaskWrapper::new (line 29) ... ok
+test src/task/yaml_task.rs - task::yaml_task::YamlTask::from_yaml (line 146) ... ok
 
 failures:
 
----- src/engine/graph.rs - engine::graph::Graph::add_edge (line 65) stdout ----
-[0m[1m[38;5;9merror[E0433][0m[0m[1m: failed to resolve: could not find `Graph` in `dagrs`[0m
-[0m [0m[0m[1m[38;5;12m--> [0m[0msrc/engine/graph.rs:66:20[0m
-[0m  [0m[0m[1m[38;5;12m|[0m
-[0m[1m[38;5;12m4[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0mlet mut g = dagrs::Graph::new();[0m
-[0m  [0m[0m[1m[38;5;12m| [0m[0m                   [0m[0m[1m[38;5;9m^^^^^[0m[0m [0m[0m[1m[38;5;9mcould not find `Graph` in `dagrs`[0m
-
-[0m[1m[38;5;9merror[0m[0m[1m: aborting due to previous error[0m
-
-[0m[1mFor more information about this error, try `rustc --explain E0433`.[0m
-Couldn't compile the test.
----- src/engine/graph.rs - engine::graph::Graph::add_node (line 51) stdout ----
-[0m[1m[38;5;9merror[E0433][0m[0m[1m: failed to resolve: could not find `Graph` in `dagrs`[0m
-[0m [0m[0m[1m[38;5;12m--> [0m[0msrc/engine/graph.rs:52:20[0m
-[0m  [0m[0m[1m[38;5;12m|[0m
-[0m[1m[38;5;12m4[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0mlet mut g = dagrs::Graph::new();[0m
-[0m  [0m[0m[1m[38;5;12m| [0m[0m                   [0m[0m[1m[38;5;9m^^^^^[0m[0m [0m[0m[1m[38;5;9mcould not find `Graph` in `dagrs`[0m
-
-[0m[1m[38;5;9merror[0m[0m[1m: aborting due to previous error[0m
-
-[0m[1mFor more information about this error, try `rustc --explain E0433`.[0m
-Couldn't compile the test.
----- src/engine/graph.rs - engine::graph::Graph::new (line 21) stdout ----
-[0m[1m[38;5;9merror[E0433][0m[0m[1m: failed to resolve: could not find `Graph` in `dagrs`[0m
-[0m [0m[0m[1m[38;5;12m--> [0m[0msrc/engine/graph.rs:22:16[0m
-[0m  [0m[0m[1m[38;5;12m|[0m
-[0m[1m[38;5;12m4[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0mlet g = dagrs::Graph::new();[0m
-[0m  [0m[0m[1m[38;5;12m| [0m[0m               [0m[0m[1m[38;5;9m^^^^^[0m[0m [0m[0m[1m[38;5;9mcould not find `Graph` in `dagrs`[0m
-
-[0m[1m[38;5;9merror[0m[0m[1m: aborting due to previous error[0m
-
-[0m[1mFor more information about this error, try `rustc --explain E0433`.[0m
-Couldn't compile the test.
----- src/engine/graph.rs - engine::graph::Graph::set_graph_size (line 36) stdout ----
-[0m[1m[38;5;9merror[E0433][0m[0m[1m: failed to resolve: could not find `Graph` in `dagrs`[0m
-[0m [0m[0m[1m[38;5;12m--> [0m[0msrc/engine/graph.rs:37:20[0m
-[0m  [0m[0m[1m[38;5;12m|[0m
-[0m[1m[38;5;12m4[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0mlet mut g = dagrs::Graph::new();[0m
-[0m  [0m[0m[1m[38;5;12m| [0m[0m                   [0m[0m[1m[38;5;9m^^^^^[0m[0m [0m[0m[1m[38;5;9mcould not find `Graph` in `dagrs`[0m
-
-[0m[1m[38;5;9merror[0m[0m[1m: aborting due to previous error[0m
-
-[0m[1mFor more information about this error, try `rustc --explain E0433`.[0m
-Couldn't compile the test.
----- src/engine/graph.rs - engine::graph::Graph::topo_sort (line 89) stdout ----
-[0m[1m[38;5;9merror[E0433][0m[0m[1m: failed to resolve: could not find `Graph` in `dagrs`[0m
-[0m [0m[0m[1m[38;5;12m--> [0m[0msrc/engine/graph.rs:90:20[0m
-[0m  [0m[0m[1m[38;5;12m|[0m
-[0m[1m[38;5;12m4[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0mlet mut g = dagrs::Graph::new();[0m
-[0m  [0m[0m[1m[38;5;12m| [0m[0m                   [0m[0m[1m[38;5;9m^^^^^[0m[0m [0m[0m[1m[38;5;9mcould not find `Graph` in `dagrs`[0m
-
-[0m[1m[38;5;9merror[0m[0m[1m: aborting due to previous error[0m
-
-[0m[1mFor more information about this error, try `rustc --explain E0433`.[0m
-Couldn't compile the test.
----- src/task/yaml_task.rs - task::yaml_task::YamlTask::from_yaml (line 146) stdout ----
-[0m[1m[38;5;9merror[E0433][0m[0m[1m: failed to resolve: could not find `YamlTask` in `dagrs`[0m
-[0m [0m[0m[1m[38;5;12m--> [0m[0msrc/task/yaml_task.rs:147:20[0m
-[0m  [0m[0m[1m[38;5;12m|[0m
-[0m[1m[38;5;12m4[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0mlet tasks = dagrs::YamlTask::from_yaml("test/test_dag1.yaml");[0m
-[0m  [0m[0m[1m[38;5;12m| [0m[0m                   [0m[0m[1m[38;5;9m^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mcould not find `YamlTask` in `dagrs`[0m
-
-[0m[1m[38;5;9merror[0m[0m[1m: aborting due to previous error[0m
-
-[0m[1mFor more information about this error, try `rustc --explain E0433`.[0m
-Couldn't compile the test.
 ---- src/task/yaml_task.rs - task::yaml_task::YamlTask::parse_one (line 45) stdout ----
-[0m[1m[38;5;9merror[E0433][0m[0m[1m: failed to resolve: could not find `FormatErrorMark` in `dagrs`[0m
-[0m [0m[0m[1m[38;5;12m--> [0m[0msrc/task/yaml_task.rs:49:45[0m
+[0m[1m[38;5;9merror[E0433][0m[0m[1m: failed to resolve: use of undeclared type `YamlFormatError`[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0msrc/task/yaml_task.rs:49:38[0m
 [0m  [0m[0m[1m[38;5;12m|[0m
-[0m[1m[38;5;12m7[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m.ok_or(dagrs::DagError::format_error(dagrs::FormatErrorMark::StartWordError));[0m
-[0m  [0m[0m[1m[38;5;12m| [0m[0m                                            [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mcould not find `FormatErrorMark` in `dagrs`[0m
+[0m[1m[38;5;12m7[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m.ok_or(dagrs::DagError::format_error(YamlFormatError::StartWordError));[0m
+[0m  [0m[0m[1m[38;5;12m| [0m[0m                                     [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9muse of undeclared type `YamlFormatError`[0m
 
-[0m[1m[38;5;9merror[E0433][0m[0m[1m: failed to resolve: could not find `Task` in `dagrs`[0m
-[0m [0m[0m[1m[38;5;12m--> [0m[0msrc/task/yaml_task.rs:51:23[0m
+[0m[1m[38;5;9merror[E0425][0m[0m[1m: cannot find value `yaml_cont` in this scope[0m
+[0m [0m[0m[1m[38;5;12m--> [0m[0msrc/task/yaml_task.rs:46:56[0m
 [0m  [0m[0m[1m[38;5;12m|[0m
-[0m[1m[38;5;12m9[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m    let task = dagrs::Task::parse_one(id, yaml);[0m
-[0m  [0m[0m[1m[38;5;12m| [0m[0m                      [0m[0m[1m[38;5;9m^^^^[0m[0m [0m[0m[1m[38;5;9mcould not find `Task` in `dagrs`[0m
+[0m[1m[38;5;12m4[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0mlet yaml_tasks = yaml_rust::YamlLoader::load_from_str(&yaml_cont);[0m
+[0m  [0m[0m[1m[38;5;12m| [0m[0m                                                       [0m[0m[1m[38;5;9m^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mnot found in this scope[0m
 
 [0m[1m[38;5;9merror[E0608][0m[0m[1m: cannot index into a value of type `Result<Vec<Yaml>, ScanError>`[0m
 [0m [0m[0m[1m[38;5;12m--> [0m[0msrc/task/yaml_task.rs:47:18[0m
@@ -138,32 +48,42 @@ Couldn't compile the test.
 [0m[1m[38;5;12m5[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0mlet yaml_tasks = yaml_tasks[0]["dagrs"][0m
 [0m  [0m[0m[1m[38;5;12m| [0m[0m                 [0m[0m[1m[38;5;9m^^^^^^^^^^^^^[0m
 
-[0m[1m[38;5;9merror[0m[0m[1m: aborting due to 3 previous errors[0m
+[0m[1m[38;5;9merror[E0624][0m[0m[1m: associated function `parse_one` is private[0m
+[0m  [0m[0m[1m[38;5;12m--> [0m[0msrc/task/yaml_task.rs:51:33[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m9[0m[0m  [0m[0m[1m[38;5;12m|[0m[0m [0m[0m    let task = dagrs::YamlTask::parse_one(id, yaml);[0m
+[0m   [0m[0m[1m[38;5;12m| [0m[0m                                [0m[0m[1m[38;5;9m^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mprivate associated function[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m  [0m[0m[1m[38;5;12m::: [0m[0m/home/github/dagrs/src/task/yaml_task.rs:54:5[0m
+[0m   [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m54[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m    fn parse_one(id: &str, info: &Yaml) -> Result<YamlTask, DagError> {[0m
+[0m   [0m[0m[1m[38;5;12m| [0m[0m    [0m[0m[1m[38;5;12m-----------------------------------------------------------------[0m[0m [0m[0m[1m[38;5;12mprivate associated function defined here[0m
 
-[0m[1mSome errors have detailed explanations: E0433, E0608.[0m
-[0m[1mFor more information about an error, try `rustc --explain E0433`.[0m
+[0m[1m[38;5;9merror[0m[0m[1m: aborting due to 4 previous errors[0m
+
+[0m[1mSome errors have detailed explanations: E0425, E0433, E0608, E0624.[0m
+[0m[1mFor more information about an error, try `rustc --explain E0425`.[0m
 Couldn't compile the test.
 ---- src/task/yaml_task.rs - task::yaml_task::YamlTask::parse_tasks (line 116) stdout ----
-[0m[1m[38;5;9merror[E0433][0m[0m[1m: failed to resolve: could not find `YamlTask` in `dagrs`[0m
-[0m [0m[0m[1m[38;5;12m--> [0m[0msrc/task/yaml_task.rs:117:20[0m
-[0m  [0m[0m[1m[38;5;12m|[0m
-[0m[1m[38;5;12m4[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0mlet tasks = dagrs::YamlTask::parse_tasks("test/test_dag.yaml");[0m
-[0m  [0m[0m[1m[38;5;12m| [0m[0m                   [0m[0m[1m[38;5;9m^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mcould not find `YamlTask` in `dagrs`[0m
+[0m[1m[38;5;9merror[E0624][0m[0m[1m: associated function `parse_tasks` is private[0m
+[0m   [0m[0m[1m[38;5;12m--> [0m[0msrc/task/yaml_task.rs:117:30[0m
+[0m    [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m4[0m[0m   [0m[0m[1m[38;5;12m|[0m[0m [0m[0mlet tasks = dagrs::YamlTask::parse_tasks("test/test_dag.yaml");[0m
+[0m    [0m[0m[1m[38;5;12m| [0m[0m                             [0m[0m[1m[38;5;9m^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mprivate associated function[0m
+[0m    [0m[0m[1m[38;5;12m|[0m
+[0m   [0m[0m[1m[38;5;12m::: [0m[0m/home/github/dagrs/src/task/yaml_task.rs:119:5[0m
+[0m    [0m[0m[1m[38;5;12m|[0m
+[0m[1m[38;5;12m119[0m[0m [0m[0m[1m[38;5;12m|[0m[0m [0m[0m    fn parse_tasks(filename: &str) -> Result<Vec<Self>, DagError> {[0m
+[0m    [0m[0m[1m[38;5;12m| [0m[0m    [0m[0m[1m[38;5;12m-------------------------------------------------------------[0m[0m [0m[0m[1m[38;5;12mprivate associated function defined here[0m
 
 [0m[1m[38;5;9merror[0m[0m[1m: aborting due to previous error[0m
 
-[0m[1mFor more information about this error, try `rustc --explain E0433`.[0m
+[0m[1mFor more information about this error, try `rustc --explain E0624`.[0m
 Couldn't compile the test.
 
 failures:
-    src/engine/graph.rs - engine::graph::Graph::add_edge (line 65)
-    src/engine/graph.rs - engine::graph::Graph::add_node (line 51)
-    src/engine/graph.rs - engine::graph::Graph::new (line 21)
-    src/engine/graph.rs - engine::graph::Graph::set_graph_size (line 36)
-    src/engine/graph.rs - engine::graph::Graph::topo_sort (line 89)
-    src/task/yaml_task.rs - task::yaml_task::YamlTask::from_yaml (line 146)
     src/task/yaml_task.rs - task::yaml_task::YamlTask::parse_one (line 45)
     src/task/yaml_task.rs - task::yaml_task::YamlTask::parse_tasks (line 116)
 
-test result: FAILED. 18 passed; 8 failed; 0 ignored; 0 measured; 0 filtered out; finished in 40.72s
+test result: FAILED. 24 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 53.82s
 

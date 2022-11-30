@@ -50,7 +50,8 @@ impl Graph {
     /// # Example
     /// ```
     /// # let mut g = dagrs::Graph::new();
-    /// g.add_node("Node1");
+    /// # g.set_graph_size(1);
+    /// g.add_node(1);
     /// ```
     /// **Note:** `id` won't get repeated in dagrs,
     /// since yaml parser will overwrite its info if a task's ID repeats.
@@ -64,6 +65,7 @@ impl Graph {
     /// # Example
     /// ```
     /// # let mut g = dagrs::Graph::new();
+    /// # g.set_graph_size(2);
     /// g.add_edge(0, 1);
     /// ```
     /// Above operation adds a arrow from node 0 to node 1,

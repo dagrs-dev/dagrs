@@ -43,12 +43,12 @@ impl YamlTask {
     ///
     /// # Example
     /// ```
-    /// # let yaml_tasks = yaml_rust::YamlLoader::load_from_str("test/test_dag.yaml");
+    /// # let yaml_tasks = yaml_rust::YamlLoader::load_from_str(&yaml_cont);
     /// # let yaml_tasks = yaml_tasks[0]["dagrs"]
     /// # .as_hash()
-    /// # .ok_or(dagrs::DagError::format_error(dagrs::FormatErrorMark::StartWordError));
+    /// # .ok_or(dagrs::DagError::format_error(YamlFormatError::StartWordError));
     /// # for(id, yaml) in yaml_tasks{
-    ///     let task = dagrs::Task::parse_one(id, yaml);
+    ///     let task = dagrs::YamlTask::parse_one(id, yaml);
     /// # }
     /// ```
     fn parse_one(id: &str, info: &Yaml) -> Result<YamlTask, DagError> {

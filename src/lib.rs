@@ -11,8 +11,8 @@ extern crate yaml_rust;
 mod engine;
 mod task;
 
-pub use engine::{DagEngine, DagError, EnvVar, RunningError, YamlError, YamlFormatError};
-pub use task::{Inputval, Retval, RunScript, RunType, TaskTrait, TaskWrapper};
+pub use engine::{DagEngine, DagError, EnvVar, RunningError, YamlError, YamlFormatError, Graph};
+pub use task::{Inputval, Retval, RunScript, RunType, TaskTrait, TaskWrapper, YamlTask};
 
 use simplelog::*;
 use std::{
