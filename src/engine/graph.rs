@@ -19,7 +19,7 @@ impl Graph {
     /// 
     /// # Example
     /// ```
-    /// let g = Grapg::new();
+    /// let g = dagrs::Graph::new();
     /// ```
     pub fn new() -> Graph {
         Graph {
@@ -34,8 +34,8 @@ impl Graph {
     /// 
     /// # Example
     /// ```
-    /// let size = 10; // 10 nodes
-    /// g.set_graph_size(size);
+    /// # let mut g = dagrs::Graph::new();
+    /// g.set_graph_size(10); // 10 nodes
     /// ```
     pub fn set_graph_size(&mut self, size: usize) {
         self.size = size;
@@ -49,7 +49,9 @@ impl Graph {
     /// 
     /// # Example
     /// ```
-    /// g.add_node("Node1");
+    /// # let mut g = dagrs::Graph::new();
+    /// # g.set_graph_size(1);
+    /// g.add_node(1);
     /// ```
     /// **Note:** `id` won't get repeated in dagrs,
     /// since yaml parser will overwrite its info if a task's ID repeats.
@@ -62,6 +64,8 @@ impl Graph {
     /// 
     /// # Example
     /// ```
+    /// # let mut g = dagrs::Graph::new();
+    /// # g.set_graph_size(2);
     /// g.add_edge(0, 1);
     /// ```
     /// Above operation adds a arrow from node 0 to node 1,
@@ -85,6 +89,8 @@ impl Graph {
     /// 
     /// # Example
     /// ```
+    /// # let mut g = dagrs::Graph::new();
+    /// # //Make your graph.
     /// g.topo_sort();
     /// ```
     /// This operation will judge whether graph is a DAG or not, 

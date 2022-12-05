@@ -11,8 +11,8 @@ extern crate yaml_rust;
 mod engine;
 mod task;
 
-pub use engine::{DagEngine, DagError, EnvVar, RunningError, YamlError, YamlFormatError};
-pub use task::{Inputval, Retval, RunScript, RunType, TaskTrait, TaskWrapper};
+pub use engine::{DagEngine, DagError, EnvVar, RunningError, YamlError, YamlFormatError, Graph};
+pub use task::{Inputval, Retval, RunScript, RunType, TaskTrait, TaskWrapper, YamlTask};
 
 use simplelog::*;
 use std::{
@@ -25,9 +25,10 @@ use std::{
 /// # Example
 /// ```rust
 /// // Default path (HOME/.dagrs/dagrs.log)
-/// init_logger(None);
-/// // or
-/// init_logger(Some("./dagrs.log"));
+/// dagrs::init_logger(None);
+/// ```
+/// ```rust
+/// dagrs::init_logger(Some("./dagrs.log"));
 /// ```
 ///
 /// **Note**, this function shall only be called once.

@@ -1,4 +1,4 @@
-//! Dag Engine is dagrs's main body
+//! Dag Engine is dagrs's main body.
 
 use super::{
     env_variables::EnvVar,
@@ -9,18 +9,18 @@ use crate::task::{ExecState, Inputval, Retval, TaskWrapper, YamlTask};
 use log::*;
 use std::{collections::HashMap, sync::Arc};
 
-/// dagrs's function is wrapped in DagEngine struct
+/// dagrs's function is wrapped in DagEngine struct.
 pub struct DagEngine {
     /// Store all tasks' infos.
     ///
-    /// Arc but no mutex, because only one thread will change [`TaskWrapper`]
-    /// at a time. And no modification to [`TaskWrapper`] happens during the execution of it.
+    /// Arc but no mutex, because only one thread will change [`TaskWrapper`]at a time.
+    /// And no modification to [`TaskWrapper`] happens during the execution of it.
     tasks: HashMap<usize, Arc<TaskWrapper>>,
-    /// Store dependency relations
+    /// Store dependency relations.
     rely_graph: Graph,
-    /// Store a task's running result
+    /// Store a task's running result.
     execstate_store: HashMap<usize, ExecState>,
-    // Environment Variables
+    // Environment Variables.
     env: EnvVar,
 }
 
@@ -29,7 +29,7 @@ impl DagEngine {
     ///
     /// # Example
     /// ```
-    /// let dagrs = DagEngine::new();
+    /// let dagrs = dagrs::DagEngine::new();
     /// ```
     pub fn new() -> DagEngine {
         DagEngine {
@@ -40,15 +40,38 @@ impl DagEngine {
         }
     }
 
+    /// Add new tasks into dagrs.
+    ///
+    /// # Example
+    /// ```
+    /// # let mut dagrs = dagrs::DagEngine::new();
+    /// # struct T {};
+    /// # impl dagrs::TaskTrait for T {
+    /// #     fn run( &self, input: dagrs::Inputval, env: dagrs::EnvVar ) -> dagrs::Retval {
+    /// #         dagrs::Retval::empty()
+    /// #     }
+    /// # }
+    /// # let task1 = dagrs::TaskWrapper::new( T{}, "name1" );
+    /// # let task2 = dagrs::TaskWrapper::new( T{}, "name2" );
+    /// dagrs.add_tasks(vec![task1, task2]);
+    /// ```
+    ///
+    /// You should defined the struct(here is T) and the function run in TaskTrait by yourself.
+    /// You can find more infomation about TaskWrapper in src/task/task.rs
+    pub fn add_tasks(&mut self, tasks: Vec<TaskWrapper>) {
+        for task in tasks {
+            self.tasks.insert(task.get_id(), Arc::new(task));
+        }
+    }
+
     /// Do dagrs's job.
     ///
     /// # Example
     /// ```
-    /// let dagrs = DagEngine::new();
-    /// dagrs.add_tasks(vec![task1, task2]);
+    /// # let mut dagrs = dagrs::DagEngine::new();
+    /// # //Add some tasks to dagrs.
+    /// dagrs.run();
     /// ```
-    ///
-    /// Here `task1` and `task2` are user defined task wrapped in [`TaskWrapper`].
     ///
     /// **Note:** This method must be called after all tasks have been added into dagrs.
     pub fn run(&mut self) -> Result<bool, DagError> {
@@ -61,7 +84,7 @@ impl DagEngine {
     ///
     /// # Example
     /// ```
-    /// let dagrs = DagEngine::new();
+    /// # let dagrs = dagrs::DagEngine::new();
     /// dagrs.run_from_yaml("test/test_dag1.yaml");
     /// ```
     ///
@@ -80,23 +103,7 @@ impl DagEngine {
         tasks.into_iter().map(|t| self.add_tasks(vec![t])).count();
         Ok(())
     }
-
-    /// Add new tasks into dagrs
-    ///
-    /// # Example
-    /// ```
-    /// let dagrs = DagEngine::new();
-    /// dagrs.add_tasks(vec![task1, task2]);
-    /// dagrs.run();
-    /// ```
-    ///
-    /// Here `task1` and `task2` are user defined task wrapped in [`TaskWrapper`].
-    pub fn add_tasks(&mut self, tasks: Vec<TaskWrapper>) {
-        for task in tasks {
-            self.tasks.insert(task.get_id(), Arc::new(task));
-        }
-    }
-
+    
     /// Push a task's [`ExecState`] into hash store
     fn push_execstate(&mut self, id: usize, state: ExecState) {
         assert!(

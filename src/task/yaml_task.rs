@@ -43,20 +43,17 @@ impl YamlTask {
     ///
     /// # Example
     /// ```
-    /// let task = Task::parse_one(id, yaml);
-    /// ```
-    /// Here `id` and `yaml` comes from:
-    /// ```
-    /// let yaml_tasks = YamlLoader::load_from_str(&yaml_cont)?;
-    /// let yaml_tasks = yaml_tasks[0]["dagrs"]
-    /// .as_hash()
-    /// .ok_or(DagError::format_error("", FormatErrorMark::StartWordError))?;
-    ///
-    /// for(id, yaml) in yaml_tasks{
-    ///     ...
+    /// use std::io::Read;
+    /// let mut yaml_cont = String::new();
+    /// let mut yaml_file = std::fs::File::open("test/test_dag1.yaml");
+    /// yaml_file.expect("REASON").read_to_string(&mut yaml_cont);
+    /// let yaml_tasks = yaml_rust::YamlLoader::load_from_str(&yaml_cont).expect("REASON");
+    /// let yaml_tasks = yaml_tasks[0]["dagrs"].as_hash().expect("REASON");
+    /// for (id, yaml) in yaml_tasks {
+    ///     let task = dagrs::YamlTask::parse_one(id.as_str().unwrap(), yaml);
     /// }
     /// ```
-    fn parse_one(id: &str, info: &Yaml) -> Result<YamlTask, DagError> {
+    pub fn parse_one(id: &str, info: &Yaml) -> Result<YamlTask, DagError> {
         // Get name first
         let name = info["name"]
             .as_str()
@@ -119,9 +116,9 @@ impl YamlTask {
     ///
     /// # Example
     /// ```
-    /// let tasks = YamlTask::parse_tasks("test/test_dag.yaml")?;
+    /// let tasks = dagrs::YamlTask::parse_tasks("test/test_dag.yaml");
     /// ```
-    fn parse_tasks(filename: &str) -> Result<Vec<Self>, DagError> {
+    pub fn parse_tasks(filename: &str) -> Result<Vec<Self>, DagError> {
         let mut yaml_cont = String::new();
 
         let mut yaml_file = File::open(filename)?;
@@ -149,7 +146,7 @@ impl YamlTask {
     ///
     /// # Example
     /// ```
-    /// let tasks = YamlTask::from_yaml(filename)?;
+    /// let tasks = dagrs::YamlTask::from_yaml("test/test_dag1.yaml");
     /// ```
     ///
     /// Used in [`crate::DagEngine`].

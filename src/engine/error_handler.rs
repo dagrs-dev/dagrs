@@ -50,7 +50,7 @@ impl DagError {
     ///
     /// # Example
     /// ```
-    /// DagError::format_error(YamlFormatError::NoName("a".to_string()));
+    /// dagrs::DagError::format_error(dagrs::YamlFormatError::NoName("a".to_string()));
     /// ```
     /// This will throw a error that says, yaml task 'a' has no name field.
     pub fn format_error(error: YamlFormatError) -> Self {
@@ -61,7 +61,7 @@ impl DagError {
     ///
     /// # Example
     /// ```
-    /// DagError::running_error(RunningError::RelyTaskIllegal("task 1".to_string()))
+    /// dagrs::DagError::running_error(dagrs::RunningError::RelyTaskIllegal("task 1".to_string()));
     /// ```
     /// This will throw a error that says, task with name "task 1" has non-exist rely tasks.
     pub fn running_error(error: RunningError) -> Self {
