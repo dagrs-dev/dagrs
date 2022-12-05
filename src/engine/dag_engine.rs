@@ -103,7 +103,7 @@ impl DagEngine {
         tasks.into_iter().map(|t| self.add_tasks(vec![t])).count();
         Ok(())
     }
-
+    
     /// Push a task's [`ExecState`] into hash store
     fn push_execstate(&mut self, id: usize, state: ExecState) {
         assert!(

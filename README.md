@@ -297,3 +297,19 @@ Freighter is licensed under this Licensed:
 * Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or https://www.apache.org/licenses/LICENSE-2.0)
 
 ### Acknowledgements
+
+
+Git even has a -s command line option to append this automatically to your commit message:
+
+```bash
+$ git commit -s -m 'This is my commit message'
+```
+
+### License
+
+Freighter is licensed under this Licensed:
+
+* MIT LICENSE ( [LICENSE-MIT](LICENSE-MIT) or https://opensource.org/licenses/MIT)
+* Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or https://www.apache.org/licenses/LICENSE-2.0)
+
+### Acknowledgements

@@ -11,6 +11,7 @@ use std::{
 /// 
 /// Since it will be shared between tasks,
 /// [`Arc`] and [`Mutex`] are needed.
+
 pub struct EnvVar(Arc<Mutex<HashMap<String, DMap>>>);
 
 impl EnvVar {
@@ -59,4 +60,5 @@ impl Clone for EnvVar {
     fn clone(&self) -> Self {
         Self(Arc::clone(&self.0))
     }
+
 }
