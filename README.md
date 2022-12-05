@@ -1,78 +1,78 @@
 # dagrs
 
-本项目是用 Rust 写的 DAG 执行引擎，开发文档请参考：[使用 Rust 编写 DAG 执行引擎](https://openeuler.feishu.cn/docs/doccnVLprAY6vIMv6W1vgfLnfrf)。
+This project is a DAG execution engine written in Rust. For development documentation, please refer to: [Writing a DAG execution engine using Rust](https://openeuler.feishu.cn/docs/doccnVLprAY6vIMv6W1vgfLnfrf).
 
-## 用法
+## Usage
 
-确保 Rust 编译环境可用（`cargo build`），然后在此文件夹中运行`cargo build --release`，在`target/release/`中获取可执行文件，并将其放入PATH。
+Make sure the Rust compilation environment is available (`cargo build`), then run `cargo build --release` in this folder, fetch the executable in `target/release/` and put it in the PATH.
 
-本项目面向两个目标群体：
+This project is aimed at two target groups.
 
-- 普通用户 - 通过 `YAML` 文件对任务进行定义和调度运行。
-- 程序员 - 通过实现 `Task Trait` 进行任务的定义和调度运行。
+- General users - define and schedule tasks by `YAML` files.
+- Programmers - define and schedule tasks by  `Task Trait`.
 
 ## YAML
 
-此部分是面向普通用户的，即用户并不通过 rust 编程，而是利用 YAML 文件对任务进行描述并调度运行。YAML 文件的一个示例如下：
+This part is catering for the general user who does't use rust, it use YAML files to define and schedule tasks.An example YAML file is as follows:
 
 ```yaml
 dagrs:
   a:
-    name: 任务1
+    name: "Task1"
     after: [b]
     from: [b]
     run:
       type: sh
-      script: ./test/test.sh
+      script: . /test/test.sh
   b:
-    name: "任务2"
+    name: "Task2"
     run:
       type: deno
       script: print("Hello!")
 ```
 
-- YAML 文件应该以 `dagrs` 开头。
+- The YAML file should start with `dagrs`.
 
-- `a,b` 是任务的标识符（也可理解为 ID），主要作为标识使用，无具体含义。该字段必须存在且不能重复（否则会覆盖早先定义）。
-- `name` 是任务的名称，在后续调度时会输出到 log 中以便用户查看。该字段必须存在，可以重复。
-- `after` 是任务的执行顺序，如 `after: [b]` 就表明 `a` 要在 `b` 之后执行。
-- `from` 是任务输入值的来源，`from: [b]` 表示 `a` 在开始执行时，会得到 `b` 的执行结果，以字符串的形式输入。
-- `run` 是任务的内容定义，包括 `type` 和 `script` 两个子字段。该字段及其子字段必须存在。
-  - `type` 是任务的执行方式，当前支持 shell 执行（sh），和 deno 执行（deno）。
-  - `script` 是任务的执行内容，可以是具体的命令，也可以是一个文件。
+- `a,b` is identifiers for the tasks. This field must be defined and unique (otherwise it will overwrite the earlier definition).
+- `name` is the name of the task, it will be output to log file at subsequent scheduling. This field must be defined and it can be the same as other task's name .
+- `after` is the order of task execution.For example, `after: [b]` in task `a` means that `a` should be executed after `b`.
+- `from` is the input file for the task, `from: [b]` means that `a` will get a string from `b`'s result when it starts execution.
+- `run` is the details of the task, including the subfields `type` and `script`. This field and its subfields must exist.
+  - `type` is the execution type of the task, it supports shell (sh) and deno (deno) now.
+  - `script` is the content of the task, which can be a program or a file.
 
-另一个实际涉及输入输出的例子：
+Another example with input and output:
 
 ```yaml
 dagrs:
   a:
-    name: "任务1"
+    name: "Task1"
     after: [b]
     from: [b]
     run:
       type: sh
-      script: echo > ./test/test_value_pass1.txt
+      script: echo > . /test/test_value_pass1.txt
   b:
-    name: "任务2"
+    name: "Task2"
     run:
       type: deno
       script: let a = 1+4; a*2
 ```
 
-在上面的描述中：
-- 任务 `b` 是一个用内置 `deno` 来执行的任务，其返回值显然是 `10`
-- 随后 `a` 会被执行，输入值将以字符串的形式拼接到 `script` 的最后面，即以下指令被执行：
-  `echo > ./test/test_value_pass1.txt 10`
-- 执行结束后，会得到一个文件 `test/test_value_pass1.txt`，其中的内容就会是 `10` 。
+In the above example:
+- Task `b` execute with the built-in `deno`, apparently it returns `10`
+- Then `a` will be executed, and the input value will be spliced to the end of the `script` as a string, i.e. the following command is executed.
+  `echo > . /test/test_value_pass1.txt 10`
+- At the end of execution, a file `test/test_value_pass1.txt` will be created, and it will have a '10' in it.
 
-**Notice:** 当前 deno 执行只支持有返回值，但输入值并未实现（`deno_core` 的一些接口问题导致）。
+**Notice:** The deno is output only now(due to some interface issues about `deno_core`).
 
-**如何运行？**
+**How does it work? **
 
-在编写好 YAML 文件后，可以通过 cli 进行运行：
+After writing the YAML file, you can run it with cli:
 
 ```bash
-$ ./target/release/dagrs --help
+$ . /target/release/dagrs --help
 dagrs 0.2.0
 Command Line input
 
@@ -80,64 +80,64 @@ USAGE:
     dagrs [OPTIONS] <FILE>
 
 ARGS:
-    <FILE>    YAML file path
+    <FILE> YAML file path
 
 OPTIONS:
-    -h, --help                 Print help information
-    -l, --logpath <LOGPATH>    Log file path
-    -V, --version              Print version information
+    -h, --help Print help information
+    -l, --logpath <LOGPATH> Log file path
+    -V, --version Print version information
 ```
 
-例如运行上述带输入输出的 YAML 的情况：
+For example, run with the YAML `test/test_value_pass1.yaml`:
 
 ```bash
-$ ./target/release/dagrs test/test_value_pass1.yaml 
-08:31:43 [INFO] [Start] -> 任务2 -> 任务1 -> [End]
-08:31:43 [INFO] Executing Task[name: 任务2]
-cargo:rerun-if-changed=/Users/wyffeiwhe/.cargo/registry/src/mirrors.ustc.edu.cn-61ef6e0cd06fb9b8/deno_core-0.121.0/00_primordials.js
+$ . /target/release/dagrs test/test_value_pass1.yaml 
+08:31:43 [INFO] [Start] -> Task2 -> Task1 -> [End]
+08:31:43 [INFO] Executing Task[name: Task2]
+cargo:rerun-if-changed=/Users/wyffeiwhe/.cargo/registry/src/mirrors.ustc.edu.cn-61ef6e0cd06fb9b8/deno_core-0.121.0/00_primordials. js
 cargo:rerun-if-changed=/Users/wyffeiwhe/.cargo/registry/src/mirrors.ustc.edu.cn-61ef6e0cd06fb9b8/deno_core-0.121.0/01_core.js
 cargo:rerun-if-changed=/Users/wyffeiwhe/.cargo/registry/src/mirrors.ustc.edu.cn-61ef6e0cd06fb9b8/deno_core-0.121.0/02_error.js
-08:31:43 [INFO] Finish Task[name: 任务2], success: true
-08:31:43 [INFO] Executing Task[name: 任务1]
-08:31:43 [INFO] Finish Task[name: 任务1], success: true
+08:31:43 [INFO] Finish Task[name: Task2], success: true
+08:31:43 [INFO] Executing Task[name: Task1]
+08:31:43 [INFO] Finish Task[name: Task1], success: true
 ```
 
-可以看到详细的运行情况输出，同时 log 文件可在 `$HOME/.dagrs/dagrs.log` 下找到（这是默认地址，可以通过 `-l` 选项来自定义。
+You can get the details of the program after you run it, and you can find the log file at `$HOME/.dagrs/dagrs.log` (this is the default address, you can define it with the `-l` option).
 
-log 文件记录任务的执行顺序以及执行结果，其内容如下：
+The log file records the program's execution sequnence and result, for this example, it just like this:
 
-```log
+``log
 $ cat ~/.dagrs/dagrs.log
-08:31:43 [INFO] [Start] -> 任务2 -> 任务1 -> [End]
-08:31:43 [INFO] Executing Task[name: 任务2]
-08:31:43 [INFO] Finish Task[name: 任务2], success: true
-08:31:43 [INFO] Executing Task[name: 任务1]
-08:31:43 [INFO] Finish Task[name: 任务1], success: true
+08:31:43 [INFO] [Start] -> Task2 -> Task1 -> [End]
+08:31:43 [INFO] Executing Task[name: Task2]
+08:31:43 [INFO] Finish Task[name: Task2], success: true
+08:31:43 [INFO] Executing Task[name: Task1]
+08:31:43 [INFO] Finish Task[name: Task1], success: true
 ```
 
 ## TaskTrait
 
-Rust Programmer 可以通过实现 `TaskTrait` 来更灵活的定义自己的任务。 `TaskTrait` 的定义如下：
+Rust Programmer can define their own tasks more flexibly by `TaskTrait`. The definition of `TaskTrait` is as follows:
 
 ```rust
 /// Task Trait.
 ///
-/// Any struct implements this trait can be added into dagrs.
+//// Any struct implements this trait can be added into dagrs.
 pub trait TaskTrait {
     fn run(&self, input: Inputval, env: EnvVar) -> Retval;
 }
 ```
 
-- `run` 是任务的执行内容，在被调度执行时由 dagrs 调用。
-- `input` 是任务的输入，由 `dagrs` 来管理。
-- `env` 是整个 `dagrs` 的全局变量，所有任务可见。
-- `Retval` 是任务的返回值。
+- `run` is the content of the task, it will be scheduled by dagrs.
+- `input` is the input to the task, which is managed by `dagrs`.
+- `env` is a global variable for the `dagrs`.
+- `Retval` is the return value of the task.
 
-程序员实现的 task struct 需要放到 `TaskWrapper` 中进行使用，并通过其提供的 `exec_after` 和 `input_from` 函数进行依赖设置，具体可见下方的例子。
+Your task struct needs to be placed in the `TaskWrapper` for use and set dependencies via the `exec_after` and `input_from`, as seen in the example below.
 
-**如何使用？**
+**How to use? **
 
-一个[例子](./examples/hello.rs)如下：
+An [example](. /examples/hello.rs) is as follows:
 
 ```rust
 extern crate dagrs;
@@ -178,33 +178,33 @@ fn main() {
     dagrs.add_tasks(vec![t1, t2]);
     assert!(dagrs.run().unwrap())
 }
-```
+```''
 
-运行的输出如下：
+The output is as follows.
 
 ```bash
 08:45:24 [INFO] [Start] -> Task 1 -> Task 2 -> [End]
 08:45:24 [INFO] Executing Task[name: Task 1]
-08:45:24 [INFO] Finish Task[name: Task 1], success: true
+08:45:24 [INFO] Finishing Task[name: Task 1], success: true
 08:45:24 [INFO] Executing Task[name: Task 2]
 Hello Dagrs!
 08:45:24 [INFO] Finish Task[name: Task 2], success: true
 ```
 
-一些解释：
-- `input` 提供一个 `get` 方法，用来获取任务的输入值，其接受一个输入值存放的 `index`。
-  - 当定义只有一个输入值来源时（如例子中 `t2` 的输入只来自 `t1`），那么将 `index` 设置为 0 即可。
-  - 如果有多个来源，假设 `t3.input_from(&[&t2, &t1])`，那么 index 就是定义任务输入时，任务的排列顺序（`&[&t2, &t1]`，如 `get(0)` 就是拿 `t2` 的返回值，`get(1)` 就是拿 `t1` 的返回值。
-- `env` 提供 `get` 和 `set`，[例子参考](./examples/hello_env.rs)。
-  - `set` 即设置环境变量，其名称必须是一个字符串。
-  - `get` 即获取一个环境变量的值。
-- `Retval` 是任务的返回值，提供 `new` 和 `empty` 两个方法。
+Some explanations.
+- `input` provides a `get` method to get the task's input values, which takes an `index` where the input values are stored.
+  - Please set `index` to 0 when only one source of input values is defined (as in the example where the input to `t2` comes only from `t1`).
+  - If there are multiple sources, such as `t3.input_from(&[&t2, &t1])`, then index is the order of the input order (`&[&t2, &t1]`, for example, `get(0)` takes the return value of `t2`, `get(1)` takes the return value of `t1`).
+- `env` provides `get` and `set`, [example reference](. /examples/hello_env.rs).
+  - `set` sets the environment variable, whose name must be a string.
+  - `get` is to get the value of an environment variable.
+- `Retval` is the return value of the task, provides `new` and `empty` methods.
 
-**Notice:** 整个自定义的任务都应该是 `Sync` 和 `Send` 的，原因是：任务是被放到一个线程中执行调度的。
+**Notice:** The whole custom task should be `Sync` and `Send` for one reason: the task is put into a thread to perform scheduling.
 
-**如何运行脚本？**
+**How to run the script? **
 
-程序员可以通过 `RunScript` 结构来实现脚本的运行（当然也可以直接在代码里自行运行而不通过该结构体），定义如下：
+You can run the script through the `RunScript` struct (or, of course, directly in the code itself without going through the struct), defined as follows:
 
 ```rust
 pub struct RunScript {
@@ -213,25 +213,25 @@ pub struct RunScript {
 }
 ```
 
-这里：
-- `script` 即脚本，可以是命令本身（"echo hello!"），也可以是脚本的路径（"./test/test.sh"）。
-- `executor` 是任务的执行方式，`RunType` 是一个 enum 类型：
-  ```rust
+Here:
+- `script` is the script, either the command itself ("echo hello!"), also can be the path to the script (". /test/test.sh").
+- `executor` is the way the task execut, and `RunType` is an enum type.
+  ``rust
   pub enum RunType {
       SH,
       DENO,
   }
   ```
 
-`RunScript` 提供了 `exec` 函数：
+`RunScript` provides the `exec` function.
 
 ```rust
 pub fn exec(&self, input: Inputval) -> Result<String, DagError> {}
 ```
 
-如果执行正常，则将结果以 `String` 的形式返回，否则返回一个 `DagError` 的错误类型。
+It will returns the result as `String` if it executes correctly, otherwise returns a `DagError` error type.
 
-一个简单的[例子](./examples/hello_script.rs)：
+A simple [example](. /examples/hello_script.rs):
 
 ```rust
 extern crate dagrs;
@@ -245,7 +245,7 @@ impl TaskTrait for T {
         let script = RunScript::new("echo 'Hello Dagrs!'", RunType::SH);
 
         let res = script.exec(None);
-        println!("{:?}", res);
+        println!("{:?}" , res);
         Retval::empty()
     }
 }
@@ -262,18 +262,18 @@ fn main() {
 }
 ```
 
-其执行结果为：
+The result is:
 
 ```bash
 09:12:48 [INFO] [Start] -> Task -> [End]
 09:12:48 [INFO] Executing Task[name: Task]
 Ok("Hello Dagrs!\n")
 09:12:48 [INFO] Finish Task[name: Task], success: true
-```
+ðŸ™' ðŸ™'
 
 ### How to contribute?
 
-This project enforce the [DCO](https://developercertificate.org).
+This project enforces the [DCO](https://developercertificate.org).
 
 Contributors sign-off that they adhere to these requirements by adding a Signed-off-by line to commit messages.
 
@@ -293,8 +293,7 @@ $ git commit -s -m 'This is my commit message'
 
 Freighter is licensed under this Licensed:
 
-* MIT LICENSE ( [LICENSE-MIT](LICENSE-MIT) or https://opensource.org/licenses/MIT)
+* MIT LICENSE ([LICENSE-MIT](LICENSE-MIT) or https://opensource.org/licenses/MIT)
 * Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or https://www.apache.org/licenses/LICENSE-2.0)
 
 ### Acknowledgements
-
