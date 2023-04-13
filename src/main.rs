@@ -76,10 +76,10 @@ fn test_value_pass2() {
         .expect("Test Fails, Read file fails.");
 
     let mut buf2 = String::new();
-        File::open("./README.md")
-            .expect("Test Fails, File not exist.")
-            .read_to_string(&mut buf2)
-            .expect("Test Fails, Read file fails.");
+    File::open("./README.md")
+        .expect("Test Fails, File not exist.")
+        .read_to_string(&mut buf2)
+        .expect("Test Fails, Read file fails.");
     
     assert_eq!(buf1, buf2);
 }
