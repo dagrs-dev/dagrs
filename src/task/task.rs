@@ -1,7 +1,7 @@
 use crate::engine::{DagError, EnvVar, RunningError};
 
 use super::{Inputval, Retval};
-use deno_core::{serde_json, serde_v8, v8, JsRuntime, RuntimeOptions};
+use deno_core::{serde_json, serde_v8, v8, JsRuntime, RuntimeOptions, FastString};
 use lazy_static::lazy_static;
 use std::process::Command;
 use std::sync::Mutex;
@@ -228,7 +228,7 @@ impl RunScript {
         let mut context = JsRuntime::new(RuntimeOptions {
             ..Default::default()
         });
-        match context.execute_script("", &script) {
+        match context.execute_script("", FastString::Owned(script.into_boxed_str())) {
             Ok(global) => {
                 let scope = &mut context.handle_scope();
                 let local = v8::Local::new(scope, global);
