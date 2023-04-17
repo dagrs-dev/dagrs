@@ -224,11 +224,11 @@ impl RunScript {
     }
 
     fn run_deno(&self, _input: Option<Inputval>) -> Result<String, DagError> {
-        let script = self.script.clone();
+        let script = self.script.clone().into_boxed_str();
         let mut context = JsRuntime::new(RuntimeOptions {
             ..Default::default()
         });
-        match context.execute_script("", &script) {
+        match context.execute_script("", deno_core::FastString::Owned(script)) {
             Ok(global) => {
                 let scope = &mut context.handle_scope();
                 let local = v8::Local::new(scope, global);
