@@ -33,13 +33,13 @@
 //! ```rust
 //! use dagrs::TaskTrait;
 //! struct MyTask{
-//!     ...
+//!     limit:u32
 //! }
 //! 
 //! impl TaskTrait for MyTask{
 //!     fn run(&self, input: dagrs::Inputval, env: dagrs::EnvVar) -> dagrs::Retval {
 //!         let mut sum=0;
-//!         for i in 0..100{
+//!         for i in 0..self.limit{
 //!             sum+=i;
 //!         }
 //!         dagrs::Retval::new(sum)
