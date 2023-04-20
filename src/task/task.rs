@@ -1,3 +1,17 @@
+//! Task abstraction
+//! 
+//! ## Specific task description.
+//! 
+//! First of all, if the programmer wants to customize a task, he must implement
+//! the [`TaskTrait`] trait to define the specific behavior of the task.
+//! 
+//! Secondly, the engine will encapsulate a task as [`TaskWrapper`]. The task
+//! has some necessary attributes, among which:
+//! - The id attribute represents the unique identifier of a task, and the id is
+//!   allocated by the global id allocator [`IDAllocator`] when creating a new task;
+//! - Tasks may also have a series of predecessor and successor tasks;
+//! - Finally it must contain a type that implements the [`TaskTrait`] trait.
+
 use crate::engine::{DagError, EnvVar, RunningError};
 
 use super::{Inputval, Retval};

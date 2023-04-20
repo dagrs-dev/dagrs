@@ -1,3 +1,18 @@
+//! Task state
+//! 
+//! ## Input, output, and state of tasks.
+//! 
+//! Task execution may require input: the execution of a task may require
+//! output from the execution of several predecessor tasks, and use [`Inputval`]
+//! to represent the required input.
+//! 
+//! Execution state of the task: If the task is executed successfully, the
+//! success field of the [`ExecState`] structure representing the task state
+//! will be true, otherwise it will be false.
+//! 
+//! The execution of the task may produce output: if the task is executed successfully,
+//! it may produce output, and [`Retval`] is used to represent the output of the task.
+
 use std::slice::Iter;
 
 use anymap::{CloneAny, Map};
