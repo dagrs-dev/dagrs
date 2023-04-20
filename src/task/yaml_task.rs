@@ -9,7 +9,7 @@
 //! successors of a task according to the id, and then parse and encapsulate a task 
 //! configuration information into a [`TaskWrapper`], and all tasks are finally put
 //! into a [`Vec`] container.
-//! Currently, the engine supports two types of tasks given by the configuration file,
+//! The engine supports two types of tasks given by the configuration file,
 //! namely running sh scripts and JavaScript scripts, and the parser will generate 
 //! [`TaskWrapper`] according to the type of tasks.
 
