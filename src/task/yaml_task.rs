@@ -1,3 +1,18 @@
+//! User-defined task flow configuration file parser.
+//! 
+//! ## Configuration file parsing process
+//! 
+//! There are several task configuration information in the configuration file, 
+//! and each task may have 0~n predecessors and successors (the first executed 
+//! task has no predecessor, and the last task has no successor). Each task has a
+//! unique identification, and the parser will determine all the predecessors and
+//! successors of a task according to the id, and then parse and encapsulate a task 
+//! configuration information into a [`TaskWrapper`], and all tasks are finally put
+//! into a [`Vec`] container.
+//! Currently, the engine supports two types of tasks given by the configuration file,
+//! namely running sh scripts and JavaScript scripts, and the parser will generate 
+//! [`TaskWrapper`] according to the type of tasks.
+
 use super::{Inputval, Retval, RunScript, RunType, TaskTrait, TaskWrapper};
 use crate::engine::{DagError, YamlFormatError, EnvVar};
 use std::{cell::Cell, collections::HashMap, fs::File, io::Read};
