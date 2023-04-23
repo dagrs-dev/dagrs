@@ -1,4 +1,4 @@
-//! A simple error handler implementation.
+//! ## A simple error handler implementation.
 
 use thiserror::Error;
 

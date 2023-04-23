@@ -1,4 +1,9 @@
-//! Implementation for global environment variables.
+//! Global environment variables
+//! 
+//! ## Implementation for global environment variables.
+//! 
+//! Users can specify global environment variables for the DAG engine when
+//! the task is running, which may be used during task execution.
 
 use crate::task::DMap;
 use anymap::CloneAny;

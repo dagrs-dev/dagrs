@@ -1,4 +1,16 @@
-//! Dag Engine is dagrs's main body.
+//! The Engine
+//! 
+//! ## Dag Engine is dagrs's main body.
+//! 
+//! DagEngine is the execution engine of the task graph, and the constructed tasks are
+//! stored in the form of Graph. The execution process of the engine is as follows:
+//! 
+//! First, check that the built Graph cannot have loops, otherwise the execution will fail;
+//! Then obtain the sequence of tasks according to topological sorting, and execute the tasks in order.
+//! It should be noted that the execution mode of the tasks is asynchronous; 
+//! 
+//! Finally, the task The execution output will be stored in the `execstate_store` field.
+//! The next task gets the required input through the `execstate_store` field.
 
 use super::{
     env_variables::EnvVar,
@@ -166,6 +178,7 @@ impl DagEngine {
     ///
     /// If it is a DAG, dagrs will start executing tasks in a feasible order and 
     /// return true when execution done, or it return a false.
+    /// 
     async fn check_dag(&mut self) -> bool {
         if let Some(seq) = self.rely_graph.topo_sort() {
             let seq = seq

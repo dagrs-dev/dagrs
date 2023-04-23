@@ -1,4 +1,25 @@
-//! Graph stores dependency relations
+//! Task Graph
+//! 
+//! ## Graph stores dependency relations.
+//! 
+//! [`Graph`] represents a series of tasks with dependencies, and stored in an adjacency
+//! list. Graph must be a directed acyclic graph, that is, the dependencies of the task
+//! cannot form a loop, otherwise the engine will not be able to execute the task successfully.
+//! It has some useful methods for building graphs, such as: adding edges, nodes, etc.
+//! And the most important of which is the `topo_sort` function, which uses topological
+//! sorting to generate the execution sequence of tasks.
+//! 
+//! ## An example of a directed acyclic graph
+//! 
+//! task1 -→ task3 ---→ task6 ----
+//!  |   ↗   ↓          ↓         ↘
+//!  |  /   task5 ---→ task7 ---→ task9
+//!  ↓ /      ↑          ↓         ↗
+//! task2 -→ task4 ---→ task8 ----
+//! 
+//! The task execution sequence can be as follows:
+//! task1->task2->task3->task4->task5->task6->task7->task8->task9
+//! 
 
 use bimap::BiMap;
 
