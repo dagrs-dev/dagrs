@@ -1,14 +1,13 @@
 //! The Engine
 //! 
-//! ## Dag Engine is dagrs's main body.
+//! ## [`DagEngine`] is dagrs's main body.
 //! 
-//! DagEngine is the execution engine of the task graph, and the constructed tasks are
-//! stored in the form of Graph. The execution process of the engine is as follows:
+//! [`DagEngine`] is the execution engine of the task graph, and the constructed tasks are
+//! stored in the form of [`Graph`]. The execution process of the engine is as follows:
 //! 
-//! First, check that the built Graph cannot have loops, otherwise the execution will fail;
+//! First, check that the built graph cannot have loops, otherwise the execution will fail;
 //! Then obtain the sequence of tasks according to topological sorting, and execute the tasks in order.
-//! It should be noted that the execution mode of the tasks is asynchronous; 
-//! 
+//! It should be noted that the execution mode of the tasks is asynchronous;
 //! Finally, the task The execution output will be stored in the `execstate_store` field.
 //! The next task gets the required input through the `execstate_store` field.
 

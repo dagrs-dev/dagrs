@@ -3,7 +3,7 @@
 //! ## Graph stores dependency relations.
 //! 
 //! [`Graph`] represents a series of tasks with dependencies, and stored in an adjacency
-//! list. Graph must be a directed acyclic graph, that is, the dependencies of the task
+//! list. It must be a directed acyclic graph, that is, the dependencies of the task
 //! cannot form a loop, otherwise the engine will not be able to execute the task successfully.
 //! It has some useful methods for building graphs, such as: adding edges, nodes, etc.
 //! And the most important of which is the `topo_sort` function, which uses topological
