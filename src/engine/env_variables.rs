@@ -67,3 +67,9 @@ impl Clone for EnvVar {
     }
 
 }
+
+impl Default for EnvVar{
+    fn default() -> Self {
+        EnvVar(Arc::new(Mutex::new(HashMap::new())))
+    }
+}

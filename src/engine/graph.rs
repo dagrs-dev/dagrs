@@ -171,3 +171,14 @@ impl Graph {
         }
     }
 }
+
+impl Default for Graph{
+    fn default() -> Self {
+        Graph {
+            size: 0,
+            nodes: BiMap::new(),
+            adj: Vec::new(),
+            indegree: Vec::new(),
+        }
+    }
+}

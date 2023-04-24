@@ -11,7 +11,7 @@ extern crate yaml_rust;
 mod engine;
 mod task;
 
-pub use engine::{DagEngine, DagError, EnvVar, RunningError, YamlError, YamlFormatError, Graph};
+pub use engine::{DagEngine, DagError, EnvVar, Graph, RunningError, YamlError, YamlFormatError};
 pub use task::{Inputval, Retval, RunScript, RunType, TaskTrait, TaskWrapper, YamlTask};
 
 use simplelog::*;
@@ -36,17 +36,14 @@ use std::{
 /// Default logger is [Simplelog](https://crates.io/crates/simplelog), you can
 /// also use other log implementations. Just remember to initialize them before
 /// running dagrs.
-pub fn init_logger(logpath: Option<&str>) {
-    let logpath = if let Some(s) = logpath {
-        s.to_owned()
-    } else {
-        if let Ok(home) = env::var("HOME") {
+pub fn init_logger(path: Option<&str>) {
+    let log_path = path.map_or(
+        env::var("HOME").map_or("./dagrs.log".to_owned(), |home| {
             create_dir(format!("{}/.dagrs", home)).unwrap_or(());
             format!("{}/.dagrs/dagrs.log", home)
-        } else {
-            "./dagrs.log".to_owned()
-        }
-    };
+        }),
+        |s| s.to_owned(),
+    );
 
     CombinedLogger::init(vec![
         TermLogger::new(
@@ -58,7 +55,7 @@ pub fn init_logger(logpath: Option<&str>) {
         WriteLogger::new(
             LevelFilter::Info,
             Config::default(),
-            File::create(logpath).unwrap(),
+            File::create(log_path).unwrap(),
         ),
     ])
     .unwrap();

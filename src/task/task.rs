@@ -1,10 +1,10 @@
 //! Task abstraction
-//! 
+//!
 //! ## Specific task description.
-//! 
+//!
 //! First of all, if the programmer wants to customize a task, he must implement
 //! the [`TaskTrait`] trait to define the specific behavior of the task.
-//! 
+//!
 //! Secondly, the engine will encapsulate a task as [`TaskWrapper`]. The task
 //! has some necessary attributes, among which:
 //! - The id attribute represents the unique identifier of a task, and the id is
@@ -201,12 +201,10 @@ impl RunScript {
     /// If execution succeeds, it returns the result in [`String`] type, or it
     /// returns a [`DagError`].
     pub fn exec(&self, input: Option<Inputval>) -> Result<String, DagError> {
-        let res = match self.executor {
+        match self.executor {
             RunType::SH => self.run_sh(input),
             RunType::DENO => self.run_deno(input),
-        };
-
-        res
+        }
     }
 
     fn run_sh(&self, input: Option<Inputval>) -> Result<String, DagError> {
@@ -215,15 +213,11 @@ impl RunScript {
             input
                 .get_iter()
                 .map(|input| {
-                    cmd.push_str(if let Some(dmap) = input {
-                        if let Some(str) = dmap.get::<String>() {
-                            str
-                        } else {
-                            ""
+                    if input.is_some(){
+                        if let Some(arg)=input.as_ref().unwrap().get::<String>(){
+                            cmd.push_str(arg);
                         }
-                    } else {
-                        ""
-                    })
+                    }
                 })
                 .count();
         }
@@ -232,7 +226,7 @@ impl RunScript {
             .arg("-c")
             .arg(&cmd)
             .output()
-            .map(|output| format!("{}", String::from_utf8(output.stdout).unwrap()));
+            .map(|output| String::from_utf8(output.stdout).unwrap());
 
         res.map_err(|err| err.into())
     }
