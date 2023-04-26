@@ -1,4 +1,25 @@
-//! Graph stores dependency relations
+//! Task Graph
+//!
+//! ## Graph stores dependency relations.
+//!
+//! [`Graph`] represents a series of tasks with dependencies, and stored in an adjacency
+//! list. It must be a directed acyclic graph, that is, the dependencies of the task
+//! cannot form a loop, otherwise the engine will not be able to execute the task successfully.
+//! It has some useful methods for building graphs, such as: adding edges, nodes, etc.
+//! And the most important of which is the `topo_sort` function, which uses topological
+//! sorting to generate the execution sequence of tasks.
+//!
+//! ## An example of a directed acyclic graph
+//!
+//! task1 -→ task3 ---→ task6 ----
+//!  |   ↗   ↓          ↓         ↘
+//!  |  /   task5 ---→ task7 ---→ task9
+//!  ↓ /      ↑          ↓         ↗
+//! task2 -→ task4 ---→ task8 ----
+//!
+//! The task execution sequence can be as follows:
+//! task1->task2->task3->task4->task5->task6->task7->task8->task9
+//!
 
 use bimap::BiMap;
 
@@ -16,7 +37,7 @@ pub struct Graph {
 
 impl Graph {
     /// Allocate an empty graph
-    /// 
+    ///
     /// # Example
     /// ```
     /// let g = dagrs::Graph::new();
@@ -31,7 +52,7 @@ impl Graph {
     }
 
     /// Set graph size, size is the number of tasks
-    /// 
+    ///
     /// # Example
     /// ```
     /// # let mut g = dagrs::Graph::new();
@@ -44,9 +65,9 @@ impl Graph {
     }
 
     /// Add a node into the graph
-    /// 
+    ///
     /// This operation will create a mapping between ID and its index.
-    /// 
+    ///
     /// # Example
     /// ```
     /// # let mut g = dagrs::Graph::new();
@@ -61,7 +82,7 @@ impl Graph {
     }
 
     /// Add an edge into the graph.
-    /// 
+    ///
     /// # Example
     /// ```
     /// # let mut g = dagrs::Graph::new();
@@ -86,28 +107,28 @@ impl Graph {
     }
 
     /// Do topo sort in graph, returns a possible execution sequnce if DAG
-    /// 
+    ///
     /// # Example
     /// ```
     /// # let mut g = dagrs::Graph::new();
     /// # //Make your graph.
     /// g.topo_sort();
     /// ```
-    /// This operation will judge whether graph is a DAG or not, 
+    /// This operation will judge whether graph is a DAG or not,
     /// returns Some(Possible Sequence) if yes, and None if no.
-    /// 
-    /// 
+    ///
+    ///
     /// **Note**: this function can only be called after graph's initialization (add nodes and edges, etc.) is done.
-    /// 
+    ///
     /// # Principle
     /// Reference: [Topological Sorting](https://www.jianshu.com/p/b59db381561a)
-    /// 
+    ///
     /// 1. For a grapg g, we record the indgree of every node.
-    /// 
+    ///
     /// 2. Each time we start from a node with zero indegree, name it N0, and N0 can be executed since it has no dependency.
-    /// 
+    ///
     /// 3. And then we decrease the indegree of N0's children (those tasks depend on N0), this would create some new zero indegree nodes.
-    /// 
+    ///
     /// 4. Just repeat step 2, 3 until no more zero degree nodes can be generated.
     ///    If all tasks have been executed, then it's a DAG, or there must be a loop in the graph.
     pub fn topo_sort(&self) -> Option<Vec<usize>> {
@@ -127,7 +148,7 @@ impl Graph {
             .count();
 
         while !queue.is_empty() {
-            let v = queue.pop().unwrap();   // This unwrap is ok since `queue` is not empty
+            let v = queue.pop().unwrap(); // This unwrap is ok since `queue` is not empty
 
             sequence.push(v);
             count += 1;
@@ -147,6 +168,17 @@ impl Graph {
             None
         } else {
             Some(sequence)
+        }
+    }
+}
+
+impl Default for Graph {
+    fn default() -> Self {
+        Graph {
+            size: 0,
+            nodes: BiMap::new(),
+            adj: Vec::new(),
+            indegree: Vec::new(),
         }
     }
 }

@@ -1,4 +1,15 @@
-//! Dag Engine is dagrs's main body.
+//! The Engine
+//!
+//! ## [`DagEngine`] is dagrs's main body.
+//!
+//! [`DagEngine`] is the execution engine of the task graph, and the constructed tasks are
+//! stored in the form of [`Graph`]. The execution process of the engine is as follows:
+//!
+//! First, check that the built graph cannot have loops, otherwise the execution will fail;
+//! Then obtain the sequence of tasks according to topological sorting, and execute the tasks in order.
+//! It should be noted that the execution mode of the tasks is asynchronous;
+//! Finally, the task The execution output will be stored in the `execstate_store` field.
+//! The next task gets the required input through the `execstate_store` field.
 
 use super::{
     env_variables::EnvVar,
@@ -96,14 +107,14 @@ impl DagEngine {
     }
 
     /// Read tasks into engine through yaml.
-    /// 
+    ///
     /// This operation will read all info in yaml file into `dagrs.tasks` if no error occurs.
     fn read_tasks(&mut self, filename: &str) -> Result<(), DagError> {
         let tasks = YamlTask::from_yaml(filename)?;
         tasks.into_iter().map(|t| self.add_tasks(vec![t])).count();
         Ok(())
     }
-    
+
     /// Push a task's [`ExecState`] into hash store
     fn push_execstate(&mut self, id: usize, state: ExecState) {
         assert!(
@@ -164,11 +175,12 @@ impl DagEngine {
 
     /// Check whether it's DAG or not.
     ///
-    /// If it is a DAG, dagrs will start executing tasks in a feasible order and 
+    /// If it is a DAG, dagrs will start executing tasks in a feasible order and
     /// return true when execution done, or it return a false.
+    ///
     async fn check_dag(&mut self) -> bool {
         if let Some(seq) = self.rely_graph.topo_sort() {
-            let seq = seq
+            let seq: Vec<usize> = seq
                 .into_iter()
                 .map(|index| self.rely_graph.find_id_by_index(index).unwrap())
                 .collect();
@@ -208,11 +220,22 @@ impl DagEngine {
     }
 
     /// Print possible execution sequnces.
-    fn print_seq(&self, seq: &Vec<usize>) {
+    fn print_seq(&self, seq: &[usize]) {
         let mut res = String::from("[Start]");
         seq.iter()
             .map(|id| res.push_str(&format!(" -> {}", self.tasks[id].get_name())))
             .count();
         info!("{} -> [End]", res);
+    }
+}
+
+impl Default for DagEngine {
+    fn default() -> Self {
+        DagEngine {
+            tasks: HashMap::new(),
+            rely_graph: Graph::new(),
+            execstate_store: HashMap::new(),
+            env: EnvVar::new(),
+        }
     }
 }

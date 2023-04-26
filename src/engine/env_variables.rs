@@ -1,4 +1,9 @@
-//! Implementation for global environment variables.
+//! Global environment variables
+//!
+//! ## Implementation for global environment variables.
+//!
+//! Users can specify global environment variables for the DAG engine when
+//! the task is running, which may be used during task execution.
 
 use crate::task::DMap;
 use anymap::CloneAny;
@@ -8,7 +13,7 @@ use std::{
 };
 
 /// Global environment variables.
-/// 
+///
 /// Since it will be shared between tasks,
 /// [`Arc`] and [`Mutex`] are needed.
 
@@ -22,13 +27,13 @@ impl EnvVar {
 
     #[allow(unused)]
     /// Set a gloval variables.
-    /// 
+    ///
     /// # Example
     /// ```rust
     /// # let mut env = dagrs::EnvVar::new();
     /// env.set("Hello", "World".to_string());
     /// ```
-    /// 
+    ///
     /// Lock operations are wrapped inside, so no need to worry.
     pub fn set<H: Send + Sync + CloneAny>(&mut self, name: &str, var: H) {
         let mut v = DMap::new();
@@ -38,7 +43,7 @@ impl EnvVar {
 
     #[allow(unused)]
     /// This method get needed input value from [`Inputval`].
-    /// 
+    ///
     /// # Example
     /// ```rust
     /// # let mut env = dagrs::EnvVar::new();
@@ -60,5 +65,10 @@ impl Clone for EnvVar {
     fn clone(&self) -> Self {
         Self(Arc::clone(&self.0))
     }
+}
 
+impl Default for EnvVar {
+    fn default() -> Self {
+        EnvVar(Arc::new(Mutex::new(HashMap::new())))
+    }
 }

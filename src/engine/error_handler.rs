@@ -1,4 +1,4 @@
-//! A simple error handler implementation.
+//! ## A simple error handler implementation.
 
 use thiserror::Error;
 
@@ -24,7 +24,7 @@ pub enum YamlFormatError {
     #[error("Task[{0}] has no name field")]
     NoName(String),
     #[error("Task[{0}] run script format error")]
-    RunScriptError(String)
+    RunScriptError(String),
 }
 
 #[derive(Debug, Error)]
@@ -42,7 +42,7 @@ pub enum RunningError {
     #[error("Task[{0}] dependency task not exist")]
     RelyTaskIllegal(String),
     #[error("Task[{0}] run script fails, details: {1}")]
-    RunScriptFailure(String, String)
+    RunScriptFailure(String, String),
 }
 
 impl DagError {
