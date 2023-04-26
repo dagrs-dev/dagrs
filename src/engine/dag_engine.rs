@@ -180,7 +180,7 @@ impl DagEngine {
     ///
     async fn check_dag(&mut self) -> bool {
         if let Some(seq) = self.rely_graph.topo_sort() {
-            let seq:Vec<usize> = seq
+            let seq: Vec<usize> = seq
                 .into_iter()
                 .map(|index| self.rely_graph.find_id_by_index(index).unwrap())
                 .collect();
