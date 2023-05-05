@@ -15,9 +15,9 @@
 
 use std::slice::Iter;
 
-use anymap::{CloneAny, Map};
+use anymap2::{any::CloneAnySendSync, Map};
 
-pub type DMap = Map<dyn CloneAny + Send + Sync>;
+pub type DMap = Map<dyn CloneAnySendSync+Send+Sync>;
 
 /// Describe task's running result
 pub struct ExecState {
@@ -69,7 +69,7 @@ impl Retval {
     /// ```rust
     /// let retval = dagrs::Retval::new(123);
     /// ```
-    pub fn new<H: Send + Sync + CloneAny>(val: H) -> Self {
+    pub fn new<H: Send + Sync + CloneAnySendSync>(val: H) -> Self {
         let mut map = DMap::new();
         assert!(map.insert(val).is_none(), "[Error] map insert fails.");
         Self(Some(map))
@@ -107,7 +107,7 @@ impl Inputval {
     /// # let mut input = dagrs::Inputval::new( vec![ None ] );
     /// let input_from_t1:Option<String> = input.get(0);
     /// ```
-    pub fn get<H: Send + Sync + CloneAny>(&mut self, index: usize) -> Option<H> {
+    pub fn get<H: Send + Sync + CloneAnySendSync>(&mut self, index: usize) -> Option<H> {
         if let Some(Some(dmap)) = self.0.get_mut(index) {
             dmap.remove()
         } else {
@@ -117,7 +117,7 @@ impl Inputval {
 
     /// Since [`Inputval`] can contain mult-input values, and it's implemented
     /// by [`Vec`] actually, of course it can be turned into a iterater.
-    pub fn get_iter(&self) -> Iter<Option<Map<dyn CloneAny + Send + Sync>>> {
+    pub fn get_iter(&self) -> Iter<Option<Map<dyn CloneAnySendSync + Send + Sync>>> {
         self.0.iter()
     }
 }

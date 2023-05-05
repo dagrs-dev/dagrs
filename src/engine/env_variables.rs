@@ -6,7 +6,7 @@
 //! the task is running, which may be used during task execution.
 
 use crate::task::DMap;
-use anymap::CloneAny;
+use anymap2::any::CloneAnySendSync;
 use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
@@ -35,7 +35,7 @@ impl EnvVar {
     /// ```
     ///
     /// Lock operations are wrapped inside, so no need to worry.
-    pub fn set<H: Send + Sync + CloneAny>(&mut self, name: &str, var: H) {
+    pub fn set<H: Send + Sync + CloneAnySendSync>(&mut self, name: &str, var: H) {
         let mut v = DMap::new();
         v.insert(var);
         self.0.lock().unwrap().insert(name.to_owned(), v);
@@ -52,7 +52,7 @@ impl EnvVar {
     /// # let res = if let Some(tmp) = res { tmp } else { String::new() };
     /// # assert_eq!(res, "World".to_string());
     /// ```
-    pub fn get<H: Send + Sync + CloneAny>(&self, name: &str) -> Option<H> {
+    pub fn get<H: Send + Sync + CloneAnySendSync>(&self, name: &str) -> Option<H> {
         if let Some(dmap) = self.0.lock().unwrap().get(name) {
             dmap.clone().remove()
         } else {

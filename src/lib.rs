@@ -1,7 +1,6 @@
-extern crate anymap;
+extern crate anymap2;
 extern crate bimap;
 extern crate clap;
-extern crate crossbeam;
 extern crate deno_core;
 extern crate lazy_static;
 extern crate log;
