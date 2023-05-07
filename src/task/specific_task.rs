@@ -6,7 +6,7 @@
 
 use crate::{
     engine::{DagError, RunningError},
-    Inputval,
+    Input,
 };
 use deno_core::{serde_json, serde_v8, v8, JsRuntime, RuntimeOptions};
 use std::process::Command;
@@ -18,7 +18,7 @@ pub struct RunScript {
     executor: RunType,
 }
 
-/// Run script type, now a script can be run in `sh` or embeded `deno`.
+/// Run script type, now a script can be run in `sh` or embedded `deno`.
 ///
 /// **Note** this features is not quite perfect, or rather, need lots of improvements.
 #[derive(Debug)]
@@ -54,14 +54,14 @@ impl RunScript {
     /// ```
     /// If execution succeeds, it returns the result in [`String`] type, or it
     /// returns a [`DagError`].
-    pub fn exec(&self, input: Option<Inputval>) -> Result<String, DagError> {
+    pub fn exec(&self, input: Option<Input>) -> Result<String, DagError> {
         match self.executor {
             RunType::SH => self.run_sh(input),
             RunType::DENO => self.run_deno(input),
         }
     }
 
-    fn run_sh(&self, input: Option<Inputval>) -> Result<String, DagError> {
+    fn run_sh(&self, input: Option<Input>) -> Result<String, DagError> {
         let mut cmd = format!("{} ", self.script);
         if let Some(input) = input {
             input
@@ -85,7 +85,7 @@ impl RunScript {
         res.map_err(|err| err.into())
     }
 
-    fn run_deno(&self, _input: Option<Inputval>) -> Result<String, DagError> {
+    fn run_deno(&self, _input: Option<Input>) -> Result<String, DagError> {
         let script = self.script.clone().into_boxed_str();
         let mut context = JsRuntime::new(RuntimeOptions {
             ..Default::default()

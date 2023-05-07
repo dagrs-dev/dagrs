@@ -8,17 +8,22 @@
 //! First, check that the built graph cannot have loops, otherwise the execution will fail;
 //! Then obtain the sequence of tasks according to topological sorting, and execute the tasks in order.
 //! It should be noted that the execution mode of the tasks is asynchronous;
-//! Finally, the task The execution output will be stored in the `execstate_store` field.
-//! The next task gets the required input through the `execstate_store` field.
+//! Finally, the task The execution output will be stored in the `execute_states` field.
+//! The next task gets the required input through the `execute_states` field.
 
 use super::{
     env_variables::EnvVar,
     error_handler::{DagError, RunningError},
     graph::Graph,
 };
-use crate::task::{ExecState, Inputval, Retval, TaskWrapper, YamlTask};
+use crate::{
+    task::{ExecState, Input, TaskWrapper, YamlTask},
+    Output,
+};
+use anymap2::any::CloneAnySendSync;
 use log::*;
 use std::{collections::HashMap, sync::Arc};
+use tokio::sync::RwLock;
 
 /// dagrs's function is wrapped in DagEngine struct.
 pub struct DagEngine {
@@ -29,9 +34,9 @@ pub struct DagEngine {
     tasks: HashMap<usize, Arc<TaskWrapper>>,
     /// Store dependency relations.
     rely_graph: Graph,
-    /// Store a task's running result.
-    execstate_store: HashMap<usize, ExecState>,
-    // Environment Variables.
+    /// Store a task's running result.Execution results will be read and written asynchronously by several threads.
+    execute_states: Arc<RwLock<HashMap<usize, ExecState>>>,
+    /// Environment Variables.
     env: EnvVar,
 }
 
@@ -46,7 +51,7 @@ impl DagEngine {
         DagEngine {
             tasks: HashMap::new(),
             rely_graph: Graph::new(),
-            execstate_store: HashMap::new(),
+            execute_states: Arc::new(RwLock::new(HashMap::new())),
             env: EnvVar::new(),
         }
     }
@@ -58,8 +63,8 @@ impl DagEngine {
     /// # let mut dagrs = dagrs::DagEngine::new();
     /// # struct T {};
     /// # impl dagrs::TaskTrait for T {
-    /// #     fn run( &self, input: dagrs::Inputval, env: dagrs::EnvVar ) -> dagrs::Retval {
-    /// #         dagrs::Retval::empty()
+    /// #     fn run( &self, input: dagrs::Input, env: dagrs::EnvVar ) -> dagrs::Output {
+    /// #         dagrs::Output::empty()
     /// #     }
     /// # }
     /// # let task1 = dagrs::TaskWrapper::new( T{}, "name1" );
@@ -68,7 +73,7 @@ impl DagEngine {
     /// ```
     ///
     /// You should defined the struct(here is T) and the function run in TaskTrait by yourself.
-    /// You can find more infomation about TaskWrapper in src/task/task.rs
+    /// You can find more information about TaskWrapper in src/task/task.rs
     pub fn add_tasks(&mut self, tasks: Vec<TaskWrapper>) {
         for task in tasks {
             self.tasks.insert(task.get_id(), Arc::new(task));
@@ -100,7 +105,7 @@ impl DagEngine {
     /// ```
     ///
     /// This method is similar to `run`, but read tasks from yaml file,
-    /// thus no need to add tasks mannually.
+    /// thus no need to add tasks manually.
     pub fn run_from_yaml(mut self, filename: &str) -> Result<bool, DagError> {
         self.read_tasks(filename)?;
         self.run()
@@ -113,34 +118,6 @@ impl DagEngine {
         let tasks = YamlTask::from_yaml(filename)?;
         tasks.into_iter().map(|t| self.add_tasks(vec![t])).count();
         Ok(())
-    }
-
-    /// Push a task's [`ExecState`] into hash store
-    fn push_execstate(&mut self, id: usize, state: ExecState) {
-        assert!(
-            !self.execstate_store.contains_key(&id),
-            "[Error] Repetitive push execstate, id: {}",
-            id
-        );
-        self.execstate_store.insert(id, state);
-    }
-
-    /// Fetch a task's [`ExecState`], this won't delete it from the hash map.
-    fn pull_execstate(&self, id: &usize) -> &ExecState {
-        self.execstate_store
-            .get(id)
-            .expect("[Error] Pull execstate fails")
-    }
-
-    /// Prepare a task's [`Inputval`].
-    fn form_input(&self, id: &usize) -> Inputval {
-        let froms = self.tasks[id].get_input_from_list();
-        Inputval::new(
-            froms
-                .iter()
-                .map(|from| self.pull_execstate(from).get_dmap())
-                .collect(),
-        )
     }
 
     /// create rely map between tasks.
@@ -186,32 +163,63 @@ impl DagEngine {
                 .collect();
             self.print_seq(&seq);
 
+            // storage execute JoinHandle<bool>.
+            let mut handles = Vec::new();
             // Start Executing
             for id in seq {
-                info!("Executing Task[name: {}]", self.tasks[&id].get_name());
-
-                let input = self.form_input(&id);
-                let env = self.env.clone();
-
+                let task_name = self.tasks[&id].get_name();
                 let task = self.tasks[&id].clone();
-                let handle = tokio::spawn(async move { task.run(input, env) });
+                let env = self.env.clone();
+                let exs = self.execute_states.clone();
+                let task_successor_numbers = self.rely_graph.get_node_out_degree(&task.get_id());
+                let wait_for_input: Vec<Arc<TaskWrapper>> = task
+                    .get_exec_after_list()
+                    .iter()
+                    .map(|id| self.tasks[id].clone())
+                    .collect();
 
-                // Recore executing state.
-                let state = if let Ok(val) = handle.await {
-                    ExecState::new(true, val)
-                } else {
-                    ExecState::new(false, Retval::empty())
-                };
+                // async execute
+                let handle = tokio::spawn(async move {
+                    info!("Executing Task[name: {}]", task_name);
 
-                info!(
-                    "Finish Task[name: {}], success: {}",
-                    self.tasks[&id].get_name(),
-                    state.success()
-                );
-                // Push executing state in to store.
-                self.push_execstate(id, state);
+                    // Wait for the execution result of the predecessor task
+                    let mut inputs = Vec::new();
+                    for wait_for in wait_for_input {
+                        wait_for.acquire_permits().await;
+                        let reader = exs.read().await;
+                        let ec = reader.get(&wait_for.get_id()).unwrap();
+                        if !ec.success() {
+                            warn!("The task was aborted due to the failure of the execution of the predecessor task.[name: {}]",task_name);
+                            return false;
+                        }
+                        inputs.push(ec.get_dmap());
+                    }
+                    // Start run task
+                    let state = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                        task.run(Input::new(inputs), env)
+                    })) {
+                        Ok(res) => {
+                            info!("Finish Task[name: {}]", task_name);
+                            ExecState::new(true, res)
+                        }
+                        Err(err) => {
+                            error!("Task Failed[name: {}],error with {:?}", task_name, err);
+                            ExecState::new(false, Output::empty())
+                        }
+                    };
+                    // Store execution results
+                    exs.write().await.insert(id, state);
+                    task.init_permits(task_successor_numbers);
+                    true
+                });
+                handles.push(handle);
             }
-
+            for handle in handles {
+                match handle.await {
+                    Ok(complete) => if !complete {std::process::abort()},
+                    Err(_) => {std::process::abort()},
+                }
+            }
             true
         } else {
             error!("Loop Detect");
@@ -219,13 +227,17 @@ impl DagEngine {
         }
     }
 
-    /// Print possible execution sequnces.
+    /// Print possible execution sequences.
     fn print_seq(&self, seq: &[usize]) {
         let mut res = String::from("[Start]");
         seq.iter()
             .map(|id| res.push_str(&format!(" -> {}", self.tasks[id].get_name())))
             .count();
         info!("{} -> [End]", res);
+    }
+
+    pub fn set_env<T: Send + Sync + CloneAnySendSync>(&mut self, k: &str, v: T) {
+        self.env.set(k, v);
     }
 }
 
@@ -234,7 +246,7 @@ impl Default for DagEngine {
         DagEngine {
             tasks: HashMap::new(),
             rely_graph: Graph::new(),
-            execstate_store: HashMap::new(),
+            execute_states: Arc::new(RwLock::new(HashMap::new())),
             env: EnvVar::new(),
         }
     }

@@ -26,7 +26,7 @@ impl EnvVar {
     }
 
     #[allow(unused)]
-    /// Set a gloval variables.
+    /// Set a global variables.
     ///
     /// # Example
     /// ```rust
@@ -42,7 +42,7 @@ impl EnvVar {
     }
 
     #[allow(unused)]
-    /// This method get needed input value from [`Inputval`].
+    /// Get environment variables through keys of type &str.
     ///
     /// # Example
     /// ```rust

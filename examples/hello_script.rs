@@ -1,16 +1,16 @@
 extern crate dagrs;
 
-use dagrs::{DagEngine, EnvVar, Inputval, Retval, TaskTrait, TaskWrapper, init_logger, RunScript, RunType};
+use dagrs::{DagEngine, EnvVar, Input, Output, TaskTrait, TaskWrapper, init_logger, RunScript, RunType};
 
 struct T {}
 
 impl TaskTrait for T {
-    fn run(&self, _input: Inputval, _env: EnvVar) -> Retval {
+    fn run(&self, _input: Input, _env: EnvVar) -> Output {
         let script = RunScript::new("echo 'Hello Dagrs!'", RunType::SH);
 
         let res = script.exec(None);
         println!("{:?}", res);
-        Retval::empty()
+        Output::empty()
     }
 }
 

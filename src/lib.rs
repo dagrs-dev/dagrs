@@ -11,7 +11,7 @@ mod engine;
 mod task;
 
 pub use engine::{DagEngine, DagError, EnvVar, Graph, RunningError, YamlError, YamlFormatError};
-pub use task::{Inputval, Retval, RunScript, RunType, TaskTrait, TaskWrapper, YamlTask};
+pub use task::{Input, Output, RunScript, RunType, TaskTrait, TaskWrapper, YamlTask};
 
 use simplelog::*;
 use std::{
@@ -62,21 +62,21 @@ pub fn init_logger(path: Option<&str>) {
 
 #[test]
 fn test_value_pass1() {
-    use crate::task::{Inputval, Retval, TaskTrait, TaskWrapper};
+    use crate::task::{Input, Output, TaskTrait, TaskWrapper};
     struct T1 {}
     impl TaskTrait for T1 {
-        fn run(&self, _input: Inputval, _env: EnvVar) -> Retval {
+        fn run(&self, _input: Input, _env: EnvVar) -> Output {
             println!("T1, return 1");
-            Retval::new(1i32)
+            Output::new(1i32)
         }
     }
 
     struct T2 {}
     impl TaskTrait for T2 {
-        fn run(&self, mut input: Inputval, _env: EnvVar) -> Retval {
+        fn run(&self, mut input: Input, _env: EnvVar) -> Output {
             let val_from_t1 = input.get::<i32>(0);
             println!("T2, receive: {:?}", val_from_t1);
-            Retval::empty()
+            Output::empty()
         }
     }
 
@@ -84,7 +84,6 @@ fn test_value_pass1() {
     let mut t2 = TaskWrapper::new(T2 {}, "Task 2");
 
     t2.exec_after(&[&t1]);
-    t2.input_from(&[&t1]);
 
     let mut dag = DagEngine::new();
     dag.add_tasks(vec![t1, t2]);
@@ -94,28 +93,28 @@ fn test_value_pass1() {
 
 #[test]
 fn test_value_pass2() {
-    use crate::task::{Inputval, Retval, TaskTrait, TaskWrapper};
+    use crate::task::{Input, Output, TaskTrait, TaskWrapper};
     struct T1 {}
     impl TaskTrait for T1 {
-        fn run(&self, _input: Inputval, mut env: EnvVar) -> Retval {
+        fn run(&self, _input: Input, mut env: EnvVar) -> Output {
             println!("T1, return 1, set env [Hello: World]");
             env.set("Hello", "World".to_string());
-            Retval::new(1i32)
+            Output::new(1i32)
         }
     }
 
     struct T2 {}
     impl TaskTrait for T2 {
-        fn run(&self, mut input: Inputval, _env: EnvVar) -> Retval {
+        fn run(&self, mut input: Input, _env: EnvVar) -> Output {
             let val_from_t1 = input.get::<i32>(0);
             println!("T2, receive from T1: {:?}, return '123'", val_from_t1);
-            Retval::new("123".to_string())
+            Output::new("123".to_string())
         }
     }
 
     struct T3 {}
     impl TaskTrait for T3 {
-        fn run(&self, mut input: Inputval, env: EnvVar) -> Retval {
+        fn run(&self, mut input: Input, env: EnvVar) -> Output {
             // Order of input value is the same as the order of tasks
             // passed in `input_from`.
             let val_from_t1 = input.get::<i32>(0);
@@ -127,7 +126,7 @@ fn test_value_pass2() {
                 val_from_t1, val_from_t2, eval
             );
 
-            Retval::empty()
+            Output::empty()
         }
     }
 
@@ -136,10 +135,7 @@ fn test_value_pass2() {
     let mut t3 = TaskWrapper::new(T3 {}, "Task 3");
 
     t2.exec_after(&[&t1]);
-    t2.input_from(&[&t1]);
-
     t3.exec_after(&[&t1, &t2]);
-    t3.input_from(&[&t1, &t2]);
 
     let mut dag = DagEngine::new();
     dag.add_tasks(vec![t1, t2, t3]);

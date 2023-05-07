@@ -27,12 +27,12 @@ use bimap::BiMap;
 /// Graph Struct
 pub struct Graph {
     size: usize,
-    /// Record node id and it's index
+    /// Record node id and it's index <id,index>
     nodes: BiMap<usize, usize>,
     /// Adjacency list
     adj: Vec<Vec<usize>>,
-    /// Node's indegree, used for topo sort
-    indegree: Vec<usize>,
+    /// Node's in_degree, used for topological sort
+    in_degree: Vec<usize>,
 }
 
 impl Graph {
@@ -47,7 +47,7 @@ impl Graph {
             size: 0,
             nodes: BiMap::new(),
             adj: Vec::new(),
-            indegree: Vec::new(),
+            in_degree: Vec::new(),
         }
     }
 
@@ -61,7 +61,7 @@ impl Graph {
     pub fn set_graph_size(&mut self, size: usize) {
         self.size = size;
         self.adj.resize(size, Vec::new());
-        self.indegree.resize(size, 0)
+        self.in_degree.resize(size, 0)
     }
 
     /// Add a node into the graph
@@ -93,7 +93,7 @@ impl Graph {
     /// which means task 0 shall be executed before task 1.
     pub fn add_edge(&mut self, v: usize, w: usize) {
         self.adj[v].push(w);
-        self.indegree[w] += 1;
+        self.in_degree[w] += 1;
     }
 
     /// Find a task's index by its ID
@@ -106,7 +106,7 @@ impl Graph {
         self.nodes.get_by_right(&index).map(|n| n.to_owned())
     }
 
-    /// Do topo sort in graph, returns a possible execution sequnce if DAG
+    /// Do topo sort in graph, returns a possible execution sequence if DAG
     ///
     /// # Example
     /// ```
@@ -123,21 +123,21 @@ impl Graph {
     /// # Principle
     /// Reference: [Topological Sorting](https://www.jianshu.com/p/b59db381561a)
     ///
-    /// 1. For a grapg g, we record the indgree of every node.
+    /// 1. For a graph g, we record the in-degree of every node.
     ///
-    /// 2. Each time we start from a node with zero indegree, name it N0, and N0 can be executed since it has no dependency.
+    /// 2. Each time we start from a node with zero in-degree, name it N0, and N0 can be executed since it has no dependency.
     ///
-    /// 3. And then we decrease the indegree of N0's children (those tasks depend on N0), this would create some new zero indegree nodes.
+    /// 3. And then we decrease the in-degree of N0's children (those tasks depend on N0), this would create some new zero in-degree nodes.
     ///
     /// 4. Just repeat step 2, 3 until no more zero degree nodes can be generated.
     ///    If all tasks have been executed, then it's a DAG, or there must be a loop in the graph.
     pub fn topo_sort(&self) -> Option<Vec<usize>> {
         let mut queue = Vec::new();
-        let mut indegree = self.indegree.clone();
+        let mut in_degree = self.in_degree.clone();
         let mut count = 0;
         let mut sequence = vec![];
 
-        indegree
+        in_degree
             .iter()
             .enumerate()
             .map(|(index, &degree)| {
@@ -156,8 +156,8 @@ impl Graph {
             self.adj[v]
                 .iter()
                 .map(|&index| {
-                    indegree[index] -= 1;
-                    if indegree[index] == 0 {
+                    in_degree[index] -= 1;
+                    if in_degree[index] == 0 {
                         queue.push(index)
                     }
                 })
@@ -170,6 +170,13 @@ impl Graph {
             Some(sequence)
         }
     }
+
+    pub fn get_node_out_degree(&self,id:&usize)->usize{
+        match self.nodes.get_by_left(id) {
+            Some(index) => self.adj[index.clone()].len(),
+            None => 0,
+        }
+    }
 }
 
 impl Default for Graph {
@@ -178,7 +185,7 @@ impl Default for Graph {
             size: 0,
             nodes: BiMap::new(),
             adj: Vec::new(),
-            indegree: Vec::new(),
+            in_degree: Vec::new(),
         }
     }
 }

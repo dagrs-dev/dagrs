@@ -1,23 +1,23 @@
 extern crate dagrs;
 
-use dagrs::{DagEngine, EnvVar, Inputval, Retval, TaskTrait, TaskWrapper, init_logger};
+use dagrs::{DagEngine, EnvVar, Input, Output, TaskTrait, TaskWrapper, init_logger};
 
 struct T1 {}
 
 impl TaskTrait for T1 {
-    fn run(&self, _input: Inputval, _env: EnvVar) -> Retval {
+    fn run(&self, _input: Input, _env: EnvVar) -> Output {
         let hello_dagrs = String::from("Hello Dagrs!");
-        Retval::new(hello_dagrs)
+        Output::new(hello_dagrs)
     }
 }
 
 struct T2 {}
 
 impl TaskTrait for T2 {
-    fn run(&self, mut input: Inputval, _env: EnvVar) -> Retval {
+    fn run(&self, mut input: Input, _env: EnvVar) -> Output {
         let val = input.get::<String>(0).unwrap();
         println!("{}", val);
-        Retval::empty()
+        Output::empty()
     }
 }
 
@@ -31,7 +31,6 @@ fn main() {
 
     // Set up dependencies
     t2.exec_after(&[&t1]);
-    t2.input_from(&[&t1]);
 
     dagrs.add_tasks(vec![t1, t2]);
     assert!(dagrs.run().unwrap())

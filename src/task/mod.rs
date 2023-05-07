@@ -37,12 +37,12 @@
 //! }
 //!
 //! impl TaskTrait for MyTask{
-//!     fn run(&self, input: dagrs::Inputval, env: dagrs::EnvVar) -> dagrs::Retval {
+//!     fn run(&self, input: dagrs::Input, env: dagrs::EnvVar) -> dagrs::Output {
 //!         let mut sum=0;
 //!         for i in 0..self.limit{
 //!             sum+=i;
 //!         }
-//!         dagrs::Retval::new(sum)
+//!         dagrs::Output::new(sum)
 //!     }
 //! }
 //!
@@ -53,7 +53,7 @@
 use crate::EnvVar;
 
 pub use self::specific_task::*;
-pub use self::state::{DMap, ExecState, Inputval, Retval};
+pub use self::state::{DMap, ExecState, Input, Output};
 pub use self::yaml_task::YamlTask;
 
 mod specific_task;
@@ -61,13 +61,14 @@ mod state;
 mod yaml_task;
 
 use lazy_static::lazy_static;
+use tokio::sync::Semaphore;
 use std::sync::Mutex;
 
 /// Task Trait.
 ///
 /// Any struct implements this trait can be added into dagrs.
 pub trait TaskTrait {
-    fn run(&self, input: Inputval, env: EnvVar) -> Retval;
+    fn run(&self, input: Input, env: EnvVar) -> Output;
 }
 
 /// Wrapper for task that impl [`TaskTrait`].
@@ -79,10 +80,14 @@ pub struct TaskWrapper {
     name: String,
     /// Id of the successor tasks.
     exec_after: Vec<usize>,
-    /// This task requires the execution results of multiple (0~n) predecessor tasks as input.
-    input_from: Vec<usize>,
     /// A task to be executed.
     inner: Box<dyn TaskTrait + Send + Sync>,
+    /// The semaphore is used to control the synchronous blocking of subsequent tasks to obtain the 
+    /// execution results of this task. 
+    /// After this task is executed, it will increase by n (n is the number of subsequent tasks of
+    /// this task, which can also be considered as the out-degree of the node represented by this task)
+    /// permit, each subsequent task requires a permit to obtain the execution result of this task.
+    semaphore: Semaphore
 }
 
 impl TaskWrapper {
@@ -92,15 +97,15 @@ impl TaskWrapper {
     /// ```
     /// # struct Task {};
     /// # impl dagrs::TaskTrait for Task {
-    /// #     fn run(&self, input: dagrs::Inputval, env: dagrs::EnvVar) -> dagrs::Retval {
-    /// #         dagrs::Retval::empty()
+    /// #     fn run(&self, input: dagrs::Input, env: dagrs::EnvVar) -> dagrs::Output {
+    /// #         dagrs::Output::empty()
     /// #     }
     /// # }
     /// let t = dagrs::TaskWrapper::new(Task{}, "Demo Task");
     /// ```
     ///
     /// `Task` is a struct that impl [`TaskTrait`]. Since task will be
-    ///  executed in seperated threads, [`send`] and [`sync`] is needed.
+    ///  executed in separated threads, [`Send`] and [`Sync`] is needed.
     ///
     /// **Note:** This method will take the ownership of struct that impl [`TaskTrait`].
     pub fn new(task: impl TaskTrait + 'static + Send + Sync, name: &str) -> Self {
@@ -108,8 +113,8 @@ impl TaskWrapper {
             id: ID_ALLOCATOR.lock().unwrap().alloc(),
             name: name.to_owned(),
             exec_after: Vec::new(),
-            input_from: Vec::new(),
             inner: Box::new(task),
+            semaphore: Semaphore::new(0)
         }
     }
 
@@ -120,8 +125,8 @@ impl TaskWrapper {
     /// ```rust
     /// # struct Task {};
     /// # impl dagrs::TaskTrait for Task {
-    /// #     fn run(&self, input: dagrs::Inputval, env: dagrs::EnvVar) -> dagrs::Retval {
-    /// #         dagrs::Retval::empty()
+    /// #     fn run(&self, input: dagrs::Input, env: dagrs::EnvVar) -> dagrs::Output {
+    /// #         dagrs::Output::empty()
     /// #     }
     /// # }
     /// # let mut t1 = dagrs::TaskWrapper::new(Task{}, "Task 1");
@@ -129,49 +134,18 @@ impl TaskWrapper {
     /// t2.exec_after(&[&t1]);
     /// ```
     /// In above code, `t1` will be executed before `t2`.
-    pub fn exec_after(&mut self, relys: &[&TaskWrapper]) {
-        self.exec_after.extend(relys.iter().map(|t| t.get_id()))
-    }
-
-    /// Input will come from the given tasks' exec result.
-    ///
-    /// # Example
-    /// ```rust
-    /// # struct Task {};
-    /// # impl dagrs::TaskTrait for Task {
-    /// #     fn run(&self, input: dagrs::Inputval, env: dagrs::EnvVar) -> dagrs::Retval {
-    /// #         dagrs::Retval::empty()
-    /// #     }
-    /// # }
-    /// # let mut t1 = dagrs::TaskWrapper::new(Task{}, "Task 1");
-    /// # let mut t2 = dagrs::TaskWrapper::new(Task{}, "Task 2");
-    /// # let mut t3 = dagrs::TaskWrapper::new(Task{}, "Task 3");
-    /// t3.input_from(&[&t1, &t2]);
-    /// ```
-    ///
-    /// In aboving code, t3 will have input from `t1` and `t2`'s return value.
-    pub fn input_from(&mut self, needed: &[&TaskWrapper]) {
-        self.input_from.extend(needed.iter().map(|t| t.get_id()))
+    pub fn exec_after(&mut self, predecessors: &[&TaskWrapper]) {
+        self.exec_after.extend(predecessors.iter().map(|t| t.get_id()))
     }
 
     /// The same as `exec_after`, but input are tasks' ids
     /// rather than reference to [`TaskWrapper`].
-    pub fn exec_after_id(&mut self, relys: &[usize]) {
-        self.exec_after.extend(relys)
-    }
-
-    /// The same as `input_from`, but input are tasks' ids
-    /// rather than reference to [`TaskWrapper`].
-    pub fn input_from_id(&mut self, needed: &[usize]) {
-        self.input_from.extend(needed)
+    pub fn exec_after_id(&mut self, predecessors_id: &[usize]) {
+        self.exec_after.extend(predecessors_id)
     }
 
     pub fn get_exec_after_list(&self) -> Vec<usize> {
         self.exec_after.clone()
-    }
-
-    pub fn get_input_from_list(&self) -> Vec<usize> {
-        self.input_from.clone()
     }
 
     pub fn get_id(&self) -> usize {
@@ -182,8 +156,16 @@ impl TaskWrapper {
         self.name.to_owned()
     }
 
-    pub fn run(&self, input: Inputval, env: EnvVar) -> Retval {
+    pub fn run(&self, input: Input, env: EnvVar) -> Output {
         self.inner.run(input, env)
+    }
+
+    pub(crate) async fn acquire_permits(&self){
+        self.semaphore.acquire().await.unwrap().forget()
+    }
+
+    pub fn init_permits(&self,permits:usize){
+        self.semaphore.add_permits(permits);
     }
 }
 
