@@ -1,3 +1,11 @@
+//! Execute graph
+//!    ↱----------↴
+//!    B -→ E --→ G
+//!  ↗    ↗     ↗ 
+//! A --→ C    / 
+//!  ↘    ↘  /
+//!   D -→ F
+
 extern crate dagrs;
 
 use dagrs::{init_logger, DagEngine, EnvVar, Input, Output, TaskTrait, TaskWrapper};
@@ -26,13 +34,13 @@ fn main() {
     init_logger(None);
     let mut dagrs = DagEngine::new();
     dagrs.set_env("base", 2usize);
-    let a = generate_task!(A(2), "Task A");
-    let mut b = generate_task!(A(2), "Task B");
-    let mut c = generate_task!(A(2), "Task C");
-    let mut d = generate_task!(A(2), "Task D");
-    let mut e = generate_task!(A(2), "Task E");
-    let mut f = generate_task!(A(2), "Task F");
-    let mut g = generate_task!(A(2), "Task G");
+    let a = generate_task!(A(1), "Compute A");
+    let mut b = generate_task!(B(2), "Compute B");
+    let mut c = generate_task!(C(4), "Compute C");
+    let mut d = generate_task!(D(8), "Compute D");
+    let mut e = generate_task!(E(16), "Compute E");
+    let mut f = generate_task!(F(32), "Compute F");
+    let mut g = generate_task!(G(64), "Compute G");
     
     b.exec_after(&[&a]);
     c.exec_after(&[&a]);

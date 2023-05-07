@@ -18,7 +18,7 @@ pub struct RunScript {
     executor: RunType,
 }
 
-/// Run script type, now a script can be run in `sh` or embeded `deno`.
+/// Run script type, now a script can be run in `sh` or embedded `deno`.
 ///
 /// **Note** this features is not quite perfect, or rather, need lots of improvements.
 #[derive(Debug)]
