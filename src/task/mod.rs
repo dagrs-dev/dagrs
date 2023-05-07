@@ -105,7 +105,7 @@ impl TaskWrapper {
     /// ```
     ///
     /// `Task` is a struct that impl [`TaskTrait`]. Since task will be
-    ///  executed in seperated threads, [`send`] and [`sync`] is needed.
+    ///  executed in separated threads, [`Send`] and [`Sync`] is needed.
     ///
     /// **Note:** This method will take the ownership of struct that impl [`TaskTrait`].
     pub fn new(task: impl TaskTrait + 'static + Send + Sync, name: &str) -> Self {

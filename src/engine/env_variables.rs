@@ -42,7 +42,7 @@ impl EnvVar {
     }
 
     #[allow(unused)]
-    /// This method get needed input value from [`Input`].
+    /// Get environment variables through keys of type &str.
     ///
     /// # Example
     /// ```rust

@@ -17,6 +17,7 @@ use std::slice::Iter;
 
 use anymap2::{any::CloneAnySendSync, Map};
 
+
 pub type DMap = Map<dyn CloneAnySendSync+Send+Sync>;
 
 /// Describe task's running result
@@ -64,7 +65,7 @@ impl Output {
     /// Get a new [`Output`].
     ///
     /// Since the return value may be transfered between threads,
-    /// [`Send`], [`Sync`], [`CloneAny`] is needed.
+    /// [`Send`], [`Sync`], [`CloneAnySendSync`] is needed.
     ///
     /// # Example
     /// ```rust
@@ -89,7 +90,7 @@ impl Output {
 
 impl Input {
     /// Get a new [`Input`], values stored in vector are ordered
-    /// by that of the given [`TaskWrapper`]'s `rely_list`.
+    /// by that of the given Task's predecessor.
     pub fn new(input: Vec<Option<DMap>>) -> Self {
         Self(input)
     }
@@ -99,9 +100,9 @@ impl Input {
     /// and, it takes an index as input.
     ///
     /// When input from only one task's return value,
-    /// just set index `0`. If from muti-tasks' return values, the index depends on
+    /// just set index `0`. If from multi-tasks' return values, the index depends on
     /// which return value you want. The order of the return values are the same
-    /// as you defined in [`input_from`] function.
+    /// as you defined in `exec_after` function.
     ///
     /// # Example
     /// ```rust
