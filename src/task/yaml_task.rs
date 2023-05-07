@@ -13,7 +13,7 @@
 //! namely running sh scripts and JavaScript scripts, and the parser will generate
 //! [`TaskWrapper`] according to the type of tasks.
 
-use super::{Inputval, Retval, RunScript, RunType, TaskTrait, TaskWrapper};
+use super::{Input, Output, RunScript, RunType, TaskTrait, TaskWrapper};
 use crate::engine::{DagError, EnvVar, YamlFormatError};
 use std::{cell::Cell, collections::HashMap, fs::File, io::Read};
 use yaml_rust::{Yaml, YamlLoader};
@@ -35,20 +35,18 @@ pub struct YamlTask {
     name: String,
     /// Record tasks' `yaml_id` that shall be executed before this task.
     afters: Vec<String>,
-    /// Record tasks' `yaml_id` that shall give their execution results to this task.
-    froms: Vec<String>,
     /// A field shall be wrapper into [`TaskWrapper`] later.
     ///
-    /// Why [`Cell`] and [`Option`]? Useful in funtion `from_yaml`.
+    /// Why [`Cell`] and [`Option`]? Useful in function `from_yaml`.
     inner: Cell<Option<YamlTaskInner>>,
 }
 
 impl TaskTrait for YamlTaskInner {
-    fn run(&self, input: Inputval, _env: EnvVar) -> Retval {
+    fn run(&self, input: Input, _env: EnvVar) -> Output {
         if let Ok(res) = self.run.exec(Some(input)) {
-            Retval::new(res)
+            Output::new(res)
         } else {
-            Retval::empty()
+            Output::empty()
         }
     }
 }
@@ -105,15 +103,6 @@ impl YamlTask {
                 .count();
         }
 
-        // froms can be empty, too
-        let mut froms = Vec::new();
-        if let Some(from_tasks) = info["from"].as_vec() {
-            from_tasks
-                .iter()
-                .map(|task_id| froms.push(task_id.as_str().unwrap().to_owned()))
-                .count();
-        }
-
         let inner = Cell::new(Some(YamlTaskInner {
             run: RunScript::new(run_script, executor),
         }));
@@ -122,7 +111,6 @@ impl YamlTask {
             yaml_id: id.to_string(),
             name,
             afters,
-            froms,
             inner,
         })
     }
@@ -190,15 +178,7 @@ impl YamlTask {
                 .map(|after| yid2id.get(after).unwrap_or(&0).to_owned())
                 .collect();
             // Task 0 won't exist in normal state, thus this will trigger an RelyTaskIllegal Error later.
-
-            let froms: Vec<usize> = ytask
-                .froms
-                .iter()
-                .map(|from| yid2id.get(from).unwrap_or(&0).to_owned())
-                .collect();
-
             tasks[index].exec_after_id(&afters);
-            tasks[index].input_from_id(&froms);
         }
 
         Ok(tasks)

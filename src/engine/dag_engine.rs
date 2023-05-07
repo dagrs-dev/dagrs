@@ -16,9 +16,11 @@ use super::{
     error_handler::{DagError, RunningError},
     graph::Graph,
 };
-use crate::task::{ExecState, Inputval, Retval, TaskWrapper, YamlTask};
+use crate::{task::{ExecState, Input, TaskWrapper, YamlTask}, Output};
+use anymap2::any::CloneAnySendSync;
 use log::*;
 use std::{collections::HashMap, sync::Arc};
+use tokio::sync::{Notify,RwLock};
 
 /// dagrs's function is wrapped in DagEngine struct.
 pub struct DagEngine {
@@ -30,9 +32,10 @@ pub struct DagEngine {
     /// Store dependency relations.
     rely_graph: Graph,
     /// Store a task's running result.
-    execstate_store: HashMap<usize, ExecState>,
+    execstate_store: Arc<RwLock<HashMap<usize, ExecState>>>,
     // Environment Variables.
     env: EnvVar,
+    notifies: HashMap<usize, Arc<Notify>>,
 }
 
 impl DagEngine {
@@ -46,8 +49,9 @@ impl DagEngine {
         DagEngine {
             tasks: HashMap::new(),
             rely_graph: Graph::new(),
-            execstate_store: HashMap::new(),
+            execstate_store: Arc::new(RwLock::new(HashMap::new())),
             env: EnvVar::new(),
+            notifies:HashMap::new()
         }
     }
 
@@ -115,34 +119,6 @@ impl DagEngine {
         Ok(())
     }
 
-    /// Push a task's [`ExecState`] into hash store
-    fn push_execstate(&mut self, id: usize, state: ExecState) {
-        assert!(
-            !self.execstate_store.contains_key(&id),
-            "[Error] Repetitive push execstate, id: {}",
-            id
-        );
-        self.execstate_store.insert(id, state);
-    }
-
-    /// Fetch a task's [`ExecState`], this won't delete it from the hash map.
-    fn pull_execstate(&self, id: &usize) -> &ExecState {
-        self.execstate_store
-            .get(id)
-            .expect("[Error] Pull execstate fails")
-    }
-
-    /// Prepare a task's [`Inputval`].
-    fn form_input(&self, id: &usize) -> Inputval {
-        let froms = self.tasks[id].get_input_from_list();
-        Inputval::new(
-            froms
-                .iter()
-                .map(|from| self.pull_execstate(from).get_dmap())
-                .collect(),
-        )
-    }
-
     /// create rely map between tasks.
     ///
     /// This operation will initialize `dagrs.rely_graph` if no error occurs.
@@ -173,6 +149,12 @@ impl DagEngine {
         Ok(())
     }
 
+    fn init_notifies(&mut self, tasks_id: &[usize]) {
+        tasks_id.into_iter().for_each(|id| {
+            self.notifies.insert(id.clone(), Arc::new(Notify::new()));
+        });
+    }
+
     /// Check whether it's DAG or not.
     ///
     /// If it is a DAG, dagrs will start executing tasks in a feasible order and
@@ -185,33 +167,57 @@ impl DagEngine {
                 .map(|index| self.rely_graph.find_id_by_index(index).unwrap())
                 .collect();
             self.print_seq(&seq);
-
+            // init notifiers
+            self.init_notifies(&seq);
+            // storage execute status
+            let mut handles=Vec::new();
             // Start Executing
             for id in seq {
-                info!("Executing Task[name: {}]", self.tasks[&id].get_name());
+                let task_name=self.tasks[&id].get_name();
+                let task=self.tasks[&id].clone();
+                let env=self.env.clone();
+                let execstate_storage=self.execstate_store.clone();
+                
+                let signal=self.notifies[&id].clone();
+                let waite_input:Vec<(usize,Arc<Notify>)>=self.tasks.get(&id).unwrap().get_exec_after_list().iter().map(|i|{
+                    (i.clone(),self.notifies.get(i).unwrap().clone())
+                }).collect();
+                
+                // async execute
+                let handle = tokio::spawn(async move {
+                    info!("Executing Task[name: {}]", task_name);
+                    let mut inputs=Vec::new();
+                    for (input_id,notifier) in waite_input{
+                        notifier.notified().await;
+                        let reader = execstate_storage.read().await;
+                        let execstate=reader.get(&input_id).unwrap();
+                        if !execstate.success(){
+                            return false;
+                        }
+                        inputs.push(execstate.get_dmap());
+                    }
 
-                let input = self.form_input(&id);
-                let env = self.env.clone();
-
-                let task = self.tasks[&id].clone();
-                let handle = tokio::spawn(async move { task.run(input, env) });
-
-                // Recore executing state.
-                let state = if let Ok(val) = handle.await {
-                    ExecState::new(true, val)
-                } else {
-                    ExecState::new(false, Retval::empty())
-                };
-
-                info!(
-                    "Finish Task[name: {}], success: {}",
-                    self.tasks[&id].get_name(),
-                    state.success()
-                );
-                // Push executing state in to store.
-                self.push_execstate(id, state);
+                    let state=match std::panic::catch_unwind(std::panic::AssertUnwindSafe(||{
+                                            task.run(Input::new(inputs), env)
+                                        })) {
+                        Ok(res) => {
+                            info!("Finish Task[name: {}]",task_name);
+                            ExecState::new(true, res)
+                        },
+                        Err(err) => {
+                            error!("Task Failed[name: {}],error with {:?}",task_name,err);
+                            ExecState::new(false, Output::empty())
+                        }
+                    };
+                    execstate_storage.write().await.insert(id, state);                  
+                    signal.notify_waiters();
+                    true
+                });
+                handles.push(handle);
             }
-
+            for handle in handles{
+                handle.await.unwrap();
+            }
             true
         } else {
             error!("Loop Detect");
@@ -227,6 +233,10 @@ impl DagEngine {
             .count();
         info!("{} -> [End]", res);
     }
+
+    pub fn set_env<T:Send + Sync + CloneAnySendSync>(&mut self,k:&str,v:T){
+        self.env.set(k, v);
+    }
 }
 
 impl Default for DagEngine {
@@ -234,8 +244,9 @@ impl Default for DagEngine {
         DagEngine {
             tasks: HashMap::new(),
             rely_graph: Graph::new(),
-            execstate_store: HashMap::new(),
+            execstate_store: Arc::new(RwLock::new(HashMap::new())),
             env: EnvVar::new(),
+            notifies:HashMap::new()
         }
     }
 }

@@ -13,6 +13,7 @@ Cargo.lock
 .idea
 
 # Exclude test output result files
-/test/
-!/test/*.yaml
-!/test/test.sh
+/test/*.txt
+
+# Exclude execute log
+/*.log

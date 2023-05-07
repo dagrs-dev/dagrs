@@ -3,7 +3,7 @@
 //! ## Input, output, and state of tasks.
 //!
 //! Task execution may require input: the execution of a task may require
-//! output from the execution of several predecessor tasks, and use [`Inputval`]
+//! output from the execution of several predecessor tasks, and use [`Input`]
 //! to represent the required input.
 //!
 //! Execution state of the task: If the task is executed successfully, the
@@ -11,7 +11,7 @@
 //! will be true, otherwise it will be false.
 //!
 //! The execution of the task may produce output: if the task is executed successfully,
-//! it may produce output, and [`Retval`] is used to represent the output of the task.
+//! it may produce output, and [`Output`] is used to represent the output of the task.
 
 use std::slice::Iter;
 
@@ -24,30 +24,30 @@ pub struct ExecState {
     /// The execution succeed or not
     success: bool,
     /// Return value of the execution.
-    retval: Retval,
+    output: Output,
 }
 
 /// Task's return value
-pub struct Retval(Option<DMap>);
+pub struct Output(Option<DMap>);
 
 /// Task's input value
-pub struct Inputval(Vec<Option<DMap>>);
+pub struct Input(Vec<Option<DMap>>);
 
 impl ExecState {
     /// Get a new [`ExecState`].
     ///
     /// `success`: task finish without panic?
     ///
-    /// `retval`: task's return value
-    pub fn new(success: bool, retval: Retval) -> Self {
-        Self { success, retval }
+    /// `output`: task's return value
+    pub fn new(success: bool, output: Output) -> Self {
+        Self { success, output }
     }
 
     /// Get [`ExecState`]'s return value.
     ///
-    /// This method will clone [`DMap`] that are stored in [`ExecState`]'s [`Retval`].
+    /// This method will clone [`DMap`] that are stored in [`ExecState`]'s [`Output`].
     pub fn get_dmap(&self) -> Option<DMap> {
-        self.retval.0.clone()
+        self.output.0.clone()
     }
 
     /// The task execution succeed or not.
@@ -58,16 +58,17 @@ impl ExecState {
     }
 }
 
-impl Retval {
+
+impl Output {
     #[allow(unused)]
-    /// Get a new [`Retval`].
+    /// Get a new [`Output`].
     ///
     /// Since the return value may be transfered between threads,
     /// [`Send`], [`Sync`], [`CloneAny`] is needed.
     ///
     /// # Example
     /// ```rust
-    /// let retval = dagrs::Retval::new(123);
+    /// let output = dagrs::Output::new(123);
     /// ```
     pub fn new<H: Send + Sync + CloneAnySendSync>(val: H) -> Self {
         let mut map = DMap::new();
@@ -75,26 +76,26 @@ impl Retval {
         Self(Some(map))
     }
 
-    /// Get empty [`Retval`].
+    /// Get empty [`Output`].
     ///
     /// # Example
     /// ```rust
-    /// let retval = dagrs::Retval::empty();
+    /// let output = dagrs::Output::empty();
     /// ```
     pub fn empty() -> Self {
         Self(None)
     }
 }
 
-impl Inputval {
-    /// Get a new [`Inputval`], values stored in vector are ordered
+impl Input {
+    /// Get a new [`Input`], values stored in vector are ordered
     /// by that of the given [`TaskWrapper`]'s `rely_list`.
-    pub fn new(vals: Vec<Option<DMap>>) -> Self {
-        Self(vals)
+    pub fn new(input: Vec<Option<DMap>>) -> Self {
+        Self(input)
     }
 
     #[allow(unused)]
-    /// This method get needed input value from [`Inputval`],
+    /// This method get needed input value from [`Input`],
     /// and, it takes an index as input.
     ///
     /// When input from only one task's return value,
@@ -104,7 +105,7 @@ impl Inputval {
     ///
     /// # Example
     /// ```rust
-    /// # let mut input = dagrs::Inputval::new( vec![ None ] );
+    /// # let mut input = dagrs::Input::new( vec![ None ] );
     /// let input_from_t1:Option<String> = input.get(0);
     /// ```
     pub fn get<H: Send + Sync + CloneAnySendSync>(&mut self, index: usize) -> Option<H> {
@@ -115,7 +116,7 @@ impl Inputval {
         }
     }
 
-    /// Since [`Inputval`] can contain mult-input values, and it's implemented
+    /// Since [`Input`] can contain mult-input values, and it's implemented
     /// by [`Vec`] actually, of course it can be turned into a iterater.
     pub fn get_iter(&self) -> Iter<Option<Map<dyn CloneAnySendSync + Send + Sync>>> {
         self.0.iter()
