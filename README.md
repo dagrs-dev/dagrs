@@ -144,7 +144,7 @@ pub trait TaskTrait {
 
 Your task struct needs to be placed in the `TaskWrapper` for use and set dependencies via the `exec_after` and `input_from`, as seen in the example below.
 
-### **Examples **
+### Examples 
 
 **A simple [example](. /examples/hello.rs) is as follows:**
 
@@ -222,7 +222,7 @@ Some explanations.
 
 **Notice:** The whole custom task should be `Sync` and `Send` for one reason: the task is put into a thread to perform scheduling.
 
-### **Run the script **
+### Run the script 
 
 You can run the script through the `RunScript` struct (or, of course, directly in the code itself without going through the struct), defined as follows:
 
