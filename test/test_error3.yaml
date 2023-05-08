@@ -1,6 +1,6 @@
 dagrs:
   a:
-    name: "任务1"
+    name: "Task 1"
     after: [b]
     run:
       type: sh

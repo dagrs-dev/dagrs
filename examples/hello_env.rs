@@ -31,7 +31,7 @@ fn main() {
     let mut dagrs = DagEngine::new();
 
     // Set up dependencies
-    t2.exec_after(&[&t1]);
+    t2.set_predecessors(&[&t1]);
 
     dagrs.add_tasks(vec![t1, t2]);
     assert!(dagrs.run().unwrap())

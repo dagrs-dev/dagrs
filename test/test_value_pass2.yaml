@@ -1,13 +1,12 @@
 dagrs:
   a:
-    name: "任务1"
+    name: "Task 1"
     run:
       type: sh
       script: ls README.md
   b:
-    name: "任务2"
+    name: "Task 2"
     after: [a]
-    from: [a]
     run:
       type: sh
       script: cat > ./test/test_value_pass2.txt

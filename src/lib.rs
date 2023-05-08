@@ -83,7 +83,7 @@ fn test_value_pass1() {
     let t1 = TaskWrapper::new(T1 {}, "Task 1");
     let mut t2 = TaskWrapper::new(T2 {}, "Task 2");
 
-    t2.exec_after(&[&t1]);
+    t2.set_predecessors(&[&t1]);
 
     let mut dag = DagEngine::new();
     dag.add_tasks(vec![t1, t2]);
@@ -134,8 +134,8 @@ fn test_value_pass2() {
     let mut t2 = TaskWrapper::new(T2 {}, "Task 2");
     let mut t3 = TaskWrapper::new(T3 {}, "Task 3");
 
-    t2.exec_after(&[&t1]);
-    t3.exec_after(&[&t1, &t2]);
+    t2.set_predecessors(&[&t1]);
+    t3.set_predecessors(&[&t1, &t2]);
 
     let mut dag = DagEngine::new();
     dag.add_tasks(vec![t1, t2, t3]);

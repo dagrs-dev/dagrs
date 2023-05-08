@@ -137,7 +137,7 @@ impl DagEngine {
         for (&id, task) in self.tasks.iter() {
             let index = self.rely_graph.find_index_by_id(&id).unwrap();
 
-            for rely_task_id in task.get_exec_after_list() {
+            for rely_task_id in task.get_predecessors_id() {
                 // Rely task existence check
                 let rely_index = self.rely_graph.find_index_by_id(&rely_task_id).ok_or(
                     DagError::running_error(RunningError::RelyTaskIllegal(task.get_name())),
@@ -173,7 +173,7 @@ impl DagEngine {
                 let exs = self.execute_states.clone();
                 let task_successor_numbers = self.rely_graph.get_node_out_degree(&task.get_id());
                 let wait_for_input: Vec<Arc<TaskWrapper>> = task
-                    .get_exec_after_list()
+                    .get_predecessors_id()
                     .iter()
                     .map(|id| self.tasks[id].clone())
                     .collect();
