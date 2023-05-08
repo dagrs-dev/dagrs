@@ -6,7 +6,7 @@ dagrs:
       type: sh
       script: echo x
   b:
-    name: "任务2"
+    name: "Task 2"
     run:
       type: sh
       script: echo x

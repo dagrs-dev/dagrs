@@ -1,48 +1,48 @@
 dagrs:
   a:
-    name: "任务1"
+    name: "Task 1"
     after: [b, c]
     run:
       type: sh
       script: echo x
   b:
-    name: "任务2"
+    name: "Task 2"
     after: [c, f, g]
     run:
       type: sh
       script: echo x
   c:
-    name: "任务3"
+    name: "Task 3"
     after: [e, g]
     run:
       type: sh
       script: echo x
   d:
-    name: "任务4"
+    name: "Task 4"
     after: [c, e]
     run:
       type: sh
       script: echo x
   e:
-    name: "任务5"
+    name: "Task 5"
     after: [h]
     run:
       type: sh
       script: echo x
   f:
-    name: "任务6"
+    name: "Task 6"
     after: [g]
     run:
       type: sh
       script: echo x
   g:
-    name: "任务7"
+    name: "Task 7"
     after: [h]
     run:
       type: sh
       script: echo x
   h:
-    name: "任务8"
+    name: "Task 8"
     after: [f]
     run:
       type: sh

@@ -178,7 +178,7 @@ impl YamlTask {
                 .map(|after| yid2id.get(after).unwrap_or(&0).to_owned())
                 .collect();
             // Task 0 won't exist in normal state, thus this will trigger an RelyTaskIllegal Error later.
-            tasks[index].exec_after_id(&afters);
+            tasks[index].set_predecessors_by_id(&afters);
         }
 
         Ok(tasks)

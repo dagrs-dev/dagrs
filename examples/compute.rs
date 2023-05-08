@@ -42,12 +42,12 @@ fn main() {
     let mut f = generate_task!(F(32), "Compute F");
     let mut g = generate_task!(G(64), "Compute G");
     
-    b.exec_after(&[&a]);
-    c.exec_after(&[&a]);
-    d.exec_after(&[&a]);
-    e.exec_after(&[&b,&c]);
-    f.exec_after(&[&c,&d]);
-    g.exec_after(&[&b,&e,&f]);
+    b.set_predecessors(&[&a]);
+    c.set_predecessors(&[&a]);
+    d.set_predecessors(&[&a]);
+    e.set_predecessors(&[&b,&c]);
+    f.set_predecessors(&[&c,&d]);
+    g.set_predecessors(&[&b,&e,&f]);
     dagrs.add_tasks(vec![a,b,c,d,e,f,g]);
     assert!(dagrs.run().unwrap());
 }

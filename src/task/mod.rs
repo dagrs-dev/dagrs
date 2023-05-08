@@ -61,8 +61,8 @@ mod state;
 mod yaml_task;
 
 use lazy_static::lazy_static;
-use tokio::sync::Semaphore;
 use std::sync::Mutex;
+use tokio::sync::Semaphore;
 
 /// Task Trait.
 ///
@@ -78,16 +78,16 @@ pub struct TaskWrapper {
     id: usize,
     /// The task's name.
     name: String,
-    /// Id of the successor tasks.
-    exec_after: Vec<usize>,
+    /// Id of the predecessor tasks.
+    predecessor_tasks: Vec<usize>,
     /// A task to be executed.
     inner: Box<dyn TaskTrait + Send + Sync>,
-    /// The semaphore is used to control the synchronous blocking of subsequent tasks to obtain the 
-    /// execution results of this task. 
+    /// The semaphore is used to control the synchronous blocking of subsequent tasks to obtain the
+    /// execution results of this task.
     /// After this task is executed, it will increase by n (n is the number of subsequent tasks of
     /// this task, which can also be considered as the out-degree of the node represented by this task)
     /// permit, each subsequent task requires a permit to obtain the execution result of this task.
-    semaphore: Semaphore
+    semaphore: Semaphore,
 }
 
 impl TaskWrapper {
@@ -112,9 +112,9 @@ impl TaskWrapper {
         TaskWrapper {
             id: ID_ALLOCATOR.lock().unwrap().alloc(),
             name: name.to_owned(),
-            exec_after: Vec::new(),
+            predecessor_tasks: Vec::new(),
             inner: Box::new(task),
-            semaphore: Semaphore::new(0)
+            semaphore: Semaphore::new(0),
         }
     }
 
@@ -131,21 +131,22 @@ impl TaskWrapper {
     /// # }
     /// # let mut t1 = dagrs::TaskWrapper::new(Task{}, "Task 1");
     /// # let mut t2 = dagrs::TaskWrapper::new(Task{}, "Task 2");
-    /// t2.exec_after(&[&t1]);
+    /// t2.set_predecessors(&[&t1]);
     /// ```
     /// In above code, `t1` will be executed before `t2`.
-    pub fn exec_after(&mut self, predecessors: &[&TaskWrapper]) {
-        self.exec_after.extend(predecessors.iter().map(|t| t.get_id()))
+    pub fn set_predecessors(&mut self, predecessors: &[&TaskWrapper]) {
+        self.predecessor_tasks
+            .extend(predecessors.iter().map(|t| t.get_id()))
     }
 
     /// The same as `exec_after`, but input are tasks' ids
     /// rather than reference to [`TaskWrapper`].
-    pub fn exec_after_id(&mut self, predecessors_id: &[usize]) {
-        self.exec_after.extend(predecessors_id)
+    pub fn set_predecessors_by_id(&mut self, predecessors_id: &[usize]) {
+        self.predecessor_tasks.extend(predecessors_id)
     }
 
-    pub fn get_exec_after_list(&self) -> Vec<usize> {
-        self.exec_after.clone()
+    pub fn get_predecessors_id(&self) -> Vec<usize> {
+        self.predecessor_tasks.clone()
     }
 
     pub fn get_id(&self) -> usize {
@@ -160,11 +161,11 @@ impl TaskWrapper {
         self.inner.run(input, env)
     }
 
-    pub(crate) async fn acquire_permits(&self){
+    pub(crate) async fn acquire_permits(&self) {
         self.semaphore.acquire().await.unwrap().forget()
     }
 
-    pub fn init_permits(&self,permits:usize){
+    pub(crate) fn init_permits(&self, permits: usize) {
         self.semaphore.add_permits(permits);
     }
 }
@@ -186,4 +187,28 @@ impl IDAllocator {
 lazy_static! {
     /// Instance of IDAllocator
     static ref ID_ALLOCATOR: Mutex<IDAllocator> = Mutex::new(IDAllocator { id: 1 });
+}
+
+/// Macros for generating simple tasks.
+///
+/// # Example
+///
+/// ```rust
+/// # use dagrs::{generate_task,TaskWrapper,Input,Output,EnvVar,TaskTrait};
+/// # let task = generate_task!("task A", |input, env| {
+/// #     Output::empty()
+/// # });
+/// # println!("{},{}", task.get_id(), task.get_name());
+/// ```
+#[macro_export]
+macro_rules! generate_task {
+    ($task_name:expr,$action:expr) => {{
+        pub struct Task {}
+        impl TaskTrait for Task {
+            fn run(&self, input: Input, env: EnvVar) -> Output {
+                $action(input, env)
+            }
+        }
+        TaskWrapper::new(Task {}, $task_name)
+    }};
 }
