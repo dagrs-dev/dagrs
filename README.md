@@ -80,9 +80,9 @@ In the above example:
 
 **Notice:** The deno is output only now(due to some interface issues about `deno_core`.
 
-### **How does it work? **
+### How does it work? 
 
-After writing the YAML file, you can run it with cli:
+After writing the yaml file, you can run it with cli:
 
 ```bash
 $ ./target/release/dagrs --help
