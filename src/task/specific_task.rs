@@ -66,12 +66,9 @@ impl RunScript {
         if let Some(input) = input {
             input
                 .get_iter()
-                .map(|input| {
-                    if input.is_some() {
-                        if let Some(arg) = input.as_ref().unwrap().get::<String>() {
-                            cmd.push_str(arg);
-                        }
-                    }
+                .map(|input| match input.get::<String>() {
+                    Some(arg) => cmd.push_str(arg),
+                    None => {}
                 })
                 .count();
         }

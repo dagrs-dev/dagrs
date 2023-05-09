@@ -18,10 +18,7 @@ macro_rules! generate_task {
                 let base = env.get::<usize>("base").unwrap();
                 let mut sum=0;
                 input.get_iter().for_each(|i|{
-                    match i {
-                        Some(val) => sum+=(val.get::<usize>().unwrap()*base),
-                        None => {},
-                    }
+                    sum+=i.get::<usize>().unwrap()*base
                 });
                 Output::new(sum)
             }

@@ -53,7 +53,7 @@
 use crate::EnvVar;
 
 pub use self::specific_task::*;
-pub use self::state::{DMap, ExecState, Input, Output};
+pub use self::state::{Content, ExecState, Input, Output};
 pub use self::yaml_task::YamlTask;
 
 mod specific_task;
@@ -161,11 +161,12 @@ impl TaskWrapper {
         self.inner.run(input, env)
     }
 
-    pub(crate) async fn acquire_permits(&self) {
-        self.semaphore.acquire().await.unwrap().forget()
+    /// TODO
+    pub(crate) fn semaphore(&self) -> &Semaphore {
+        &self.semaphore
     }
-
-    pub(crate) fn init_permits(&self, permits: usize) {
+    /// TODO
+    pub(crate) fn add_permits(&self, permits: usize) {
         self.semaphore.add_permits(permits);
     }
 }
