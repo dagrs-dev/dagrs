@@ -18,7 +18,6 @@ use super::{
 };
 use crate::task::{ExecState, Input, TaskWrapper, YamlTask};
 use anymap2::any::CloneAnySendSync;
-use dashmap::DashMap;
 use log::*;
 use std::{collections::HashMap, sync::Arc};
 /// dagrs's function is wrapped in DagEngine struct.
@@ -31,9 +30,10 @@ pub struct DagEngine {
     /// Store dependency relations.
     rely_graph: Graph,
     /// Store a task's running result.Execution results will be read and written asynchronously by several threads.
-    execute_states: Arc<DashMap<usize, ExecState>>,
+    execute_states: HashMap<usize, Arc<ExecState>>,
     /// Environment Variables.
     env: EnvVar,
+    last_task_id: usize,
 }
 
 impl DagEngine {
@@ -47,8 +47,9 @@ impl DagEngine {
         DagEngine {
             tasks: HashMap::new(),
             rely_graph: Graph::new(),
-            execute_states: Arc::new(DashMap::new()),
+            execute_states: HashMap::new(),
             env: EnvVar::new(),
+            last_task_id: 0,
         }
     }
 
@@ -153,7 +154,8 @@ impl DagEngine {
     fn init_execute_states(&mut self, tasks_id: &[usize]) {
         tasks_id.iter().for_each(|id| {
             let task_id = id.clone();
-            self.execute_states.insert(task_id, ExecState::new(task_id));
+            self.execute_states
+                .insert(task_id, Arc::new(ExecState::new(task_id)));
         });
     }
 
@@ -168,21 +170,24 @@ impl DagEngine {
                 .into_iter()
                 .map(|index| self.rely_graph.find_id_by_index(index).unwrap())
                 .collect();
+            if seq.is_empty() {
+                return true;
+            }
             self.print_seq(&seq);
             self.init_execute_states(&seq);
-
+            self.last_task_id = seq.last().unwrap().clone();
             // storage execute JoinHandle<bool>.
             let mut handles = Vec::new();
             // Start Executing
             for id in seq {
                 let task = self.tasks[&id].clone();
                 let env = self.env.clone();
-                let exs = self.execute_states.clone();
-                let task_successor_numbers = self.rely_graph.get_node_out_degree(&task.get_id());
-                let wait_for_input: Vec<Arc<TaskWrapper>> = task
+                let execute_state = self.execute_states[&task.get_id()].clone();
+                let task_out_degree = self.rely_graph.get_node_out_degree(&task.get_id());
+                let wait_for_input: Vec<Arc<ExecState>> = task
                     .get_predecessors_id()
                     .iter()
-                    .map(|id| self.tasks[id].clone())
+                    .map(|id| self.execute_states[id].clone())
                     .collect();
 
                 // async execute
@@ -192,10 +197,11 @@ impl DagEngine {
                     // Wait for the execution result of the predecessor task
                     let mut inputs = Vec::new();
                     for wait_for in wait_for_input {
-                        wait_for.semaphore().acquire().await.unwrap().forget();
-                        match exs.get(&wait_for.get_id()).unwrap().get_output() {
-                            Some(content) => inputs.push(content),
-                            None => {}
+                        wait_for.acquire_permits().await;
+                        if let Some(content) = wait_for.get_output() {
+                            if !content.is_empty() {
+                                inputs.push(content);
+                            }
                         }
                     }
 
@@ -203,18 +209,15 @@ impl DagEngine {
                     match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                         task.run(Input::new(inputs), env)
                     })) {
-                        Ok(res) => {
+                        Ok(output) => {
                             info!("Finish Task[name: {}]", task.get_name());
                             // Store execution results
-                            let mut state = exs.get_mut(&id).unwrap();
-                            state.set_output(res);
-                            task.add_permits(task_successor_numbers);
+                            execute_state.set_output(output);
+                            execute_state.add_permits(task_out_degree);
                             true
                         }
                         Err(err) => {
                             error!("Task Failed[name: {}, err: {:?}]", task.get_name(), err);
-                            let mut state = exs.get_mut(&id).unwrap();
-                            state.set_executed();
                             false
                         }
                     }
@@ -246,6 +249,14 @@ impl DagEngine {
             .count();
         info!("{} -> [End]", res);
     }
+
+    /// Get the final execution result.
+    pub fn get_result<T: CloneAnySendSync + Send + Sync>(&mut self) -> Option<T> {
+        match self.execute_states[&self.last_task_id].get_output() {
+            Some(ref content) => content.clone().remove(),
+            None => None,
+        }
+    }
 }
 
 impl Default for DagEngine {
@@ -253,8 +264,9 @@ impl Default for DagEngine {
         DagEngine {
             tasks: HashMap::new(),
             rely_graph: Graph::new(),
-            execute_states: Arc::new(DashMap::new()),
+            execute_states: HashMap::new(),
             env: EnvVar::new(),
+            last_task_id: 0,
         }
     }
 }

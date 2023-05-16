@@ -11,7 +11,7 @@ mod engine;
 mod task;
 
 pub use engine::{DagEngine, DagError, EnvVar, Graph, RunningError, YamlError, YamlFormatError};
-pub use task::{Input, Output, RunScript, RunType, TaskTrait, TaskWrapper, YamlTask};
+pub use task::{Content, Input, Output, RunScript, RunType, TaskTrait, TaskWrapper, YamlTask};
 
 use simplelog::*;
 use std::{

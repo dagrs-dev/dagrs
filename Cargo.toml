@@ -16,4 +16,3 @@ clap = { version = "4.2.2", features = ["derive"] }
 anymap2 = "0.13.0"
 thiserror = "1.0.30"
 tokio = { version = "1.28", features = ["rt", "sync","rt-multi-thread"] }
-dashmap = "5.4.0"

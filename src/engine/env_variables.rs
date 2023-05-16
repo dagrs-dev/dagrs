@@ -7,20 +7,22 @@
 
 use crate::task::Content;
 use anymap2::any::CloneAnySendSync;
-use dashmap::DashMap;
-use std::sync::Arc;
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+};
 
 /// Global environment variables.
 ///
 /// Since it will be shared between tasks,
 /// [`Arc`] and [`Mutex`] are needed.
 
-pub struct EnvVar(Arc<DashMap<String, Content>>);
+pub struct EnvVar(Arc<Mutex<HashMap<String, Content>>>);
 
 impl EnvVar {
     /// Allocate a new [`EnvVar`].
     pub fn new() -> Self {
-        Self(Arc::new(DashMap::new()))
+        Self(Arc::new(Mutex::new(HashMap::new())))
     }
 
     #[allow(unused)]
@@ -36,7 +38,7 @@ impl EnvVar {
     pub fn set<H: Send + Sync + CloneAnySendSync>(&mut self, name: &str, var: H) {
         let mut v = Content::new();
         v.insert(var);
-        self.0.insert(name.to_owned(), v);
+        self.0.clone().lock().unwrap().insert(name.to_owned(), v);
     }
 
     #[allow(unused)]
@@ -51,7 +53,7 @@ impl EnvVar {
     /// # assert_eq!(res, "World".to_string());
     /// ```
     pub fn get<H: Send + Sync + CloneAnySendSync>(&self, name: &str) -> Option<H> {
-        if let Some(content) = self.0.get(name) {
+        if let Some(content) = self.0.clone().lock().unwrap().get(name) {
             content.clone().remove()
         } else {
             None
@@ -67,6 +69,6 @@ impl Clone for EnvVar {
 
 impl Default for EnvVar {
     fn default() -> Self {
-        EnvVar(Arc::new(DashMap::new()))
+        EnvVar(Arc::new(Mutex::new(HashMap::new())))
     }
 }

@@ -53,7 +53,7 @@
 use crate::EnvVar;
 
 pub use self::specific_task::*;
-pub use self::state::{Content, ExecState, Input, Output};
+pub use self::state::*;
 pub use self::yaml_task::YamlTask;
 
 mod specific_task;
@@ -62,7 +62,6 @@ mod yaml_task;
 
 use lazy_static::lazy_static;
 use std::sync::Mutex;
-use tokio::sync::Semaphore;
 
 /// Task Trait.
 ///
@@ -82,12 +81,6 @@ pub struct TaskWrapper {
     predecessor_tasks: Vec<usize>,
     /// A task to be executed.
     inner: Box<dyn TaskTrait + Send + Sync>,
-    /// The semaphore is used to control the synchronous blocking of subsequent tasks to obtain the
-    /// execution results of this task.
-    /// After this task is executed, it will increase by n (n is the number of subsequent tasks of
-    /// this task, which can also be considered as the out-degree of the node represented by this task)
-    /// permit, each subsequent task requires a permit to obtain the execution result of this task.
-    semaphore: Semaphore,
 }
 
 impl TaskWrapper {
@@ -114,7 +107,6 @@ impl TaskWrapper {
             name: name.to_owned(),
             predecessor_tasks: Vec::new(),
             inner: Box::new(task),
-            semaphore: Semaphore::new(0),
         }
     }
 
@@ -159,15 +151,6 @@ impl TaskWrapper {
 
     pub fn run(&self, input: Input, env: EnvVar) -> Output {
         self.inner.run(input, env)
-    }
-
-    /// TODO
-    pub(crate) fn semaphore(&self) -> &Semaphore {
-        &self.semaphore
-    }
-    /// TODO
-    pub(crate) fn add_permits(&self, permits: usize) {
-        self.semaphore.add_permits(permits);
     }
 }
 
