@@ -196,7 +196,8 @@ impl DagEngine {
                 // async execute
                 handles.push(self.execute_task(task, wait_for_input, env, execute_state, task_out_degree));
             });
-            
+            // Wait for the status of each task to execute. If there is an error in the execution of a task,
+            // the engine will fail to execute and give up executing tasks that have not yet been executed.
             for handle in handles {
                 match handle.await {
                     Ok(complete) => {
@@ -222,7 +223,7 @@ impl DagEngine {
             .count();
         info!("{} -> [End]", res);
     }
-
+    /// Execute a given task asynchronously.
     fn execute_task(
         &self,
         task: Arc<TaskWrapper>,
