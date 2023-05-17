@@ -66,9 +66,10 @@ impl RunScript {
         if let Some(input) = input {
             input
                 .get_iter()
-                .map(|input| match input.get::<String>() {
-                    Some(arg) => cmd.push_str(arg),
-                    None => {}
+                .map(|input| {
+                    if let Some(arg) = input.get::<String>() {
+                        cmd.push_str(arg)
+                    }
                 })
                 .count();
         }

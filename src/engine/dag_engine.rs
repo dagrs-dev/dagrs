@@ -155,9 +155,8 @@ impl DagEngine {
 
     fn init_execute_states(&mut self, tasks_id: &[usize]) {
         tasks_id.iter().for_each(|id| {
-            let task_id = id.clone();
             self.execute_states
-                .insert(task_id, Arc::new(ExecState::new(task_id)));
+                .insert(*id, Arc::new(ExecState::new(*id)));
         });
     }
 
@@ -180,7 +179,7 @@ impl DagEngine {
             // Set the execution results of all tasks to empty and set them to the status of unsuccessful execution.
             self.init_execute_states(&seq);
             // Set the id of the last task, which can be used to get the final execution result.
-            self.last_task_id = seq.last().unwrap().clone();
+            self.last_task_id = *seq.last().unwrap();
             // storage execute JoinHandle<bool>.
             let mut handles = Vec::new();
             seq.iter().for_each(|id|{
