@@ -5,6 +5,8 @@
 //! A --→ C    / 
 //!  ↘    ↘  /
 //!   D -→ F
+//! 
+//! The final execution result is 272.
 
 extern crate dagrs;
 
@@ -16,12 +18,9 @@ macro_rules! generate_task {
         impl TaskTrait for $task {
             fn run(&self, input: Input, env: EnvVar) -> Output {
                 let base = env.get::<usize>("base").unwrap();
-                let mut sum=0;
+                let mut sum=self.0;
                 input.get_iter().for_each(|i|{
-                    match i {
-                        Some(val) => sum+=(val.get::<usize>().unwrap()*base),
-                        None => {},
-                    }
+                    sum+=i.get::<usize>().unwrap()*base
                 });
                 Output::new(sum)
             }
@@ -50,4 +49,7 @@ fn main() {
     g.set_predecessors(&[&b,&e,&f]);
     dagrs.add_tasks(vec![a,b,c,d,e,f,g]);
     assert!(dagrs.run().unwrap());
+    let res = dagrs.get_result::<usize>().unwrap();
+    println!("The result is {}.",res);
+    
 }

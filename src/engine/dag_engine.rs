@@ -16,15 +16,11 @@ use super::{
     error_handler::{DagError, RunningError},
     graph::Graph,
 };
-use crate::{
-    task::{ExecState, Input, TaskWrapper, YamlTask},
-    Output,
-};
+use crate::task::{ExecState, Input, TaskWrapper, YamlTask};
 use anymap2::any::CloneAnySendSync;
 use log::*;
 use std::{collections::HashMap, sync::Arc};
-use tokio::sync::RwLock;
-
+use tokio::task::JoinHandle;
 /// dagrs's function is wrapped in DagEngine struct.
 pub struct DagEngine {
     /// Store all tasks' infos.
@@ -35,9 +31,11 @@ pub struct DagEngine {
     /// Store dependency relations.
     rely_graph: Graph,
     /// Store a task's running result.Execution results will be read and written asynchronously by several threads.
-    execute_states: Arc<RwLock<HashMap<usize, ExecState>>>,
+    execute_states: HashMap<usize, Arc<ExecState>>,
     /// Environment Variables.
     env: EnvVar,
+    /// The id of the last task.
+    last_task_id: usize,
 }
 
 impl DagEngine {
@@ -51,9 +49,14 @@ impl DagEngine {
         DagEngine {
             tasks: HashMap::new(),
             rely_graph: Graph::new(),
-            execute_states: Arc::new(RwLock::new(HashMap::new())),
+            execute_states: HashMap::new(),
             env: EnvVar::new(),
+            last_task_id: 0,
         }
+    }
+
+    pub fn set_env<T: Send + Sync + CloneAnySendSync>(&mut self, k: &str, v: T) {
+        self.env.set(k, v);
     }
 
     /// Add new tasks into dagrs.
@@ -150,6 +153,13 @@ impl DagEngine {
         Ok(())
     }
 
+    fn init_execute_states(&mut self, tasks_id: &[usize]) {
+        tasks_id.iter().for_each(|id| {
+            self.execute_states
+                .insert(*id, Arc::new(ExecState::new(*id)));
+        });
+    }
+
     /// Check whether it's DAG or not.
     ///
     /// If it is a DAG, dagrs will start executing tasks in a feasible order and
@@ -161,63 +171,40 @@ impl DagEngine {
                 .into_iter()
                 .map(|index| self.rely_graph.find_id_by_index(index).unwrap())
                 .collect();
+            // If there is no task, return true directly.
+            if seq.is_empty() {
+                return true;
+            }
             self.print_seq(&seq);
-
+            // Set the execution results of all tasks to empty and set them to the status of unsuccessful execution.
+            self.init_execute_states(&seq);
+            // Set the id of the last task, which can be used to get the final execution result.
+            self.last_task_id = *seq.last().unwrap();
             // storage execute JoinHandle<bool>.
             let mut handles = Vec::new();
-            // Start Executing
-            for id in seq {
-                let task_name = self.tasks[&id].get_name();
-                let task = self.tasks[&id].clone();
+            seq.iter().for_each(|id|{
+                let task = self.tasks[id].clone();
                 let env = self.env.clone();
-                let exs = self.execute_states.clone();
-                let task_successor_numbers = self.rely_graph.get_node_out_degree(&task.get_id());
-                let wait_for_input: Vec<Arc<TaskWrapper>> = task
+                let execute_state = self.execute_states[id].clone();
+                let task_out_degree = self.rely_graph.get_node_out_degree(id);
+                let wait_for_input: Vec<Arc<ExecState>> = task
                     .get_predecessors_id()
                     .iter()
-                    .map(|id| self.tasks[id].clone())
+                    .map(|id| self.execute_states[id].clone())
                     .collect();
-
                 // async execute
-                let handle = tokio::spawn(async move {
-                    info!("Executing Task[name: {}]", task_name);
-
-                    // Wait for the execution result of the predecessor task
-                    let mut inputs = Vec::new();
-                    for wait_for in wait_for_input {
-                        wait_for.acquire_permits().await;
-                        let reader = exs.read().await;
-                        let ec = reader.get(&wait_for.get_id()).unwrap();
-                        if !ec.success() {
-                            warn!("The task was aborted due to the failure of the execution of the predecessor task.[name: {}]",task_name);
-                            return false;
-                        }
-                        inputs.push(ec.get_dmap());
-                    }
-                    // Start run task
-                    let state = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                        task.run(Input::new(inputs), env)
-                    })) {
-                        Ok(res) => {
-                            info!("Finish Task[name: {}]", task_name);
-                            ExecState::new(true, res)
-                        }
-                        Err(err) => {
-                            error!("Task Failed[name: {}],error with {:?}", task_name, err);
-                            ExecState::new(false, Output::empty())
-                        }
-                    };
-                    // Store execution results
-                    exs.write().await.insert(id, state);
-                    task.init_permits(task_successor_numbers);
-                    true
-                });
-                handles.push(handle);
-            }
+                handles.push(self.execute_task(task, wait_for_input, env, execute_state, task_out_degree));
+            });
+            // Wait for the status of each task to execute. If there is an error in the execution of a task,
+            // the engine will fail to execute and give up executing tasks that have not yet been executed.
             for handle in handles {
                 match handle.await {
-                    Ok(complete) => if !complete {std::process::abort()},
-                    Err(_) => {std::process::abort()},
+                    Ok(complete) => {
+                        if !complete {
+                            std::process::abort()
+                        }
+                    }
+                    Err(_) => std::process::abort(),
                 }
             }
             true
@@ -235,9 +222,52 @@ impl DagEngine {
             .count();
         info!("{} -> [End]", res);
     }
+    /// Execute a given task asynchronously.
+    fn execute_task(
+        &self,
+        task: Arc<TaskWrapper>,
+        wait_for_input: Vec<Arc<ExecState>>,
+        env: EnvVar,
+        execute_state: Arc<ExecState>,
+        task_out_degree: usize,
+    ) -> JoinHandle<bool> {
+        tokio::spawn(async move {
+            info!("Executing Task[name: {}]", task.get_name());
+            // Wait for the execution result of the predecessor task
+            let mut inputs = Vec::new();
+            for wait_for in wait_for_input {
+                wait_for.acquire_permits().await;
+                if let Some(content) = wait_for.get_output() {
+                    if !content.is_empty() {
+                        inputs.push(content);
+                    }
+                }
+            }
+            // Start run task
+            match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                task.run(Input::new(inputs), env)
+            })) {
+                Ok(output) => {
+                    info!("Finish Task[name: {}]", task.get_name());
+                    // Store execution results
+                    execute_state.set_output(output);
+                    execute_state.add_permits(task_out_degree);
+                    true
+                }
+                Err(err) => {
+                    error!("Task Failed[name: {}, err: {:?}]", task.get_name(), err);
+                    false
+                }
+            }
+        })
+    }
 
-    pub fn set_env<T: Send + Sync + CloneAnySendSync>(&mut self, k: &str, v: T) {
-        self.env.set(k, v);
+    /// Get the final execution result.
+    pub fn get_result<T: CloneAnySendSync + Send + Sync>(&mut self) -> Option<T> {
+        match self.execute_states[&self.last_task_id].get_output() {
+            Some(ref content) => content.clone().remove(),
+            None => None,
+        }
     }
 }
 
@@ -246,8 +276,9 @@ impl Default for DagEngine {
         DagEngine {
             tasks: HashMap::new(),
             rely_graph: Graph::new(),
-            execute_states: Arc::new(RwLock::new(HashMap::new())),
+            execute_states: HashMap::new(),
             env: EnvVar::new(),
+            last_task_id: 0,
         }
     }
 }

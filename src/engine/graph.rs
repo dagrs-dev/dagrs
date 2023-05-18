@@ -171,9 +171,9 @@ impl Graph {
         }
     }
 
-    pub fn get_node_out_degree(&self,id:&usize)->usize{
+    pub fn get_node_out_degree(&self, id: &usize) -> usize {
         match self.nodes.get_by_left(id) {
-            Some(index) => self.adj[index.clone()].len(),
+            Some(index) => self.adj[*index].len(),
             None => 0,
         }
     }

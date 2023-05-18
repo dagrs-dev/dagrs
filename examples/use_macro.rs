@@ -19,10 +19,7 @@ fn main() {
     let mut b = generate_task!("Compute B", |input: Input, _env: EnvVar| {
         let mut sum = 0;
         input.get_iter().for_each(|i| {
-            match i {
-                Some(val) => sum += val.get::<usize>().unwrap(),
-                None => {}
-            };
+            sum += i.get::<usize>().unwrap()
         });
         Output::new(sum)
     });
@@ -31,10 +28,7 @@ fn main() {
         let mut sum = 0;
         let base = env.get::<usize>("base").unwrap();
         input.get_iter().for_each(|i| {
-            match i {
-                Some(val) => sum += val.get::<usize>().unwrap() * base,
-                None => {}
-            };
+            sum += i.get::<usize>().unwrap() * base
         });
         Output::new(sum)
     });
@@ -42,10 +36,7 @@ fn main() {
         let mut sum = 0;
         let base = env.get::<usize>("base").unwrap();
         input.get_iter().for_each(|i| {
-            match i {
-                Some(val) => sum += val.get::<usize>().unwrap() - base,
-                None => {}
-            };
+            sum += i.get::<usize>().unwrap() - base
         });
         Output::new(sum)
     });

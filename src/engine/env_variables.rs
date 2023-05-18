@@ -5,7 +5,7 @@
 //! Users can specify global environment variables for the DAG engine when
 //! the task is running, which may be used during task execution.
 
-use crate::task::DMap;
+use crate::task::Content;
 use anymap2::any::CloneAnySendSync;
 use std::{
     collections::HashMap,
@@ -17,7 +17,7 @@ use std::{
 /// Since it will be shared between tasks,
 /// [`Arc`] and [`Mutex`] are needed.
 
-pub struct EnvVar(Arc<Mutex<HashMap<String, DMap>>>);
+pub struct EnvVar(Arc<Mutex<HashMap<String, Content>>>);
 
 impl EnvVar {
     /// Allocate a new [`EnvVar`].
@@ -36,9 +36,9 @@ impl EnvVar {
     ///
     /// Lock operations are wrapped inside, so no need to worry.
     pub fn set<H: Send + Sync + CloneAnySendSync>(&mut self, name: &str, var: H) {
-        let mut v = DMap::new();
+        let mut v = Content::new();
         v.insert(var);
-        self.0.lock().unwrap().insert(name.to_owned(), v);
+        self.0.clone().lock().unwrap().insert(name.to_owned(), v);
     }
 
     #[allow(unused)]
@@ -53,8 +53,8 @@ impl EnvVar {
     /// # assert_eq!(res, "World".to_string());
     /// ```
     pub fn get<H: Send + Sync + CloneAnySendSync>(&self, name: &str) -> Option<H> {
-        if let Some(dmap) = self.0.lock().unwrap().get(name) {
-            dmap.clone().remove()
+        if let Some(content) = self.0.clone().lock().unwrap().get(name) {
+            content.clone().remove()
         } else {
             None
         }

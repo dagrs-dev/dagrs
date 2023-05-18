@@ -22,6 +22,7 @@ fn main() {
     if let Err(e) = dagrs.run_from_yaml(&args.file) {
         error!("[Error] {}", e);
     }
+    
 }
 
 #[test]

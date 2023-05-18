@@ -13,58 +13,98 @@
 //! The execution of the task may produce output: if the task is executed successfully,
 //! it may produce output, and [`Output`] is used to represent the output of the task.
 
-use std::slice::Iter;
-
 use anymap2::{any::CloneAnySendSync, Map};
+use std::{
+    slice::Iter,
+    sync::atomic::{AtomicBool, AtomicPtr, Ordering},
+};
+use tokio::sync::Semaphore;
 
-
-pub type DMap = Map<dyn CloneAnySendSync+Send+Sync>;
+pub type Content = Map<dyn CloneAnySendSync + Send + Sync>;
 
 /// Describe task's running result
+
+#[derive(Debug)]
 pub struct ExecState {
-    /// The execution succeed or not
-    success: bool,
+    /// The execution succeed or not.
+    success: AtomicBool,
     /// Return value of the execution.
-    output: Output,
+    output: AtomicPtr<Output>,
+    // Task output identified by id.
+    task_id: usize,
+    /// The semaphore is used to control the synchronous blocking of subsequent tasks to obtain the
+    /// execution results of this task.
+    /// After this task is executed, it will increase by n (n is the number of subsequent tasks of
+    /// this task, which can also be considered as the out-degree of the node represented by this task)
+    /// permit, each subsequent task requires a permit to obtain the execution result of this task.
+    semaphore: Semaphore,
 }
 
 /// Task's return value
-pub struct Output(Option<DMap>);
+#[derive(Debug)]
+pub struct Output(Option<Content>);
 
 /// Task's input value
-pub struct Input(Vec<Option<DMap>>);
+pub struct Input(Vec<Content>);
 
+#[allow(dead_code)]
 impl ExecState {
     /// Get a new [`ExecState`].
     ///
     /// `success`: task finish without panic?
     ///
     /// `output`: task's return value
-    pub fn new(success: bool, output: Output) -> Self {
-        Self { success, output }
+    pub fn new(task_id: usize) -> Self {
+        Self {
+            success: AtomicBool::new(false),
+            output: AtomicPtr::new(std::ptr::null_mut()),
+            task_id,
+            semaphore: Semaphore::new(0),
+        }
     }
 
-    /// Get [`ExecState`]'s return value.
+    /// After the task is successfully executed, set the execution result.
+    pub fn set_output(&self, output: Output) {
+        self.success.store(true, Ordering::Relaxed);
+        self.output
+            .store(Box::leak(Box::new(output)), Ordering::Relaxed);
+    }
+
+    /// Consume a permit to get the output, if there is no permit currently, the thread will be blocked.
     ///
     /// This method will clone [`DMap`] that are stored in [`ExecState`]'s [`Output`].
-    pub fn get_dmap(&self) -> Option<DMap> {
-        self.output.0.clone()
+    pub fn get_output(&self) -> Option<Content> {
+        unsafe { self.output.load(Ordering::Relaxed).as_ref().unwrap() }
+            .0
+            .clone()
     }
 
     /// The task execution succeed or not.
     ///
     /// `true` means no panic occurs.
     pub fn success(&self) -> bool {
-        self.success
+        self.success.load(Ordering::Relaxed)
+    }
+
+    // Use id to indicate the output of which task.
+    pub fn get_id(&self) -> usize {
+        self.task_id
+    }
+    pub(crate) async fn acquire_permits(&self) {
+        self.semaphore.acquire().await.unwrap().forget();
+    }
+    /// Set the number of permits, the number of permits means that the execution
+    /// result can be taken away by several subsequent tasks.
+    pub(crate) fn add_permits(&self, permits: usize) {
+        self.semaphore.add_permits(permits);
     }
 }
-
 
 impl Output {
     #[allow(unused)]
     /// Get a new [`Output`].
     ///
-    /// Since the return value may be transfered between threads,
+    /// Since the return value may be transferred between threads,
     /// [`Send`], [`Sync`], [`CloneAnySendSync`] is needed.
     ///
     /// # Example
@@ -72,7 +112,7 @@ impl Output {
     /// let output = dagrs::Output::new(123);
     /// ```
     pub fn new<H: Send + Sync + CloneAnySendSync>(val: H) -> Self {
-        let mut map = DMap::new();
+        let mut map = Content::new();
         assert!(map.insert(val).is_none(), "[Error] map insert fails.");
         Self(Some(map))
     }
@@ -91,7 +131,7 @@ impl Output {
 impl Input {
     /// Get a new [`Input`], values stored in vector are ordered
     /// by that of the given Task's predecessor.
-    pub fn new(input: Vec<Option<DMap>>) -> Self {
+    pub fn new(input: Vec<Content>) -> Self {
         Self(input)
     }
 
@@ -106,20 +146,22 @@ impl Input {
     ///
     /// # Example
     /// ```rust
-    /// # let mut input = dagrs::Input::new( vec![ None ] );
-    /// let input_from_t1:Option<String> = input.get(0);
+    /// # let mut content=dagrs::Content::new();
+    /// # content.insert("something".to_owned());
+    /// # let mut input = dagrs::Input::new( vec![ content ] );
+    /// # let input_from_t1:Option<String> = input.get(0);
     /// ```
     pub fn get<H: Send + Sync + CloneAnySendSync>(&mut self, index: usize) -> Option<H> {
-        if let Some(Some(dmap)) = self.0.get_mut(index) {
-            dmap.remove()
+        if let Some(content) = self.0.get_mut(index) {
+            content.remove()
         } else {
             None
         }
     }
 
-    /// Since [`Input`] can contain mult-input values, and it's implemented
-    /// by [`Vec`] actually, of course it can be turned into a iterater.
-    pub fn get_iter(&self) -> Iter<Option<Map<dyn CloneAnySendSync + Send + Sync>>> {
+    /// Since [`Input`] can contain multi-input values, and it's implemented
+    /// by [`Vec`] actually, of course it can be turned into a iterator.
+    pub fn get_iter(&self) -> Iter<Content> {
         self.0.iter()
     }
 }
