@@ -17,8 +17,7 @@ use super::{
 };
 use crate::{
     parser::{Parser, YamlParser},
-    task::{Action, ExecState, Input, Task},
-    ComplexAction,
+    task::{Action, ExecState, Input, Task, ComplexAction},
 };
 use anymap2::any::CloneAnySendSync;
 use log::*;
@@ -195,7 +194,7 @@ impl DagEngine {
                 return true;
             }
             self.print_seq(&seq);
-            crate::utils::env_unchangeable();
+            // crate::utils::env_unchangeable();
             // Set the execution results of all tasks to empty and set them to the status of unsuccessful execution.
             self.init_execute_states(&seq);
             // Set the id of the last task, which can be used to get the final execution result.

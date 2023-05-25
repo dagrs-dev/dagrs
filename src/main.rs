@@ -4,7 +4,9 @@
 //     content: String,
 // }
 
-fn main(){
+
+
+fn main() {
     
 }
 
@@ -17,7 +19,7 @@ fn main(){
 //     fn run(&self, input: dagrs::Input, env: dagrs::EnvVar) -> dagrs::Output {
 //         Output::new(self.content.split(" "))
 //     }
-    
+
 //     fn after_run(&mut self) {
 //         // Suppose you delete a temporary file generated when a task runs.
 //         self.content = "".to_owned();

@@ -5,18 +5,19 @@ extern crate deno_core;
 extern crate log;
 extern crate simplelog;
 extern crate yaml_rust;
+extern crate serde_json;
 extern crate once_cell;
 
-mod engine;
-mod utils;
-mod parser;
-mod task;
+pub mod engine;
+pub mod utils;
+pub mod parser;
+pub mod task;
 
-pub use engine::{DagEngine, DagError, Graph, RunningError, YamlError, YamlFormatError};
-pub use task::{
-    ComplexAction, Content, DefaultTask, Input, Output, SimpleAction,
-    YamlTask,
-};
+// pub use engine::{DagEngine, DagError, Graph, RunningError, YamlError, YamlFormatError};
+// pub use task::{
+//     ComplexAction, Content, DefaultTask, Input, Output, SimpleAction,
+//     YamlTask,
+// };
 
 use simplelog::*;
 use std::{

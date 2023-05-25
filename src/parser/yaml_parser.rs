@@ -1,8 +1,5 @@
-use crate::task::{JavaScriptRunnable, Action, ShScriptRunnable, Task};
-use crate::YamlTask;
-use std::collections::HashMap;
-use std::sync::Arc;
-use std::{fs::File, io::Read};
+use crate::task::{Action, JavaScript, ShScript, Task, YamlTask};
+use std::{collections::HashMap, fs::File, io::Read, sync::Arc};
 use yaml_rust::{Yaml, YamlLoader};
 
 use super::error::{FileContentError, ParserError};
@@ -42,13 +39,13 @@ impl YamlParser {
                 let sh_script = run["script"]
                     .as_str()
                     .ok_or(YamlTaskError::IllegalScript(name.clone()))?;
-                Action::Simple(Arc::new(ShScriptRunnable::new(sh_script)))
+                Action::Simple(Arc::new(ShScript::new(sh_script)))
             }
             "deno" => {
                 let js_script = run["script"]
                     .as_str()
                     .ok_or(YamlTaskError::IllegalScript(name.clone()))?;
-                Action::Simple(Arc::new(JavaScriptRunnable::new(js_script)))
+                Action::Simple(Arc::new(JavaScript::new(js_script)))
             }
             _ => return Err(YamlTaskError::UnsupportedType(name.clone())),
         };

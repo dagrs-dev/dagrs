@@ -11,14 +11,14 @@ use std::process::Command;
 
 /// Can be used to run a script cmd or file.
 
-pub struct ShScriptRunnable {
+pub struct ShScript {
     script: String,
 }
-pub struct JavaScriptRunnable {
+pub struct JavaScript {
     script: String,
 }
 
-impl ShScriptRunnable {
+impl ShScript {
     pub fn new(script: &str) -> Self {
         Self {
             script: script.to_owned(),
@@ -26,7 +26,7 @@ impl ShScriptRunnable {
     }
 }
 
-impl SimpleAction for ShScriptRunnable {
+impl SimpleAction for ShScript {
     fn run(&self, input: Input) -> Result<Output,super::RunningError> {
         let mut cmd = format!("{} ", self.script);
         input
@@ -53,7 +53,7 @@ impl SimpleAction for ShScriptRunnable {
     }
 }
 
-impl JavaScriptRunnable {
+impl JavaScript {
     pub fn new(script: &str) -> Self {
         Self {
             script: script.to_owned(),
@@ -61,7 +61,7 @@ impl JavaScriptRunnable {
     }
 }
 
-impl SimpleAction for JavaScriptRunnable {
+impl SimpleAction for JavaScript {
     fn run(&self, _input: Input) -> Result<Output,super::RunningError> {
         let script = self.script.clone().into_boxed_str();
         let mut context = JsRuntime::new(RuntimeOptions {
