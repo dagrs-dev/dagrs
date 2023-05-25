@@ -45,4 +45,4 @@ dagrs:
     name: "Task 8"
     run:
       type: sh
-      script: ./test/test.sh
+      script: sh_script.sh

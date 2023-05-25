@@ -19,10 +19,7 @@ pub enum DagError {
 #[derive(Debug, Error)]
 /// Format Error, point out which part has what kinds of error.
 pub enum YamlFormatError {
-    #[error("Not start with 'dagrs'")]
-    StartWordError,
-    #[error("Task[{0}] has no name field")]
-    NoName(String),
+    
     #[error("Task[{0}] run script format error")]
     RunScriptError(String),
 }

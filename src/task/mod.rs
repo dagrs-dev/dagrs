@@ -25,18 +25,18 @@
 //! ```
 //!
 //! The second mode is that the user program defines the task, which requires the
-//! user to implement the [`TaskTrait`] trait of the task module and rewrite the
+//! user to implement the [`SimpleAction`] trait of the task module and rewrite the
 //! run function.
 //!
 //! ### An example of a user programmatically defined task
 //!
 //! ```rust
-//! use dagrs::TaskTrait;
+//! use dagrs::SimpleAction;
 //! struct MyTask{
 //!     limit:u32
 //! }
 //!
-//! impl TaskTrait for MyTask{
+//! impl SimpleAction for MyTask{
 //!     fn run(&self, input: dagrs::Input, env: dagrs::EnvVar) -> dagrs::Output {
 //!         let mut sum=0;
 //!         for i in 0..self.limit{
@@ -50,63 +50,213 @@
 //!
 //!
 
-use crate::EnvVar;
-
 pub use self::specific_task::*;
 pub use self::state::*;
-pub use self::yaml_task::YamlTask;
+pub use self::script::*;
+pub use self::error::*;
 
+mod error;
 mod specific_task;
 mod state;
-mod yaml_task;
+mod script;
 
-use lazy_static::lazy_static;
-use std::sync::Mutex;
+use std::sync::Arc;
+use std::sync::atomic::AtomicUsize;
 
-/// Task Trait.
+/// SimpleAction Trait.
 ///
-/// Any struct implements this trait can be added into dagrs.
-pub trait TaskTrait {
-    fn run(&self, input: Input, env: EnvVar) -> Output;
+/// [`SimpleAction`] represents the specific behavior to be executed.
+///
+/// # Example
+///
+/// ```rust
+/// use dagrs::{Input,EnvVar,Output,SimpleAction};
+/// struct Action(usize);
+/// impl SimpleAction for Action{
+///     fn run(&self, input: Input) -> Output{
+///         Output::new(self.0+1)
+///     }
+/// }
+/// ```
+pub trait SimpleAction {
+    /// The specific behavior to be performed by the task.
+    ///
+    /// Parameter Description
+    /// - `input` represents the execution result from the predecessor task.
+    /// - `env` stands for global environment variables, users can continue
+    /// to add or access environment variables.
+    fn run(&self, input: Input) -> Result<Output,RunningError>;
 }
 
-/// Wrapper for task that impl [`TaskTrait`].
-pub struct TaskWrapper {
-    /// id is the unique identifier of each task, it will be assigned by the global
-    /// [`IDAllocator`] when creating a new task, you can find this task through this identifier.
+/// ComplexAction Trait.
+///
+/// [`ComplexAction`] is an enhanced version of [`SimpleAction`], which supports pre-processing
+/// and post-processing of specific execution behaviors.Users can do some preprocessing in
+/// the preprocessing method `before_run`, such as reading files. You can do post-processing
+/// work in the post-processing method `after_run`, such as closing files, closing network
+/// streams, etc.
+///
+/// # Example
+///
+/// ```rust
+/// use dagrs::{ComplexAction, DefaultTask, Output};
+/// use std::{fs::File, io::Write};
+/// struct FileOperation {
+///     content: String,
+/// }
+///
+/// impl ComplexAction for FileOperation {
+///     fn before_run(&mut self) {
+///         // Suppose you open the file and read the content into `content`.
+///         self.content = "hello world".to_owned()
+///     }
+///
+///     fn run(&self, input: dagrs::Input) -> dagrs::Output {
+///         Output::new(self.content.split(" "))
+///     }
+///
+///     fn after_run(&mut self) {
+///         // Suppose you delete a temporary file generated when a task runs.
+///         self.content = "".to_owned();
+///     }
+/// }
+/// ```
+pub trait ComplexAction {
+    /// Executed before the `run` function to do preprocessing.
+    fn before_run(&mut self);
+    /// The specific behavior to be performed by the task.
+    ///
+    /// Parameter Description
+    /// - `input` represents the execution result from the predecessor task.
+    /// - `env` stands for global environment variables, users can continue
+    /// to add or access environment variables.
+    fn run(&self, input: Input) -> Result<Output,RunningError>;
+    /// Executed after the `run` function, for aftermath work.
+    fn after_run(&mut self);
+}
+
+pub enum Action {
+    Simple(Arc<dyn SimpleAction + Send + Sync>),
+    Complex(Arc<dyn ComplexAction + Send + Sync>),
+}
+
+
+
+/// Tasks can have many attributes, among which `id`, `name`, `predecessor_tasks`, and
+/// `runnable` attributes are required, and users can also customize some other attributes.
+/// [`DefaultTask`] in this module is a [ `Task`], the DAG engine uses it as the basic
+/// task by default.
+///
+/// A task must provide methods to obtain precursors and required attributes, just as
+/// the methods defined below, users who want to customize tasks must implement these methods.
+pub trait Task{
+    /// Get a reference to an executable action.
+    fn runnable(&self) -> Action;
+    /// Get the id of all predecessor tasks of this task.
+    fn predecessors(&self) -> &[usize];
+    /// Get the id of this task.
+    fn id(&self) -> usize;
+    /// Get the name of this task.
+    fn name(&self) -> String;
+}
+
+/// Default implementation of abstract tasks.
+pub struct DefaultTask {
+    /// id is the unique identifier of each task, it will be assigned by the global [`IDAllocator`]
+    /// when creating a new task, you can find this task through this identifier.
     id: usize,
     /// The task's name.
     name: String,
     /// Id of the predecessor tasks.
     predecessor_tasks: Vec<usize>,
-    /// A task to be executed.
-    inner: Box<dyn TaskTrait + Send + Sync>,
+    /// Perform specific actions.
+    action: Action,
 }
 
-impl TaskWrapper {
-    /// Allocate a new TaskWrapper.
+impl Clone for Action{
+    fn clone(&self) -> Self {
+        match self {
+            Action::Simple(simple)=>Action::Simple(simple.clone()),
+            Action::Complex(complex)=>Action::Complex(complex.clone())
+        }
+    }
+}
+
+impl DefaultTask {
+    /// Allocate a new [`DefaultTask`], the specific task behavior is a structure that implements [`SimpleRunner`].
     ///
     /// # Example
-    /// ```
-    /// # struct Task {};
-    /// # impl dagrs::TaskTrait for Task {
-    /// #     fn run(&self, input: dagrs::Input, env: dagrs::EnvVar) -> dagrs::Output {
-    /// #         dagrs::Output::empty()
-    /// #     }
-    /// # }
-    /// let t = dagrs::TaskWrapper::new(Task{}, "Demo Task");
+    ///
+    /// ```rust
+    /// use dagrs::{DefaultTask, Output, SimpleAction};
+    ///
+    /// struct Action(usize);
+    ///
+    /// impl SimpleAction for Action {
+    /// fn run(&self, input: dagrs::Input, env: dagrs::EnvVar) -> Output {
+    ///     Output::new(self.0 + 10)
+    /// }
+    /// }
+    ///
+    /// let runnable = Action(10);
+    /// let task = DefaultTask::simple_task(runnable, "Increment action");
     /// ```
     ///
-    /// `Task` is a struct that impl [`TaskTrait`]. Since task will be
+    /// `Action` is a struct that impl [`SimpleAction`]. Since task will be
     ///  executed in separated threads, [`Send`] and [`Sync`] is needed.
     ///
-    /// **Note:** This method will take the ownership of struct that impl [`TaskTrait`].
-    pub fn new(task: impl TaskTrait + 'static + Send + Sync, name: &str) -> Self {
-        TaskWrapper {
-            id: ID_ALLOCATOR.lock().unwrap().alloc(),
+    /// **Note:** This method will take the ownership of struct that impl [`SimpleAction`].
+    pub fn simple_task(runnable: impl SimpleAction + 'static + Send + Sync, name: &str) -> Self {
+        DefaultTask {
+            id: ID_ALLOCATOR.alloc(),
+            action: Action::Simple(Arc::new(runnable)),
             name: name.to_owned(),
             predecessor_tasks: Vec::new(),
-            inner: Box::new(task),
+        }
+    }
+    /// Allocate a new [`DefaultTask`], the specific task behavior is a structure that implements [`ComplexAction`].
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use dagrs::{ComplexAction, DefaultTask, Output};
+    /// use std::{fs::File, io::Write};
+    /// struct FileOperation {
+    ///     content: String,
+    /// }
+    ///
+    /// impl ComplexAction for FileOperation {
+    ///     fn before_run(&mut self) {
+    ///         // Suppose you open the file and read the content into `content`.
+    ///         self.content = "hello world".to_owned()
+    ///     }
+    ///
+    ///     fn run(&self, input: dagrs::Input, env: dagrs::EnvVar) -> dagrs::Output {
+    ///         Output::new(self.content.split(" "))
+    ///     }
+    ///
+    ///     fn after_run(&mut self) {
+    ///         // Suppose you delete a temporary file generated when a task runs.
+    ///         self.content = "".to_owned();
+    ///     }
+    /// }
+    /// let mut runnable = Action {content: "".to_owned()};
+    /// let task = DefaultTask::complex_task(runnable, "Increment action");
+    /// ```
+    ///
+    /// `FileOperation` is a struct that impl [`ComplexAction`]. Since task will be
+    ///  executed in separated threads, [`Send`] and [`Sync`] is needed.
+    ///
+    /// **Note:** This method will take the ownership of struct that impl [`ComplexAction`].
+    pub fn complex_task(
+        runnable: impl ComplexAction + 'static + Send + Sync,
+        name: &str,
+    ) -> Self {
+        DefaultTask {
+            id: ID_ALLOCATOR.alloc(),
+            action: Action::Complex(Arc::new(runnable)),
+            name: name.to_owned(),
+            predecessor_tasks: Vec::new(),
         }
     }
 
@@ -116,83 +266,66 @@ impl TaskWrapper {
     /// # Example
     /// ```rust
     /// # struct Task {};
-    /// # impl dagrs::TaskTrait for Task {
+    /// # impl dagrs::SimpleAction for Task {
     /// #     fn run(&self, input: dagrs::Input, env: dagrs::EnvVar) -> dagrs::Output {
     /// #         dagrs::Output::empty()
     /// #     }
     /// # }
-    /// # let mut t1 = dagrs::TaskWrapper::new(Task{}, "Task 1");
-    /// # let mut t2 = dagrs::TaskWrapper::new(Task{}, "Task 2");
+    /// # let mut t1 = dagrs::DefaultTask::new(Task{}, "Task 1");
+    /// # let mut t2 = dagrs::DefaultTask::new(Task{}, "Task 2");
     /// t2.set_predecessors(&[&t1]);
     /// ```
     /// In above code, `t1` will be executed before `t2`.
-    pub fn set_predecessors(&mut self, predecessors: &[&TaskWrapper]) {
+    pub fn set_predecessors(&mut self, predecessors: &[&DefaultTask]) {
         self.predecessor_tasks
-            .extend(predecessors.iter().map(|t| t.get_id()))
+            .extend(predecessors.iter().map(|t| t.id()))
     }
 
     /// The same as `exec_after`, but input are tasks' ids
-    /// rather than reference to [`TaskWrapper`].
+    /// rather than reference to [`DefaultTask`].
     pub fn set_predecessors_by_id(&mut self, predecessors_id: &[usize]) {
         self.predecessor_tasks.extend(predecessors_id)
     }
+}
 
-    pub fn get_predecessors_id(&self) -> Vec<usize> {
-        self.predecessor_tasks.clone()
-    }
-
-    pub fn get_id(&self) -> usize {
+impl Task for DefaultTask {
+    fn id(&self) -> usize {
         self.id
     }
 
-    pub fn get_name(&self) -> String {
-        self.name.to_owned()
+    fn name(&self) -> String {
+        self.name.clone()
     }
 
-    pub fn run(&self, input: Input, env: EnvVar) -> Output {
-        self.inner.run(input, env)
+    fn predecessors(&self) -> &[usize] {
+        &self.predecessor_tasks
+    }
+    fn runnable(&self) -> Action {
+        self.action.clone()
     }
 }
 
-/// IDAllocator for TaskWrapper
+
+/// IDAllocator for DefaultTask
 struct IDAllocator {
-    id: usize,
+    id: AtomicUsize,
 }
 
 impl IDAllocator {
-    pub fn alloc(&mut self) -> usize {
-        self.id += 1;
-
-        // Return values
-        self.id - 1
+    fn alloc(&self) -> usize {
+        let origin = self.id.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        if origin > self.id.load(std::sync::atomic::Ordering::Relaxed) {
+            panic!("Too many tasks.")
+        } else {
+            origin
+        }
     }
 }
 
-lazy_static! {
-    /// Instance of IDAllocator
-    static ref ID_ALLOCATOR: Mutex<IDAllocator> = Mutex::new(IDAllocator { id: 1 });
+static ID_ALLOCATOR: IDAllocator = IDAllocator { id: AtomicUsize::new(1) };
+
+#[allow(unused)]
+pub fn alloc_task_id()->usize{
+    ID_ALLOCATOR.alloc()
 }
 
-/// Macros for generating simple tasks.
-///
-/// # Example
-///
-/// ```rust
-/// # use dagrs::{generate_task,TaskWrapper,Input,Output,EnvVar,TaskTrait};
-/// # let task = generate_task!("task A", |input, env| {
-/// #     Output::empty()
-/// # });
-/// # println!("{},{}", task.get_id(), task.get_name());
-/// ```
-#[macro_export]
-macro_rules! generate_task {
-    ($task_name:expr,$action:expr) => {{
-        pub struct Task {}
-        impl TaskTrait for Task {
-            fn run(&self, input: Input, env: EnvVar) -> Output {
-                $action(input, env)
-            }
-        }
-        TaskWrapper::new(Task {}, $task_name)
-    }};
-}

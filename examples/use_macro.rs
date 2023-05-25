@@ -7,7 +7,7 @@
 
 extern crate dagrs;
 
-use dagrs::{generate_task, init_logger, DagEngine, EnvVar, Input, Output, TaskTrait, TaskWrapper};
+use dagrs::{generate_task, init_logger, DagEngine, EnvVar, Input, Output, SimpleAction, DefaultTask};
 
 fn main() {
     init_logger(None);

@@ -1,0 +1,6 @@
+dagrs:
+  a:
+    name: "Task 1"
+    run:
+      type: sh
+      script: ./test/test.sh

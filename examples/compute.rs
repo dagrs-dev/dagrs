@@ -10,7 +10,7 @@
 
 extern crate dagrs;
 
-use dagrs::{init_logger, DagEngine, EnvVar, Input, Output, TaskTrait, TaskWrapper};
+use dagrs::{init_logger, DagEngine, EnvVar, Input, Output, SimpleAction, DefaultTask};
 
 macro_rules! generate_task {
     ($task:ident($val:expr),$name:expr) => {{

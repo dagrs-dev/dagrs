@@ -12,11 +12,14 @@
 //! The next task gets the required input through the `execute_states` field.
 
 use super::{
-    env_variables::EnvVar,
     error_handler::{DagError, RunningError},
     graph::Graph,
 };
-use crate::task::{ExecState, Input, TaskWrapper, YamlTask};
+use crate::{
+    parser::{Parser, YamlParser},
+    task::{Action, ExecState, Input, Task},
+    ComplexAction,
+};
 use anymap2::any::CloneAnySendSync;
 use log::*;
 use std::{collections::HashMap, sync::Arc};
@@ -27,13 +30,11 @@ pub struct DagEngine {
     ///
     /// Arc but no mutex, because only one thread will change [`TaskWrapper`]at a time.
     /// And no modification to [`TaskWrapper`] happens during the execution of it.
-    tasks: HashMap<usize, Arc<TaskWrapper>>,
+    tasks: HashMap<usize, Arc<Box<dyn Task>>>,
     /// Store dependency relations.
     rely_graph: Graph,
     /// Store a task's running result.Execution results will be read and written asynchronously by several threads.
     execute_states: HashMap<usize, Arc<ExecState>>,
-    /// Environment Variables.
-    env: EnvVar,
     /// The id of the last task.
     last_task_id: usize,
 }
@@ -50,13 +51,8 @@ impl DagEngine {
             tasks: HashMap::new(),
             rely_graph: Graph::new(),
             execute_states: HashMap::new(),
-            env: EnvVar::new(),
             last_task_id: 0,
         }
-    }
-
-    pub fn set_env<T: Send + Sync + CloneAnySendSync>(&mut self, k: &str, v: T) {
-        self.env.set(k, v);
     }
 
     /// Add new tasks into dagrs.
@@ -77,9 +73,9 @@ impl DagEngine {
     ///
     /// You should defined the struct(here is T) and the function run in TaskTrait by yourself.
     /// You can find more information about TaskWrapper in src/task/task.rs
-    pub fn add_tasks(&mut self, tasks: Vec<TaskWrapper>) {
+    pub fn add_tasks(&mut self, tasks: Vec<Box<dyn Task>>) {
         for task in tasks {
-            self.tasks.insert(task.get_id(), Arc::new(task));
+            self.tasks.insert(task.id().clone(), Arc::new(task));
         }
     }
 
@@ -109,17 +105,40 @@ impl DagEngine {
     ///
     /// This method is similar to `run`, but read tasks from yaml file,
     /// thus no need to add tasks manually.
-    pub fn run_from_yaml(mut self, filename: &str) -> Result<bool, DagError> {
-        self.read_tasks(filename)?;
+    pub fn run_from_yaml(mut self, file: &str) -> Result<bool, DagError> {
+        self.read_tasks(file, None)?;
+        self.run()
+    }
+
+    pub fn run_from_yaml_with_parser(
+        mut self,
+        file: &str,
+        parser: Box<dyn Parser>,
+    ) -> Result<bool, DagError> {
+        self.read_tasks(file, Some(parser))?;
         self.run()
     }
 
     /// Read tasks into engine through yaml.
     ///
     /// This operation will read all info in yaml file into `dagrs.tasks` if no error occurs.
-    fn read_tasks(&mut self, filename: &str) -> Result<(), DagError> {
-        let tasks = YamlTask::from_yaml(filename)?;
-        tasks.into_iter().map(|t| self.add_tasks(vec![t])).count();
+    fn read_tasks(&mut self, file: &str, parser: Option<Box<dyn Parser>>) -> Result<(), DagError> {
+        match parser {
+            Some(p) => {
+                p.parse_tasks(file)
+                    .unwrap()
+                    .into_iter()
+                    .for_each(|task| self.add_tasks(vec![task]));
+            }
+            None => {
+                let parser = YamlParser;
+                parser
+                    .parse_tasks(file)
+                    .unwrap()
+                    .into_iter()
+                    .for_each(|task| self.add_tasks(vec![task]))
+            }
+        }
         Ok(())
     }
 
@@ -140,10 +159,10 @@ impl DagEngine {
         for (&id, task) in self.tasks.iter() {
             let index = self.rely_graph.find_index_by_id(&id).unwrap();
 
-            for rely_task_id in task.get_predecessors_id() {
+            for rely_task_id in task.predecessors() {
                 // Rely task existence check
                 let rely_index = self.rely_graph.find_index_by_id(&rely_task_id).ok_or(
-                    DagError::running_error(RunningError::RelyTaskIllegal(task.get_name())),
+                    DagError::running_error(RunningError::RelyTaskIllegal(task.name())),
                 )?;
 
                 self.rely_graph.add_edge(rely_index, index);
@@ -176,31 +195,33 @@ impl DagEngine {
                 return true;
             }
             self.print_seq(&seq);
+            crate::utils::env_unchangeable();
             // Set the execution results of all tasks to empty and set them to the status of unsuccessful execution.
             self.init_execute_states(&seq);
             // Set the id of the last task, which can be used to get the final execution result.
             self.last_task_id = *seq.last().unwrap();
             // storage execute JoinHandle<bool>.
             let mut handles = Vec::new();
-            seq.iter().for_each(|id|{
+            seq.iter().for_each(|id| {
                 let task = self.tasks[id].clone();
-                let env = self.env.clone();
-                let execute_state = self.execute_states[id].clone();
-                let task_out_degree = self.rely_graph.get_node_out_degree(id);
-                let wait_for_input: Vec<Arc<ExecState>> = task
-                    .get_predecessors_id()
-                    .iter()
-                    .map(|id| self.execute_states[id].clone())
-                    .collect();
                 // async execute
-                handles.push(self.execute_task(task, wait_for_input, env, execute_state, task_out_degree));
+                handles.push(self.execute_task(task));
             });
             // Wait for the status of each task to execute. If there is an error in the execution of a task,
             // the engine will fail to execute and give up executing tasks that have not yet been executed.
             for handle in handles {
                 match handle.await {
-                    Ok(complete) => {
-                        if !complete {
+                    Ok((complete, complex_runnable)) => {
+                        if complete {
+                            if let Some(runnable) = complex_runnable {
+                                unsafe {
+                                    let mut_runnable = &(*runnable)
+                                        as *const (dyn ComplexAction + Send + Sync)
+                                        as *mut (dyn ComplexAction + Send + Sync);
+                                    (*mut_runnable).after_run();
+                                }
+                            }
+                        } else {
                             std::process::abort()
                         }
                     }
@@ -218,21 +239,26 @@ impl DagEngine {
     fn print_seq(&self, seq: &[usize]) {
         let mut res = String::from("[Start]");
         seq.iter()
-            .map(|id| res.push_str(&format!(" -> {}", self.tasks[id].get_name())))
+            .map(|id| res.push_str(&format!(" -> {}", self.tasks[id].name())))
             .count();
         info!("{} -> [End]", res);
     }
     /// Execute a given task asynchronously.
     fn execute_task(
         &self,
-        task: Arc<TaskWrapper>,
-        wait_for_input: Vec<Arc<ExecState>>,
-        env: EnvVar,
-        execute_state: Arc<ExecState>,
-        task_out_degree: usize,
-    ) -> JoinHandle<bool> {
+        task: Arc<Box<dyn Task>>,
+    ) -> JoinHandle<(bool, Option<Arc<dyn ComplexAction + Send + Sync>>)> {
+        let task_id = task.id();
+        let task_name = task.name();
+        let execute_state = self.execute_states[&task_id].clone();
+        let task_out_degree = self.rely_graph.get_node_out_degree(&task_id);
+        let wait_for_input: Vec<Arc<ExecState>> = task
+            .predecessors()
+            .iter()
+            .map(|id| self.execute_states[id].clone())
+            .collect();
+        let runnable = task.runnable();
         tokio::spawn(async move {
-            info!("Executing Task[name: {}]", task.get_name());
             // Wait for the execution result of the predecessor task
             let mut inputs = Vec::new();
             for wait_for in wait_for_input {
@@ -243,22 +269,36 @@ impl DagEngine {
                     }
                 }
             }
+            info!("Executing Task[name: {}]", task_name);
+            let mut future = (false, None);
             // Start run task
-            match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                task.run(Input::new(inputs), env)
-            })) {
-                Ok(output) => {
-                    info!("Finish Task[name: {}]", task.get_name());
-                    // Store execution results
-                    execute_state.set_output(output);
-                    execute_state.add_permits(task_out_degree);
-                    true
+            let res = match runnable {
+                Action::Simple(simple) => simple.run(Input::new(inputs)),
+                Action::Complex(complex) => {
+                    info!("Execute task[name: {}] preprocessing.", task_name);
+                    future.1 = Some(complex.clone());
+                    unsafe {
+                        let mut_complex = &(*complex) as *const (dyn ComplexAction + Send + Sync)
+                            as *mut (dyn ComplexAction + Send + Sync);
+                        (*mut_complex).before_run();
+                    }
+                    complex.run(Input::new(inputs))
                 }
-                Err(err) => {
-                    error!("Task Failed[name: {}, err: {:?}]", task.get_name(), err);
-                    false
-                }
+            };
+            if res.is_ok() {
+                info!("Finish task[name: {}]", task_name);
+                // Store execution results
+                execute_state.set_output(res.unwrap());
+                execute_state.add_permits(task_out_degree);
+                future.0 = true;
+            } else {
+                error!(
+                    "Task Failed[name: {}, err: {:?}]",
+                    task_name,
+                    res.err().unwrap()
+                );
             }
+            future
         })
     }
 
@@ -277,7 +317,6 @@ impl Default for DagEngine {
             tasks: HashMap::new(),
             rely_graph: Graph::new(),
             execute_states: HashMap::new(),
-            env: EnvVar::new(),
             last_task_id: 0,
         }
     }
