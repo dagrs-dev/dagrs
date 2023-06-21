@@ -1,0 +1,6 @@
+dagrs:
+  a:
+    name:"Task a"
+    run:
+      type: sh
+      script: sh_script.sh

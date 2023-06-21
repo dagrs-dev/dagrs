@@ -1,6 +1,6 @@
 //! Relevant definitions of tasks.
 //!
-//! ## Task execution mode of the Dag engine
+//! # Task execution mode of the Dag engine
 //!
 //! Currently, the Dag execution engine has two execution modes:
 //! The first mode is to execute tasks through user-written yaml configuration file,
@@ -8,191 +8,264 @@
 //! configuration file supports two types of tasks, one is to execute sh scripts,
 //! and the other is to execute javascript scripts.
 //!
-//! ### An example yaml configuration file
+//！# The basic format of the yaml configuration file is as follows:
 //! ```yaml
 //! dagrs:
-//!     a:
-//!       name: "task1"
-//!       after: [b]
-//!       run:
-//!           type: sh
-//!           script: test.sh
-//!     b:
-//!       name: "task2"
-//!       run:
-//!           type: deno
-//!           script: Deno.core.print("Hello!")
+//!   a:
+//!     name: "Task 1"
+//!     after: [b, c]
+//!     run:
+//!       type: sh
+//!       script: echo a
+//!   b:
+//!     name: "Task 2"
+//!     after: [c, f, g]
+//!     run:
+//!       type: sh
+//!       script: echo b
+//!   c:
+//!     name: "Task 3"
+//!     after: [e, g]
+//!     run:
+//!       type: sh
+//!       script: echo c
+//!   d:
+//!     name: "Task 4"
+//!     after: [c, e]
+//!     run:
+//!       type: sh
+//!       script: echo d
+//!   e:
+//!     name: "Task 5"
+//!     after: [h]
+//!     run:
+//!       type: sh
+//!       script: echo e
+//!   f:
+//!     name: "Task 6"
+//!     after: [g]
+//!     run:
+//!       type: deno
+//!       script: Deno.core.print("f\n")
+//!   g:
+//!     name: "Task 7"
+//!     after: [h]
+//!     run:
+//!       type: deno
+//!       script: Deno.core.print("g\n")
+//!   h:
+//!     name: "Task 8"
+//!     run:
+//!       type: sh
+//!       script: sh_script.sh
 //! ```
+//! The necessary attributes for tasks in the yaml configuration file are:
+//! id: unique identifier, such as 'a'
+//! name: task name
+//! after: Indicates which task to execute after, this attribute is optional
+//! run:
+//!    type: sh or deno
+//!    script: command or file path
+//!
 //!
 //! The second mode is that the user program defines the task, which requires the
-//! user to implement the [`TaskTrait`] trait of the task module and rewrite the
+//! user to implement the [`Action`] trait of the task module and rewrite the
 //! run function.
 //!
-//! ### An example of a user programmatically defined task
+//! # Example
 //!
 //! ```rust
-//! use dagrs::TaskTrait;
-//! struct MyTask{
+//! use dagrs::{Action,EnvVar,Output,RunningError,Input};
+//! use std::sync::Arc;
+//! struct SimpleAction{
 //!     limit:u32
 //! }
 //!
-//! impl TaskTrait for MyTask{
-//!     fn run(&self, input: dagrs::Input, env: dagrs::EnvVar) -> dagrs::Output {
+//! impl Action for SimpleAction{
+//!     fn run(&self, input: Input,env:Arc<EnvVar>) -> Result<Output,RunningError> {
 //!         let mut sum=0;
 //!         for i in 0..self.limit{
 //!             sum+=i;
 //!         }
-//!         dagrs::Output::new(sum)
+//!         Ok(Output::new(sum))
 //!     }
 //! }
 //!
 //! ```
 //!
+//! # Task definition.
 //!
+//! Currently, two different execution modes correspond to two different task types,
+//! namely [`DefaultTask`] and [`YamlTask`].
+//! When users program to implement task logic, the engine uses [`DefaultTask`];
+//! When the user provides the yaml configuration file, the internal engine uses [`YamlTask`];
+//!
+//! These two task types both implement the [`Task`] trait, that is to say, users can also
+//! customize tasks and assign more functions and attributes to tasks. However, a task must
+//! have four fixed properties (the four standard properties contained in DefaultTask):
+//! - id: use [`ID_ALLOCATOR`] to get a global task unique identifier, the type must be usize
+//! - name: the task name specified by the user, the type must be String
+//! - predecessor_tasks: the predecessor task of this task, the type must be Vec<usize>
+//! - action: the specific behavior to be performed by the task, the type must be Arc<dyn Action + Send + Sync>
+//!
+//! If users want to customize Task, they can refer to the implementation of these two specific [`Task`].
 
-use crate::EnvVar;
+use std::fmt::Debug;
+use std::sync::Arc;
+use std::sync::atomic::AtomicUsize;
 
+use crate::utils::EnvVar;
+
+pub use self::error::*;
+pub use self::script::*;
 pub use self::specific_task::*;
 pub use self::state::*;
-pub use self::yaml_task::YamlTask;
 
+mod error;
+mod script;
 mod specific_task;
 mod state;
-mod yaml_task;
 
-use lazy_static::lazy_static;
-use std::sync::Mutex;
-
-/// Task Trait.
-///
-/// Any struct implements this trait can be added into dagrs.
-pub trait TaskTrait {
-    fn run(&self, input: Input, env: EnvVar) -> Output;
+/// Action Trait.
+/// [`Action`] represents the specific behavior to be executed.
+pub trait Action {
+    /// The specific behavior to be performed by the task.
+    fn run(&self, input: Input, env: Arc<EnvVar>) -> Result<Output, RunningError>;
 }
 
-/// Wrapper for task that impl [`TaskTrait`].
-pub struct TaskWrapper {
-    /// id is the unique identifier of each task, it will be assigned by the global
-    /// [`IDAllocator`] when creating a new task, you can find this task through this identifier.
+/// Tasks can have many attributes, among which `id`, `name`, `predecessor_tasks`, and
+/// `runnable` attributes are required, and users can also customize some other attributes.
+/// [`DefaultTask`] in this module is a [ `Task`], the DAG engine uses it as the basic
+/// task by default.
+///
+/// A task must provide methods to obtain precursors and required attributes, just as
+/// the methods defined below, users who want to customize tasks must implement these methods.
+
+pub trait Task {
+    /// Get a reference to an executable action.
+    fn action(&self) -> Arc<dyn Action + Send + Sync>;
+    /// Get the id of all predecessor tasks of this task.
+    fn predecessors(&self) -> &[usize];
+    /// Get the id of this task.
+    fn id(&self) -> usize;
+    /// Get the name of this task.
+    fn name(&self) -> String;
+}
+
+impl Debug for dyn Task {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{},\t{},\t{:?}", self.id(),self.name(),self.predecessors())
+    }
+}
+
+/// Default implementation of abstract tasks.
+pub struct DefaultTask {
+    /// id is the unique identifier of each task, it will be assigned by the global [`IDAllocator`]
+    /// when creating a new task, you can find this task through this identifier.
     id: usize,
     /// The task's name.
     name: String,
     /// Id of the predecessor tasks.
     predecessor_tasks: Vec<usize>,
-    /// A task to be executed.
-    inner: Box<dyn TaskTrait + Send + Sync>,
+    /// Perform specific actions.
+    action: Arc<dyn Action + Send + Sync>,
 }
 
-impl TaskWrapper {
-    /// Allocate a new TaskWrapper.
+impl DefaultTask {
+    /// Allocate a new [`DefaultTask`], the specific task behavior is a structure that implements [`SimpleRunner`].
     ///
     /// # Example
-    /// ```
-    /// # struct Task {};
-    /// # impl dagrs::TaskTrait for Task {
-    /// #     fn run(&self, input: dagrs::Input, env: dagrs::EnvVar) -> dagrs::Output {
-    /// #         dagrs::Output::empty()
-    /// #     }
-    /// # }
-    /// let t = dagrs::TaskWrapper::new(Task{}, "Demo Task");
+    ///
+    /// ```rust
+    /// use dagrs::{DefaultTask, Output,Input, Action,EnvVar,RunningError};
+    /// use std::sync::Arc;
+    /// struct SimpleAction(usize);
+    ///
+    /// impl Action for SimpleAction {
+    /// fn run(&self, input: Input, env: Arc<EnvVar>) -> Result<Output,RunningError> {
+    ///     Ok(Output::new(self.0 + 10))
+    /// }
+    /// }
+    ///
+    /// let action = SimpleAction(10);
+    /// let task = DefaultTask::new(action, "Increment action");
     /// ```
     ///
-    /// `Task` is a struct that impl [`TaskTrait`]. Since task will be
+    /// `Action` is a struct that impl [`SimpleAction`]. Since task will be
     ///  executed in separated threads, [`Send`] and [`Sync`] is needed.
     ///
-    /// **Note:** This method will take the ownership of struct that impl [`TaskTrait`].
-    pub fn new(task: impl TaskTrait + 'static + Send + Sync, name: &str) -> Self {
-        TaskWrapper {
-            id: ID_ALLOCATOR.lock().unwrap().alloc(),
+    /// **Note:** This method will take the ownership of struct that impl [`SimpleAction`].
+    pub fn new(action: impl Action + 'static + Send + Sync, name: &str) -> Self {
+        DefaultTask {
+            id: ID_ALLOCATOR.alloc(),
+            action: Arc::new(action),
             name: name.to_owned(),
             predecessor_tasks: Vec::new(),
-            inner: Box::new(task),
         }
     }
 
-    #[allow(unused)]
     /// Tasks that shall be executed before this one.
     ///
     /// # Example
     /// ```rust
-    /// # struct Task {};
-    /// # impl dagrs::TaskTrait for Task {
-    /// #     fn run(&self, input: dagrs::Input, env: dagrs::EnvVar) -> dagrs::Output {
-    /// #         dagrs::Output::empty()
-    /// #     }
-    /// # }
-    /// # let mut t1 = dagrs::TaskWrapper::new(Task{}, "Task 1");
-    /// # let mut t2 = dagrs::TaskWrapper::new(Task{}, "Task 2");
+    /// use dagrs::{Action,DefaultTask,Input,Output,RunningError,EnvVar};
+    /// use std::sync::Arc;
+    /// struct SimpleAction {};
+    /// impl Action for SimpleAction {
+    ///     fn run(&self, input: Input, env: Arc<EnvVar>) -> Result<Output,RunningError> {
+    ///         Ok(Output::empty())
+    ///     }
+    /// }
+    /// let mut t1 = DefaultTask::new(SimpleAction{}, "Task 1");
+    /// let mut t2 = DefaultTask::new(SimpleAction{}, "Task 2");
     /// t2.set_predecessors(&[&t1]);
     /// ```
     /// In above code, `t1` will be executed before `t2`.
-    pub fn set_predecessors(&mut self, predecessors: &[&TaskWrapper]) {
+    pub fn set_predecessors(&mut self, predecessors: &[&DefaultTask]) {
         self.predecessor_tasks
-            .extend(predecessors.iter().map(|t| t.get_id()))
+            .extend(predecessors.iter().map(|t| t.id()))
     }
 
     /// The same as `exec_after`, but input are tasks' ids
-    /// rather than reference to [`TaskWrapper`].
+    /// rather than reference to [`DefaultTask`].
     pub fn set_predecessors_by_id(&mut self, predecessors_id: &[usize]) {
         self.predecessor_tasks.extend(predecessors_id)
     }
+}
 
-    pub fn get_predecessors_id(&self) -> Vec<usize> {
-        self.predecessor_tasks.clone()
+impl Task for DefaultTask {
+    fn action(&self) -> Arc<dyn Action + Send + Sync> {
+        self.action.clone()
     }
 
-    pub fn get_id(&self) -> usize {
+    fn predecessors(&self) -> &[usize] {
+        &self.predecessor_tasks
+    }
+
+    fn id(&self) -> usize {
         self.id
     }
-
-    pub fn get_name(&self) -> String {
-        self.name.to_owned()
-    }
-
-    pub fn run(&self, input: Input, env: EnvVar) -> Output {
-        self.inner.run(input, env)
+    fn name(&self) -> String {
+        self.name.clone()
     }
 }
 
-/// IDAllocator for TaskWrapper
-struct IDAllocator {
-    id: usize,
+/// IDAllocator for DefaultTask
+pub struct IDAllocator {
+    id: AtomicUsize,
 }
 
 impl IDAllocator {
-    pub fn alloc(&mut self) -> usize {
-        self.id += 1;
-
-        // Return values
-        self.id - 1
+    pub fn alloc(&self) -> usize {
+        let origin = self.id.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        if origin > self.id.load(std::sync::atomic::Ordering::Relaxed) {
+            panic!("Too many tasks.")
+        } else {
+            origin
+        }
     }
 }
 
-lazy_static! {
-    /// Instance of IDAllocator
-    static ref ID_ALLOCATOR: Mutex<IDAllocator> = Mutex::new(IDAllocator { id: 1 });
-}
-
-/// Macros for generating simple tasks.
-///
-/// # Example
-///
-/// ```rust
-/// # use dagrs::{generate_task,TaskWrapper,Input,Output,EnvVar,TaskTrait};
-/// # let task = generate_task!("task A", |input, env| {
-/// #     Output::empty()
-/// # });
-/// # println!("{},{}", task.get_id(), task.get_name());
-/// ```
-#[macro_export]
-macro_rules! generate_task {
-    ($task_name:expr,$action:expr) => {{
-        pub struct Task {}
-        impl TaskTrait for Task {
-            fn run(&self, input: Input, env: EnvVar) -> Output {
-                $action(input, env)
-            }
-        }
-        TaskWrapper::new(Task {}, $task_name)
-    }};
-}
+pub static ID_ALLOCATOR: IDAllocator = IDAllocator {
+    id: AtomicUsize::new(1),
+};

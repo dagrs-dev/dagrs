@@ -11,6 +11,7 @@ Cargo.lock
 
 # IDE
 .idea
+.vscode
 
 # Exclude test output result files
 /test/*.txt

@@ -1,6 +1,0 @@
-a:
-  name: "Task 1"
-  after: [a]
-  run:
-    type: sh
-    script: echo x

@@ -1,0 +1,5 @@
+dagrs:
+  a:
+    run:
+      type: sh
+      script: echo "Task 1"

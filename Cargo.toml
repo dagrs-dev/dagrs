@@ -7,12 +7,11 @@ edition = "2021"
 
 [dependencies]
 yaml-rust = "0.4.5"
-lazy_static = "1.4.0"
 bimap = "0.6.1"
-deno_core = "0.185.0"
-log = "0.4.14"
-simplelog = "0.12.0"
+deno_core = "0.191.0"
 clap = { version = "4.2.2", features = ["derive"] }
 anymap2 = "0.13.0"
 thiserror = "1.0.30"
 tokio = { version = "1.28", features = ["rt", "sync","rt-multi-thread"] }
+log = "0.4"
+simplelog = "0.12"

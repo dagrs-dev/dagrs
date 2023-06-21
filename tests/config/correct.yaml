@@ -1,43 +1,43 @@
 dagrs:
   a:
     name: "Task 1"
-    after: [b, c]
+    after: [ b, c ]
     run:
       type: sh
       script: echo a
   b:
     name: "Task 2"
-    after: [c, f, g]
+    after: [ c, f, g ]
     run:
       type: sh
       script: echo b
   c:
     name: "Task 3"
-    after: [e, g]
+    after: [ e, g ]
     run:
       type: sh
       script: echo c
   d:
     name: "Task 4"
-    after: [c, e]
+    after: [ c, e ]
     run:
       type: sh
       script: echo d
   e:
     name: "Task 5"
-    after: [h]
+    after: [ h ]
     run:
       type: sh
       script: echo e
   f:
     name: "Task 6"
-    after: [g]
+    after: [ g ]
     run:
       type: deno
       script: Deno.core.print("f\n")
   g:
     name: "Task 7"
-    after: [h]
+    after: [ h ]
     run:
       type: deno
       script: Deno.core.print("g\n")
@@ -45,4 +45,4 @@ dagrs:
     name: "Task 8"
     run:
       type: sh
-      script: ./test/test.sh
+      script: tests/config/sh_script.sh
