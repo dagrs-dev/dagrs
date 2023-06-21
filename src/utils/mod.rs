@@ -1,6 +1,14 @@
+//! general tool.
+//! 
+//! # dagrs tool module.
+//! 
+//! This module contains common tools for the program, such as: loggers, environment
+//! variables, task generation macros.
 
-pub use self::env::{get_env,set_env};
-pub(crate) use self::env::env_unchangeable;
-
+#[macro_use]
+pub mod gen_macro;
 mod env;
-mod gen_macro;
+pub mod log;
+
+pub use env::EnvVar;
+pub use self::log::{LogLevel,Logger};

@@ -1,6 +1,6 @@
 //! Task Graph
 //!
-//! ## Graph stores dependency relations.
+//! # Graph stores dependency relations.
 //!
 //! [`Graph`] represents a series of tasks with dependencies, and stored in an adjacency
 //! list. It must be a directed acyclic graph, that is, the dependencies of the task
@@ -9,7 +9,7 @@
 //! And the most important of which is the `topo_sort` function, which uses topological
 //! sorting to generate the execution sequence of tasks.
 //!
-//! ## An example of a directed acyclic graph
+//! # An example of a directed acyclic graph
 //!
 //! task1 -→ task3 ---→ task6 ----
 //!  |   ↗   ↓          ↓         ↘
@@ -37,11 +37,6 @@ pub struct Graph {
 
 impl Graph {
     /// Allocate an empty graph
-    ///
-    /// # Example
-    /// ```
-    /// let g = dagrs::Graph::new();
-    /// ```
     pub fn new() -> Graph {
         Graph {
             size: 0,
@@ -52,12 +47,6 @@ impl Graph {
     }
 
     /// Set graph size, size is the number of tasks
-    ///
-    /// # Example
-    /// ```
-    /// # let mut g = dagrs::Graph::new();
-    /// g.set_graph_size(10); // 10 nodes
-    /// ```
     pub fn set_graph_size(&mut self, size: usize) {
         self.size = size;
         self.adj.resize(size, Vec::new());
@@ -65,15 +54,7 @@ impl Graph {
     }
 
     /// Add a node into the graph
-    ///
     /// This operation will create a mapping between ID and its index.
-    ///
-    /// # Example
-    /// ```
-    /// # let mut g = dagrs::Graph::new();
-    /// # g.set_graph_size(1);
-    /// g.add_node(1);
-    /// ```
     /// **Note:** `id` won't get repeated in dagrs,
     /// since yaml parser will overwrite its info if a task's ID repeats.
     pub fn add_node(&mut self, id: usize) {
@@ -82,13 +63,6 @@ impl Graph {
     }
 
     /// Add an edge into the graph.
-    ///
-    /// # Example
-    /// ```
-    /// # let mut g = dagrs::Graph::new();
-    /// # g.set_graph_size(2);
-    /// g.add_edge(0, 1);
-    /// ```
     /// Above operation adds a arrow from node 0 to node 1,
     /// which means task 0 shall be executed before task 1.
     pub fn add_edge(&mut self, v: usize, w: usize) {
@@ -106,14 +80,7 @@ impl Graph {
         self.nodes.get_by_right(&index).map(|n| n.to_owned())
     }
 
-    /// Do topo sort in graph, returns a possible execution sequence if DAG
-    ///
-    /// # Example
-    /// ```
-    /// # let mut g = dagrs::Graph::new();
-    /// # //Make your graph.
-    /// g.topo_sort();
-    /// ```
+    /// Do topo sort in graph, returns a possible execution sequence if DAG.
     /// This operation will judge whether graph is a DAG or not,
     /// returns Some(Possible Sequence) if yes, and None if no.
     ///
@@ -171,6 +138,7 @@ impl Graph {
         }
     }
 
+    /// Get the out degree of a node.
     pub fn get_node_out_degree(&self, id: &usize) -> usize {
         match self.nodes.get_by_left(id) {
             Some(index) => self.adj[*index].len(),

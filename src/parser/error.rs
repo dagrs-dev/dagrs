@@ -1,53 +1,64 @@
+//! Errors that may occur during configuration file parsing.
+
 use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum ParserError {
+    /// Configuration file not found.
     #[error("File not found. [{0}]")]
     FileNotFound(#[from] std::io::Error),
     #[error("{0}")]
     YamlTaskError(YamlTaskError),
-    // #[error("{0}")]
-    // JsonTaskError(JsonTaskError),
     #[error("{0}")]
     FileContentError(FileContentError),
 }
 
-#[derive(Debug, Error)]
+/// Error about file information.
+#[derive(Debug, Error, PartialEq, Eq)]
 pub enum FileContentError {
+    /// The format of the yaml configuration file is not standardized.
     #[error("{0}")]
-    IllegalYamlContent(#[from]yaml_rust::ScanError),
+    IllegalYamlContent(#[from] yaml_rust::ScanError),
+    /// Config file has no content.
     #[error("File is empty! [{0}]")]
-    Empty(String)
+    Empty(String),
 }
 
-#[derive(Debug, Error)]
+/// Errors about task configuration items.
+#[derive(Debug, Error, PartialEq, Eq)]
 pub enum YamlTaskError {
+    /// The configuration file should start with `dagrs:`.
     #[error("File content is not start with 'dagrs'.")]
     StartWordError,
-    #[error("Task [{0}] has no name field.")]
-    NoName(String),
-    #[error("Task [{0}] cannot find the specified predecessor.")]
-    NoPrecursor(String),
-    #[error("Unsupported task type. [{0}]")]
+    /// No task name configured.
+    #[error("Task has no name field. [{0}]")]
+    NoNameAttr(String),
+    /// The specified task predecessor was not found.
+    #[error("Task cannot find the specified predecessor. [{0}]")]
+    NotFoundPrecursor(String),
+    /// `run` is not defined.
+    #[error("The 'run' attribute is not defined. [{0}]")]
+    NoRunAttr(String),
+    /// `type` is not defined.
+    #[error("The 'type' attribute is not defined. [{0}]")]
+    NoTypeAttr(String),
+    /// Unsupported script type.
+    #[error("Unsupported script type [{0}]")]
     UnsupportedType(String),
-    #[error("Undefined executable behavior. [{0}]")]
-    NoRunnable(String),
-    #[error("Invalid script definition. [{0}]")]
-    IllegalScript(String)
+    /// `script` is not defined.
+    #[error("The 'script' attribute is not defined. [{0}]")]
+    NoScriptAttr(String),
 }
 
-
-// #[derive(Debug, Error)]
-// pub enum JsonTaskError{}
-
-impl From<FileContentError> for ParserError{
+impl From<FileContentError> for ParserError {
     fn from(value: FileContentError) -> Self {
         ParserError::FileContentError(value)
     }
 }
 
-impl From<YamlTaskError> for ParserError{
+impl From<YamlTaskError> for ParserError {
     fn from(value: YamlTaskError) -> Self {
         ParserError::YamlTaskError(value)
     }
 }
+

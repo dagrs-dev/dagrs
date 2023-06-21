@@ -1,7 +1,7 @@
 dagrs:
   a:
     name: "Task 1"
-    after: [b]
+    after: [ b ]
     run:
       type: sh
       script: echo x
