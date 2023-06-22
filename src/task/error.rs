@@ -18,8 +18,6 @@ pub struct RunningError {
 #[derive(Error, Debug)]
 pub struct ShExecuteError {
     msg: String,
-    #[source]
-    err: std::io::Error,
 }
 
 /// Javascript script produces incorrect behavior when run.
@@ -49,14 +47,14 @@ impl Display for RunningError {
 }
 
 impl ShExecuteError {
-    pub fn new(msg: String, err: std::io::Error) -> Self {
-        Self { msg, err }
+    pub fn new(msg: String) -> Self {
+        Self { msg }
     }
 }
 
 impl Display for ShExecuteError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "sh script execution error: {}\n,{}", self.msg, self.err)
+        write!(f, "sh script execution error: {}", self.msg)
     }
 }
 

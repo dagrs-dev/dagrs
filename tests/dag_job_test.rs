@@ -34,7 +34,7 @@ fn yaml_task_failed_execute() {
     let res = Dag::with_yaml("tests/config/script_run_failed.yaml")
         .unwrap()
         .start();
-    assert!(res.unwrap());
+    assert!(!res.unwrap());
 }
 
 macro_rules! generate_task {

@@ -76,7 +76,7 @@ dagrs provides users with two basic task execution methods:
        name: "Task 8"
        run:
          type: sh
-         script: tests/config/sh_script.sh
+         script: echo h
    ```
 
    These yaml-defined task items form a complex dependency graph. In the yaml configuration file:
