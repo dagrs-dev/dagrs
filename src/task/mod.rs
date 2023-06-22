@@ -103,10 +103,10 @@
 //! These two task types both implement the [`Task`] trait, that is to say, users can also
 //! customize tasks and assign more functions and attributes to tasks. However, a task must
 //! have four fixed properties (the four standard properties contained in DefaultTask):
-//! - id: use [`ID_ALLOCATOR`] to get a global task unique identifier, the type must be usize
-//! - name: the task name specified by the user, the type must be String
-//! - predecessor_tasks: the predecessor task of this task, the type must be Vec<usize>
-//! - action: the specific behavior to be performed by the task, the type must be Arc<dyn Action + Send + Sync>
+//! - id: use [`ID_ALLOCATOR`] to get a global task unique identifier, the type must be `usize`
+//! - name: the task name specified by the user, the type must be `String`
+//! - predecessor_tasks: the predecessor task of this task, the type must be `Vec<usize>`
+//! - action: the specific behavior to be performed by the task, the type must be `Arc<dyn Action + Send + Sync>`
 //!
 //! If users want to customize Task, they can refer to the implementation of these two specific [`Task`].
 
@@ -116,10 +116,11 @@ use std::sync::atomic::AtomicUsize;
 
 use crate::utils::EnvVar;
 
-pub use self::error::*;
-pub use self::script::*;
-pub use self::specific_task::*;
-pub use self::state::*;
+pub use self::error::{RunningError,JavaScriptExecuteError,ShExecuteError};
+pub use self::script::{JavaScript,ShScript};
+pub use self::specific_task::{YamlTask};
+pub use self::state::{Output,Input};
+pub(crate) use self::state::ExecState;
 
 mod error;
 mod script;
@@ -140,7 +141,6 @@ pub trait Action {
 ///
 /// A task must provide methods to obtain precursors and required attributes, just as
 /// the methods defined below, users who want to customize tasks must implement these methods.
-
 pub trait Task {
     /// Get a reference to an executable action.
     fn action(&self) -> Arc<dyn Action + Send + Sync>;
@@ -158,7 +158,7 @@ impl Debug for dyn Task {
     }
 }
 
-/// Default implementation of abstract tasks.
+/// A default implementation of the Task trait. In general, use it to define the tasks of dagrs.
 pub struct DefaultTask {
     /// id is the unique identifier of each task, it will be assigned by the global [`IDAllocator`]
     /// when creating a new task, you can find this task through this identifier.
@@ -172,7 +172,7 @@ pub struct DefaultTask {
 }
 
 impl DefaultTask {
-    /// Allocate a new [`DefaultTask`], the specific task behavior is a structure that implements [`SimpleRunner`].
+    /// Allocate a new [`DefaultTask`], the specific task behavior is a structure that implements [`Action`].
     ///
     /// # Example
     ///
@@ -191,10 +191,10 @@ impl DefaultTask {
     /// let task = DefaultTask::new(action, "Increment action");
     /// ```
     ///
-    /// `Action` is a struct that impl [`SimpleAction`]. Since task will be
+    /// `SimpleAction` is a struct that impl [`Action`]. Since task will be
     ///  executed in separated threads, [`Send`] and [`Sync`] is needed.
     ///
-    /// **Note:** This method will take the ownership of struct that impl [`SimpleAction`].
+    /// **Note:** This method will take the ownership of struct that impl [`Action`].
     pub fn new(action: impl Action + 'static + Send + Sync, name: &str) -> Self {
         DefaultTask {
             id: ID_ALLOCATOR.alloc(),
@@ -251,12 +251,12 @@ impl Task for DefaultTask {
 }
 
 /// IDAllocator for DefaultTask
-pub struct IDAllocator {
+struct IDAllocator {
     id: AtomicUsize,
 }
 
 impl IDAllocator {
-    pub fn alloc(&self) -> usize {
+    fn alloc(&self) -> usize {
         let origin = self.id.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         if origin > self.id.load(std::sync::atomic::Ordering::Relaxed) {
             panic!("Too many tasks.")
@@ -266,6 +266,12 @@ impl IDAllocator {
     }
 }
 
-pub static ID_ALLOCATOR: IDAllocator = IDAllocator {
+/// The global task uniquely identifies an instance of the allocator.
+static ID_ALLOCATOR: IDAllocator = IDAllocator {
     id: AtomicUsize::new(1),
 };
+
+/// public function to assign task's id.
+pub fn alloc_id()->usize{
+    ID_ALLOCATOR.alloc()
+}

@@ -18,7 +18,7 @@ use std::{fs, sync::Arc};
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 
-use dagrs::{Action, Dag, ID_ALLOCATOR, log,LogLevel, JavaScript, Parser, ParserError, ShScript, Task};
+use dagrs::{Action, Dag, log,LogLevel, JavaScript, Parser, ParserError, ShScript, Task};
 
 struct MyTask {
     tid: (String, usize),
@@ -36,7 +36,7 @@ impl MyTask {
         action: impl Action + Send + Sync + 'static,
     ) -> Self {
         Self {
-            tid: (txt_id.to_owned(), ID_ALLOCATOR.alloc()),
+            tid: (txt_id.to_owned(), dagrs::alloc_id()),
             name,
             precursors,
             precursors_id: Vec::new(),

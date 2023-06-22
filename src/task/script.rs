@@ -7,17 +7,18 @@
 
 use std::{process::Command, sync::Arc};
 
-use deno_core::{JsRuntime, RuntimeOptions, serde_json, serde_v8, v8};
+use deno_core::{serde_json, serde_v8, v8, JsRuntime, RuntimeOptions};
 
-use crate::utils::EnvVar;
+use crate::{log, utils::EnvVar};
 
 use super::{Action, Input, JavaScriptExecuteError, Output, RunningError, ShExecuteError};
 
-/// Can be used to run a script cmd or file.
+/// Can be used to run a sh script.
 pub struct ShScript {
     script: String,
 }
 
+/// Can be used to execute javascript scripts.
 pub struct JavaScript {
     script: String,
 }
@@ -32,26 +33,24 @@ impl ShScript {
 
 impl Action for ShScript {
     fn run(&self, input: Input, _env: Arc<EnvVar>) -> Result<Output, RunningError> {
-        let mut cmd = format!("{} ", self.script);
-        input
+        let args: Vec<String> = input
             .get_iter()
-            .for_each(|input| {
-                if let Some(arg) = input.get::<String>() {
-                    cmd.push_str(arg)
-                }
-            });
-        match Command::new("sh")
+            .map(|input| input.get::<String>())
+            .filter(|input| input.is_some())
+            .map(|input| input.unwrap().clone())
+            .collect();
+        let out = Command::new("sh")
             .arg("-c")
-            .arg(&cmd)
+            .arg(&self.script)
+            .args(args)
             .output()
-            .map(|output| String::from_utf8(output.stdout).unwrap())
-        {
-            Ok(res) => Ok(Output::new(res)),
-            Err(err) => {
-                let e = ShExecuteError::new(err.to_string(), err);
-                // error!("sh task execution failed! {}", e);
-                Err(e.into())
-            }
+            .unwrap();
+        if !out.stderr.is_empty() {
+            let err_msg = String::from_utf8(out.stderr).unwrap();
+            log::error(err_msg.clone());
+            Err(ShExecuteError::new(err_msg).into())
+        } else {
+            Ok(Output::new(String::from_utf8(out.stdout).unwrap()))
         }
     }
 }
@@ -78,14 +77,14 @@ impl Action for JavaScript {
                     Ok(value) => Ok(Output::new(value.to_string())),
                     Err(err) => {
                         let e = JavaScriptExecuteError::SerializeError(err);
-                        //error!("JavaScript script task execution failed! {}", e);
+                        log::error(format!("JavaScript script task execution failed! {}", e));
                         Err(e.into())
                     }
                 }
             }
             Err(err) => {
                 let e = JavaScriptExecuteError::AnyHowError(err);
-               // error!("JavaScript script task parsing failed! {}", e);
+                log::error(format!("JavaScript script task parsing failed! {}", e));
                 Err(e.into())
             }
         }

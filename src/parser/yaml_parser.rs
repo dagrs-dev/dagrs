@@ -11,6 +11,7 @@ use super::{
     Parser,
 };
 
+/// An implementation of [`Parser`]. It is the default yaml configuration file parser.
 pub struct YamlParser;
 
 impl YamlParser {

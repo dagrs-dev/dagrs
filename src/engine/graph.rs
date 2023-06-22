@@ -25,7 +25,7 @@ use bimap::BiMap;
 
 #[derive(Debug)]
 /// Graph Struct
-pub struct Graph {
+pub(crate) struct Graph {
     size: usize,
     /// Record node id and it's index <id,index>
     nodes: BiMap<usize, usize>,
@@ -37,7 +37,7 @@ pub struct Graph {
 
 impl Graph {
     /// Allocate an empty graph
-    pub fn new() -> Graph {
+    pub(crate) fn new() -> Graph {
         Graph {
             size: 0,
             nodes: BiMap::new(),
@@ -47,7 +47,7 @@ impl Graph {
     }
 
     /// Set graph size, size is the number of tasks
-    pub fn set_graph_size(&mut self, size: usize) {
+    pub(crate) fn set_graph_size(&mut self, size: usize) {
         self.size = size;
         self.adj.resize(size, Vec::new());
         self.in_degree.resize(size, 0)
@@ -57,7 +57,7 @@ impl Graph {
     /// This operation will create a mapping between ID and its index.
     /// **Note:** `id` won't get repeated in dagrs,
     /// since yaml parser will overwrite its info if a task's ID repeats.
-    pub fn add_node(&mut self, id: usize) {
+    pub(crate) fn add_node(&mut self, id: usize) {
         let index = self.nodes.len();
         self.nodes.insert(id, index);
     }
@@ -65,18 +65,18 @@ impl Graph {
     /// Add an edge into the graph.
     /// Above operation adds a arrow from node 0 to node 1,
     /// which means task 0 shall be executed before task 1.
-    pub fn add_edge(&mut self, v: usize, w: usize) {
+    pub(crate) fn add_edge(&mut self, v: usize, w: usize) {
         self.adj[v].push(w);
         self.in_degree[w] += 1;
     }
 
     /// Find a task's index by its ID
-    pub fn find_index_by_id(&self, id: &usize) -> Option<usize> {
+    pub(crate) fn find_index_by_id(&self, id: &usize) -> Option<usize> {
         self.nodes.get_by_left(id).map(|i| i.to_owned())
     }
 
     /// Find a task's ID by its index
-    pub fn find_id_by_index(&self, index: usize) -> Option<usize> {
+    pub(crate) fn find_id_by_index(&self, index: usize) -> Option<usize> {
         self.nodes.get_by_right(&index).map(|n| n.to_owned())
     }
 
@@ -98,7 +98,7 @@ impl Graph {
     ///
     /// 4. Just repeat step 2, 3 until no more zero degree nodes can be generated.
     ///    If all tasks have been executed, then it's a DAG, or there must be a loop in the graph.
-    pub fn topo_sort(&self) -> Option<Vec<usize>> {
+    pub(crate) fn topo_sort(&self) -> Option<Vec<usize>> {
         let mut queue = Vec::new();
         let mut in_degree = self.in_degree.clone();
         let mut count = 0;
@@ -139,7 +139,7 @@ impl Graph {
     }
 
     /// Get the out degree of a node.
-    pub fn get_node_out_degree(&self, id: &usize) -> usize {
+    pub(crate) fn get_node_out_degree(&self, id: &usize) -> usize {
         match self.nodes.get_by_left(id) {
             Some(index) => self.adj[*index].len(),
             None => 0,

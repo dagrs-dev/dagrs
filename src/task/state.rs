@@ -24,7 +24,7 @@ use std::{
 use anymap2::{any::CloneAnySendSync, Map};
 use tokio::sync::Semaphore;
 
-pub type Content = Map<dyn CloneAnySendSync + Send + Sync>;
+type Content = Map<dyn CloneAnySendSync + Send + Sync>;
 
 /// Describe task's running result.
 #[derive(Debug)]

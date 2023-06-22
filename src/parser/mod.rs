@@ -60,7 +60,7 @@
 //!     name: "Task 8"
 //!     run:
 //!       type: sh
-//!       script: sh_script.sh
+//!       script: echo h
 //! ```
 //!
 //! Currently yaml configuration files support two types of tasks, sh and javascript.
