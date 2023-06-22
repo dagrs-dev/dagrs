@@ -13,11 +13,12 @@ use crate::utils::EnvVar;
 
 use super::{Action, Input, JavaScriptExecuteError, Output, RunningError, ShExecuteError};
 
-/// Can be used to run a script cmd or file.
+/// Can be used to run a sh script or sh file.
 pub struct ShScript {
     script: String,
 }
 
+/// Can be used to execute javascript scripts.
 pub struct JavaScript {
     script: String,
 }

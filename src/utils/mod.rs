@@ -10,5 +10,5 @@ pub mod gen_macro;
 mod env;
 pub mod log;
 
-pub use env::EnvVar;
+pub use self::env::EnvVar;
 pub use self::log::{LogLevel,Logger};

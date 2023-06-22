@@ -51,7 +51,7 @@ use crate::{
 
 use super::{error::DagError, graph::Graph};
 
-/// dagrs's function is wrapped in Dag struct.
+/// A Dag represents a set of tasks. Use it to build a multitasking Dag.
 #[derive(Debug)]
 pub struct Dag {
     /// Store all tasks' infos.

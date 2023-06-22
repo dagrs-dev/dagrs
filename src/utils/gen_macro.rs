@@ -1,5 +1,5 @@
 /// Macros for generating simple tasks.
-///
+
 /// # Example
 ///
 /// ```rust

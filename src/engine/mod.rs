@@ -13,7 +13,6 @@
 
 pub use dag::Dag;
 pub use error::DagError;
-pub use graph::Graph;
 
 mod dag;
 mod error;

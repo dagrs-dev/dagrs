@@ -2,6 +2,7 @@
 
 use thiserror::Error;
 
+/// Errors that may occur while parsing task configuration files.
 #[derive(Debug, Error)]
 pub enum ParserError {
     /// Configuration file not found.

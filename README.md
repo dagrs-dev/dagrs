@@ -250,7 +250,7 @@ Executing Task[name: Task 1]
 - If the result of the predecessor task can be obtained, check the continuation status`can_continue`, if it is true, continue to execute the defined logic, if it is false, trigger`handle_error`, and cancel the execution of the subsequent task.
 - After all tasks are executed, set the continuation status to false, which means that the tasks of the dag cannot be scheduled for execution again.
 
-![image-20230621223120581](assets/execute logic.png)
+![image-20230621223120581](assets/execute_logic.png)
 
 ## The examples
 

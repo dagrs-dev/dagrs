@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 
-use dagrs::{log, Action, Dag, EnvVar, Input, LogLevel, Output, RunningError, Task, ID_ALLOCATOR};
+use dagrs::{log, Action, Dag, EnvVar, Input, LogLevel, Output, RunningError, Task,alloc_id};
 
 struct MyTask {
     id: usize,
@@ -15,7 +15,7 @@ struct MyTask {
 impl MyTask {
     pub fn new(action: impl Action + 'static + Send + Sync, name: &str) -> Self {
         MyTask {
-            id: ID_ALLOCATOR.alloc(),
+            id: alloc_id(),
             action: Arc::new(action),
             name: name.to_owned(),
             predecessor_tasks: Vec::new(),

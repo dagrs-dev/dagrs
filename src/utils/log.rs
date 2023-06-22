@@ -3,7 +3,7 @@
 //! # The Logger
 //!
 //! [`Logger`] is a log programming interface provided for users. The framework implements
-//! a default logger [`DefaultLogger`]. If users want to customize the logger, they can
+//! a default logger. If users want to customize the logger, they can
 //! implement the [`Logger`] trait.
 //! There are five log levels: Debug is the highest level, and Off is the lowest level.
 //! Before dagrs is executed, the user should first specify the logging level. The level
