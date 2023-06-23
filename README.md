@@ -1,4 +1,4 @@
-# dagrs
+# Dagrs
 
 ## What is dagrs
 
