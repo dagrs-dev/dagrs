@@ -7,7 +7,7 @@ license = "MIT OR Apache-2.0"
 description = "The DAG engine, named dagrs, is designed to execute multiple tasks with graph-like dependencies. It offers high performance and asynchronous execution, providing a convenient programming interface for Rust developers."
 readme = "README.md"
 repository = "https://github.com/open-rust-initiative/dagrs"
-keywords = ["DAG", "task", "executor", "async", "parallel", "concurrent"]
+keywords = ["DAG", "task", "async", "parallel", "concurrent"]
 
 
 [dependencies]
