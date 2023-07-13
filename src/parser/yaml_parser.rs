@@ -1,10 +1,13 @@
 //! Default yaml configuration file parser.
 
-use std::{collections::HashMap, fs::File, io::Read};
+use std::{collections::HashMap, fs::File, io::Read, sync::Arc};
 
 use yaml_rust::{Yaml, YamlLoader};
 
-use crate::task::{JavaScript, ShScript, Task, YamlTask};
+use crate::{
+    task::{JavaScript, ShScript, Task, YamlTask},
+    Action,
+};
 
 use super::{
     error::{FileContentError, ParserError, YamlTaskError},
@@ -32,7 +35,12 @@ impl YamlParser {
     ///      type: sh
     ///      script: echo a
     /// ```
-    fn parse_one(&self, id: &str, item: &Yaml) -> Result<YamlTask, YamlTaskError> {
+    fn parse_one(
+        &self,
+        id: &str,
+        item: &Yaml,
+        specific_action: Option<Arc<dyn Action + Send + Sync + 'static>>,
+    ) -> Result<YamlTask, YamlTaskError> {
         // Get name first
         let name = item["name"]
             .as_str()
@@ -51,43 +59,52 @@ impl YamlParser {
         if run.is_badvalue() {
             return Err(YamlTaskError::NoRunAttr(name));
         }
-        match run["type"]
+        let script_type = run["type"]
             .as_str()
-            .ok_or(YamlTaskError::NoTypeAttr(name.clone()))?
-        {
-            "sh" => {
-                let sh_script = run["script"]
-                    .as_str()
-                    .ok_or(YamlTaskError::NoScriptAttr(name.clone()))?;
-                Ok(YamlTask::new(
-                    id,
-                    precursors,
-                    name,
-                    ShScript::new(sh_script),
-                ))
+            .ok_or(YamlTaskError::NoTypeAttr(name.clone()))?;
+        
+        if let Some(action) = specific_action {
+            Ok(YamlTask::new(id, precursors, name, action))
+        } else {
+            match script_type {
+                "sh" => {
+                    let sh_script = run["script"]
+                        .as_str()
+                        .ok_or(YamlTaskError::NoScriptAttr(name.clone()))?;
+                    Ok(YamlTask::new(
+                        id,
+                        precursors,
+                        name,
+                        Arc::new(ShScript::new(sh_script)) as Arc<dyn Action+Send+Sync+'static>,
+                    ))
+                }
+                "deno" => {
+                    let js_script = run["script"]
+                        .as_str()
+                        .ok_or(YamlTaskError::NoScriptAttr(name.clone()))?;
+                    Ok(YamlTask::new(
+                        id,
+                        precursors,
+                        name,
+                        Arc::new(JavaScript::new(js_script)) as Arc<dyn Action+Send+Sync+'static>,
+                    ))
+                }
+                _ => Err(YamlTaskError::UnsupportedType(name)),
             }
-            "deno" => {
-                let js_script = run["script"]
-                    .as_str()
-                    .ok_or(YamlTaskError::NoScriptAttr(name.clone()))?;
-                Ok(YamlTask::new(
-                    id,
-                    precursors,
-                    name,
-                    JavaScript::new(js_script),
-                ))
-            }
-            _ => Err(YamlTaskError::UnsupportedType(name)),
         }
     }
 }
 
 impl Parser for YamlParser {
-    fn parse_tasks(&self, file: &str) -> Result<Vec<Box<dyn Task>>, ParserError> {
+    fn parse_tasks(
+        &self,
+        file: &str,
+        mut specific_actions: HashMap<String,Arc<dyn Action+Send+Sync+'static>>,
+    ) -> Result<Vec<Box<dyn Task>>, ParserError> {
         let content = self.load_file(file)?;
         // Parse Yaml
-        let yaml_tasks = YamlLoader::load_from_str(&content)
-            .map_err(FileContentError::IllegalYamlContent)?;
+        let yaml_tasks =
+            YamlLoader::load_from_str(&content).map_err(FileContentError::IllegalYamlContent)?;
         // empty file error
         if yaml_tasks.is_empty() {
             return Err(FileContentError::Empty(file.to_string()).into());
@@ -100,7 +117,12 @@ impl Parser for YamlParser {
         // Read tasks
         for (v, w) in yaml_tasks {
             let id = v.as_str().unwrap();
-            let task = self.parse_one(id, w)?;
+            let task = if specific_actions.contains_key(id) {
+                let action = specific_actions.remove(id).unwrap();
+                self.parse_one(id, w, Some(action))?
+            } else {
+                self.parse_one(id, w, None)?
+            };
             map.insert(id, task.id());
             tasks.push(task);
         }

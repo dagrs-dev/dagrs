@@ -4,6 +4,8 @@ extern crate dagrs;
 extern crate log;
 extern crate simplelog;
 
+use std::collections::HashMap;
+
 use dagrs::{Dag, LogLevel, Logger};
 use simplelog::*;
 
@@ -58,6 +60,6 @@ impl Logger for MyLogger {
 fn main() {
     // Initialize the global logger with a custom logger.
     dagrs::log::init_custom_logger(MyLogger::new(LogLevel::Info));
-    let mut dag = Dag::with_yaml("tests/config/correct.yaml").unwrap();
+    let mut dag = Dag::with_yaml("tests/config/correct.yaml",HashMap::new()).unwrap();
     assert!(dag.start().unwrap());
 }

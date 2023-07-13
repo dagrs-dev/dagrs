@@ -27,14 +27,14 @@ impl YamlTask {
         yaml_id: &str,
         precursors: Vec<String>,
         name: String,
-        action: impl Action + Send + Sync + 'static,
+        action: Arc<dyn Action + Send + Sync + 'static>,
     ) -> Self {
         Self {
             tid: (yaml_id.to_owned(), ID_ALLOCATOR.alloc()),
             name,
             precursors,
             precursors_id: Vec::new(),
-            action: Arc::new(action),
+            action,
         }
     }
     /// After the configuration file is parsed, the id of each task has been assigned.
