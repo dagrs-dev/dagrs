@@ -46,7 +46,7 @@ use tokio::task::JoinHandle;
 use crate::{
     parser::{Parser, YamlParser},
     task::{ExecState, Input, Task},
-    utils::{log, EnvVar},
+    utils::{log, EnvVar}, Action,
 };
 
 use super::{error::DagError, graph::Graph};
@@ -100,26 +100,27 @@ impl Dag {
     }
 
     /// Given a yaml configuration file parsing task to generate a dag.
-    pub fn with_yaml(file: &str) -> Result<Dag, DagError> {
-        Dag::read_tasks(file, None)
+    pub fn with_yaml(file: &str,specific_actions: HashMap<String,Arc<dyn Action+Send+Sync+'static>>) -> Result<Dag, DagError> {
+        Dag::read_tasks(file, None,specific_actions)
     }
 
     /// Generates a dag with the user given path to a custom parser and task config file.
     pub fn with_config_file_and_parser(
         file: &str,
         parser: Box<dyn Parser>,
+        specific_actions: HashMap<String,Arc<dyn Action+Send+Sync+'static>>
     ) -> Result<Dag, DagError> {
-        Dag::read_tasks(file, Some(parser))
+        Dag::read_tasks(file, Some(parser),specific_actions)
     }
 
     /// Parse the content of the configuration file into a series of tasks and generate a dag.
-    fn read_tasks(file: &str, parser: Option<Box<dyn Parser>>) -> Result<Dag, DagError> {
+    fn read_tasks(file: &str, parser: Option<Box<dyn Parser>>,specific_actions: HashMap<String,Arc<dyn Action+Send+Sync+'static>>) -> Result<Dag, DagError> {
         let mut dag = Dag::new();
         let tasks = match parser {
-            Some(p) => p.parse_tasks(file)?,
+            Some(p) => p.parse_tasks(file,specific_actions)?,
             None => {
                 let parser = YamlParser;
-                parser.parse_tasks(file)?
+                parser.parse_tasks(file,specific_actions)?
             }
         };
         tasks.into_iter().for_each(|task| {

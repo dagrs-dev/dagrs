@@ -63,12 +63,17 @@
 //!       script: echo h
 //! ```
 //!
-//! Currently yaml configuration files support two types of tasks, sh and javascript.
+//! Currently, the framework supports sh and javascript script task types by default. If users
+//! want to run other types of script tasks, they need to implement the [`Action`] trait by themselves,
+//! and before parsing the configuration file, they need to provide a specific type that implements
+//! the [`Action`] trait in the form of key-value pairs: <id, action>.
+
+use std::{collections::HashMap, sync::Arc};
 
 pub use error::*;
 pub use yaml_parser::YamlParser;
 
-use crate::task::Task;
+use crate::{task::Task, Action};
 
 mod error;
 mod yaml_parser;
@@ -77,5 +82,7 @@ mod yaml_parser;
 /// [`YamlParser`] is an example of [`Parser`]
 pub trait Parser {
     /// Parses the contents of a configuration file into a series of tasks with dependencies.
-    fn parse_tasks(&self, file: &str) -> Result<Vec<Box<dyn Task>>, ParserError>;
+    /// If the user customizes the script execution logic, it is necessary to provide specific
+    /// types that implement the [`Action`] trait for certain tasks in the form of key-value pairs.
+    fn parse_tasks(&self, file: &str,specific_actions:HashMap<String,Arc<dyn Action+Send+Sync+'static>>) -> Result<Vec<Box<dyn Task>>, ParserError>;
 }

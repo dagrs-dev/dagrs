@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use clap::Parser;
 use dagrs::{Dag, log, LogLevel};
 
@@ -35,6 +37,6 @@ fn main() {
         Some(path) => {log::init_logger(log_level,Some(std::fs::File::create(path).unwrap()))}
     };
     let yaml_path=args.yaml;
-    let mut dag=Dag::with_yaml(yaml_path.as_str()).unwrap();
+    let mut dag=Dag::with_yaml(yaml_path.as_str(),HashMap::new()).unwrap();
     assert!(dag.start().unwrap());
 }

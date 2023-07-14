@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, collections::HashMap};
 
 ///! Some tests of the dag engine.
 use dagrs::{Action, Dag, DagError, DefaultTask, EnvVar, Input, Output, RunningError,log,LogLevel};
@@ -6,14 +6,14 @@ use dagrs::{Action, Dag, DagError, DefaultTask, EnvVar, Input, Output, RunningEr
 #[test]
 fn yaml_task_correct_execute() {
     log::init_logger(LogLevel::Info, None);
-    let mut job = Dag::with_yaml("tests/config/correct.yaml").unwrap();
+    let mut job = Dag::with_yaml("tests/config/correct.yaml",HashMap::new()).unwrap();
     assert!(job.start().unwrap());
 }
 
 #[test]
 fn yaml_task_loop_graph() {
     log::init_logger(LogLevel::Info, None);
-    let res = Dag::with_yaml("tests/config/loop_error.yaml")
+    let res = Dag::with_yaml("tests/config/loop_error.yaml",HashMap::new())
         .unwrap()
         .start();
     assert!(matches!(res, Err(DagError::LoopGraph)))
@@ -22,7 +22,7 @@ fn yaml_task_loop_graph() {
 #[test]
 fn yaml_task_self_loop_graph() {
     log::init_logger(LogLevel::Info, None);
-    let res = Dag::with_yaml("tests/config/self_loop_error.yaml")
+    let res = Dag::with_yaml("tests/config/self_loop_error.yaml",HashMap::new())
         .unwrap()
         .start();
     assert!(matches!(res, Err(DagError::LoopGraph)))
@@ -31,7 +31,7 @@ fn yaml_task_self_loop_graph() {
 #[test]
 fn yaml_task_failed_execute() {
     log::init_logger(LogLevel::Info, None);
-    let res = Dag::with_yaml("tests/config/script_run_failed.yaml")
+    let res = Dag::with_yaml("tests/config/script_run_failed.yaml",HashMap::new())
         .unwrap()
         .start();
     assert!(!res.unwrap());

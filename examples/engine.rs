@@ -2,7 +2,7 @@
 
 extern crate dagrs;
 
-use std::sync::Arc;
+use std::{sync::Arc, collections::HashMap};
 
 use dagrs::{
     gen_task, log, Action, Dag, DefaultTask, Engine, EnvVar, Input, LogLevel, Output, RunningError,
@@ -78,7 +78,7 @@ fn main() {
     // Add dag2 to engine.
     engine.append_dag("graph2", dag2);
     // Read tasks from configuration files and resolve to dag3.
-    let dag3 = Dag::with_yaml("tests/config/correct.yaml").unwrap();
+    let dag3 = Dag::with_yaml("tests/config/correct.yaml",HashMap::new()).unwrap();
     // Add dag3 to engine.
     engine.append_dag("graph3", dag3);
     // Execute dag in order, the order should be dag1, dag2, dag3.

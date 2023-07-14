@@ -120,7 +120,7 @@ impl ConfigParser {
 }
 
 impl Parser for ConfigParser {
-    fn parse_tasks(&self, file: &str) -> Result<Vec<Box<dyn Task>>, ParserError> {
+    fn parse_tasks(&self, file: &str,_specific_actions:HashMap<String,Arc<dyn Action+Send+Sync+'static>>) -> Result<Vec<Box<dyn Task>>, ParserError> {
         let content = self.load_file(file)?;
         let mut map = HashMap::new();
         let mut tasks = Vec::new();
@@ -150,6 +150,6 @@ impl Parser for ConfigParser {
 fn main() {
     log::init_logger(LogLevel::Info, None);
     let file = "tests/config/custom_file_task.txt";
-    let mut dag = Dag::with_config_file_and_parser(file, Box::new(ConfigParser)).unwrap();
+    let mut dag = Dag::with_config_file_and_parser(file, Box::new(ConfigParser),HashMap::new()).unwrap();
     assert!(dag.start().unwrap());
 }
