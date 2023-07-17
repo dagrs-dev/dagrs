@@ -90,17 +90,17 @@ impl ConfigParser {
     fn parse_one(&self, item: String) -> MyTask {
         let attr: Vec<&str> = item.split(",").collect();
 
-        let pres_item = attr.get(2).unwrap().clone();
+        let pres_item = *attr.get(2).unwrap();
         let pres = if pres_item.eq("") {
             Vec::new()
         } else {
             pres_item.split(" ").map(|pre| pre.to_string()).collect()
         };
 
-        let id = attr.get(0).unwrap().clone();
+        let id = *attr.get(0).unwrap();
         let name = attr.get(1).unwrap().to_string();
-        let script = attr.get(4).unwrap().clone();
-        let t_type = attr.get(3).unwrap().clone();
+        let script = *attr.get(4).unwrap();
+        let t_type = *attr.get(3).unwrap();
         if t_type.eq("sh") {
             MyTask::new(
                 id,

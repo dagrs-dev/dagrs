@@ -118,7 +118,7 @@ use crate::utils::EnvVar;
 
 pub use self::error::{RunningError,JavaScriptExecuteError,ShExecuteError};
 pub use self::script::{JavaScript,ShScript};
-pub use self::specific_task::{YamlTask};
+pub use self::specific_task::YamlTask;
 pub use self::state::{Output,Input};
 pub(crate) use self::state::ExecState;
 
