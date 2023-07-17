@@ -114,9 +114,7 @@ impl Graph {
             })
             .count();
 
-        while !queue.is_empty() {
-            let v = queue.pop().unwrap(); // This unwrap is ok since `queue` is not empty
-
+        while let Some(v)=queue.pop() {
             sequence.push(v);
             count += 1;
 
