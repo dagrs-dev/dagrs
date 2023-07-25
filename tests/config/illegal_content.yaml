@@ -1,6 +1,4 @@
 dagrs:
   a:
     name:"Task a"
-    run:
-      type: sh
-      script: sh_script.sh
+    cmd: sh_script.sh

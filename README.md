@@ -136,9 +136,7 @@ Task executed successfully. [name: Task d]
 Process finished with exit code 0
 ```
 
-
-
-### Yaml configuration file
+### `Yaml` configuration file
 
 A standard yaml configuration file format is given below:
 
@@ -147,50 +145,34 @@ dagrs:
   a:
     name: "Task 1"
     after: [ b, c ]
-    run:
-      type: sh
-      script: echo a
+    cmd: echo a
   b:
     name: "Task 2"
     after: [ c, f, g ]
-    run:
-      type: sh
-      script: echo b
+    cmd: echo b
   c:
     name: "Task 3"
     after: [ e, g ]
-    run:
-      type: sh
-      script: echo c
+    cmd: echo c
   d:
     name: "Task 4"
     after: [ c, e ]
-    run:
-      type: sh
-      script: echo d
+    cmd: echo d
   e:
     name: "Task 5"
     after: [ h ]
-    run:
-      type: sh
-      script: echo e
+    cmd: echo e
   f:
     name: "Task 6"
     after: [ g ]
-    run:
-      type: deno
-      script: Deno.core.print("f\n")
+    cmd: python3 ./tests/config/test.py
   g:
     name: "Task 7"
     after: [ h ]
-    run:
-      type: deno
-      script: Deno.core.print("g\n")
+    cmd: deno run ./tests/config/test.js
   h:
     name: "Task 8"
-    run:
-      type: sh
-      script: echo h
+    cmd: echo h
 ```
 
 These yaml-defined task items form a complex dependency graph. In the yaml configuration file:
@@ -199,7 +181,8 @@ These yaml-defined task items form a complex dependency graph. In the yaml confi
 - Similar to `a`, `b`, `c`... is the unique identifier of the task
 - `name` is a required attribute, which is the name of the task
 - `after` is an optional attribute (only the first executed task does not have this attribute), which represents which tasks are executed after the task, that is, specifies dependencies for tasks
-- `run` is a required attribute, followed by `type` and `script`, they are all required attributes, where `type` represents the type of task. The framework provides default implementations of the `Action` trait for two types of script tasks, namely sh and javascript. If users want to customize other types of script tasks, or implement their own script execution logic, they can implement the `Action` trait by programming. Although this is cumbersome, this method will be more flexible. In addition, when parsing the configuration file, the user also needs to provide the parser with a specific type that implements the `Action` trait, and the method should be in the form of a key-value pair: <id,action>
+- `cmd` is a optional attribute. You need to point out the command to be executed, such as the basic shell command: `echo hello`, execute the python script `python test.py`, etc. The user must ensure that the interpreter that executes the script exists in the environment variable. `CommandAction` is the implementation of the specific execution logic of the script, which is put into a specific `Task` type.
+  If users want to customize other types of script tasks, or implement their own script execution logic, they can implement the "Action" feature through programming, and when parsing the configuration file, provide the parser with a specific type that implements the `Action` feature, and the method should be in the form of a key-value pair: <id,action>. Although this is more troublesome, this method will be more flexible.
 
 To parse the yaml configured file, you need to compile this project, requiring rust version >= 1.70:
 
@@ -230,9 +213,7 @@ $./target/release/dagrs --yaml=./tests/config/correct.yaml --log-path=./dagrs.lo
 Executing Task[name: Task 8]
 Executing Task[name: Task 5]
 Executing Task[name: Task 7]
-g
 Executing Task[name: Task 6]
-f
 Executing Task[name: Task 3]
 Executing Task[name: Task 2]
 Executing Task[name: Task 4]

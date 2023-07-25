@@ -37,15 +37,6 @@ pub enum YamlTaskError {
     /// The specified task predecessor was not found.
     #[error("Task cannot find the specified predecessor. [{0}]")]
     NotFoundPrecursor(String),
-    /// `run` is not defined.
-    #[error("The 'run' attribute is not defined. [{0}]")]
-    NoRunAttr(String),
-    /// `type` is not defined.
-    #[error("The 'type' attribute is not defined. [{0}]")]
-    NoTypeAttr(String),
-    /// Unsupported script type.
-    #[error("Unsupported script type [{0}]")]
-    UnsupportedType(String),
     /// `script` is not defined.
     #[error("The 'script' attribute is not defined. [{0}]")]
     NoScriptAttr(String),

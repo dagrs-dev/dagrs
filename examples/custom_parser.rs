@@ -2,14 +2,14 @@
 //! The content of the configuration file is as follows:
 //! 
 //! ```
-//! a,Task a,b c,sh,echo a
-//! b,Task b,c f g,sh,echo b
-//! c,Task c,e g,sh,echo c
-//! d,Task d,c e,sh,echo d
-//! e,Task e,h,sh,echo e
-//! f,Task f,g,deno,Deno.core.print("f\n")
-//! g,Task g,h,deno,Deno.core.print("g\n")
-//! h,Task h,,sh,echo h
+//! a,Task a,b c,echo a
+//! b,Task b,c f g,echo b
+//! c,Task c,e g,echo c
+//! d,Task d,c e,echo d
+//! e,Task e,h,echo e
+//! f,Task f,g,python3 tests/config/test.py
+//! g,Task g,h,deno run tests/config/test.js
+//! h,Task h,,echo h
 //! ```
 
 extern crate dagrs;
@@ -18,7 +18,7 @@ use std::{fs, sync::Arc};
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 
-use dagrs::{Action, Dag, log,LogLevel, JavaScript, Parser, ParserError, ShScript, Task};
+use dagrs::{Action, Dag, log,LogLevel, Parser, ParserError, CommandAction, Task};
 
 struct MyTask {
     tid: (String, usize),
@@ -99,23 +99,13 @@ impl ConfigParser {
 
         let id = *attr.get(0).unwrap();
         let name = attr.get(1).unwrap().to_string();
-        let script = *attr.get(4).unwrap();
-        let t_type = *attr.get(3).unwrap();
-        if t_type.eq("sh") {
-            MyTask::new(
-                id,
-                pres,
-                name,
-                ShScript::new(script),
-            )
-        } else {
-            MyTask::new(
-                id,
-                pres,
-                name,
-                JavaScript::new(script),
-            )
-        }
+        let cmd = *attr.get(3).unwrap();
+        MyTask::new(
+            id,
+            pres,
+            name,
+            CommandAction::new(cmd),
+        )
     }
 }
 

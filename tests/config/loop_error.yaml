@@ -2,30 +2,20 @@ dagrs:
   a:
     name: "Task 1"
     after: [ b, c ]
-    run:
-      type: sh
-      script: echo x
+    cmd: echo x
   b:
     name: "Task 2"
     after: [ c ]
-    run:
-      type: sh
-      script: echo x
+    cmd: echo x
   c:
     name: "Task 3"
     after: [ d ]
-    run:
-      type: sh
-      script: echo x
+    cmd: echo x
   d:
     name: "Task 4"
     after: [ e ]
-    run:
-      type: sh
-      script: echo x
+    cmd: echo x
   e:
     name: "Task 5"
     after: [ c ]
-    run:
-      type: sh
-      script: echo x
+    cmd: echo x

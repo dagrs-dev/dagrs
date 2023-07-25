@@ -5,7 +5,7 @@ use std::{collections::HashMap, fs::File, io::Read, sync::Arc};
 use yaml_rust::{Yaml, YamlLoader};
 
 use crate::{
-    task::{JavaScript, ShScript, Task, YamlTask},
+    task::{CommandAction, Task, YamlTask},
     Action,
 };
 
@@ -54,43 +54,19 @@ impl YamlParser {
                 .map(|task_id| precursors.push(task_id.as_str().unwrap().to_owned()))
                 .count();
         }
-        // Get run script
-        let run = &item["run"];
-        if run.is_badvalue() {
-            return Err(YamlTaskError::NoRunAttr(name));
-        }
-        let script_type = run["type"]
-            .as_str()
-            .ok_or(YamlTaskError::NoTypeAttr(name.clone()))?;
-        
+
         if let Some(action) = specific_action {
             Ok(YamlTask::new(id, precursors, name, action))
         } else {
-            match script_type {
-                "sh" => {
-                    let sh_script = run["script"]
-                        .as_str()
-                        .ok_or(YamlTaskError::NoScriptAttr(name.clone()))?;
-                    Ok(YamlTask::new(
-                        id,
-                        precursors,
-                        name,
-                        Arc::new(ShScript::new(sh_script)) as Arc<dyn Action+Send+Sync+'static>,
-                    ))
-                }
-                "deno" => {
-                    let js_script = run["script"]
-                        .as_str()
-                        .ok_or(YamlTaskError::NoScriptAttr(name.clone()))?;
-                    Ok(YamlTask::new(
-                        id,
-                        precursors,
-                        name,
-                        Arc::new(JavaScript::new(js_script)) as Arc<dyn Action+Send+Sync+'static>,
-                    ))
-                }
-                _ => Err(YamlTaskError::UnsupportedType(name)),
-            }
+            let cmd = item["cmd"]
+                .as_str()
+                .ok_or(YamlTaskError::NoScriptAttr(name.clone()))?;
+            Ok(YamlTask::new(
+                id,
+                precursors,
+                name,
+                Arc::new(CommandAction::new(cmd)) as Arc<dyn Action + Send + Sync + 'static>,
+            ))
         }
     }
 }
@@ -99,7 +75,7 @@ impl Parser for YamlParser {
     fn parse_tasks(
         &self,
         file: &str,
-        mut specific_actions: HashMap<String,Arc<dyn Action+Send+Sync+'static>>,
+        mut specific_actions: HashMap<String, Arc<dyn Action + Send + Sync + 'static>>,
     ) -> Result<Vec<Box<dyn Task>>, ParserError> {
         let content = self.load_file(file)?;
         // Parse Yaml

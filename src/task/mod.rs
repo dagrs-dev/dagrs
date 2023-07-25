@@ -3,69 +3,49 @@
 //! # Task execution mode of the Dag engine
 //!
 //! Currently, the Dag execution engine has two execution modes:
-//! The first mode is to execute tasks through user-written yaml configuration file,
-//! and then hand them over to the dag engine for execution. Currently, the yaml
-//! configuration file supports two types of tasks, one is to execute sh scripts,
-//! and the other is to execute javascript scripts.
+//! The first mode is to execute tasks through user-written yaml configuration file, and then
+//! hand them over to the dag engine for execution. The command to be executed can be specified in yaml.
 //!
 //！# The basic format of the yaml configuration file is as follows:
 //! ```yaml
 //! dagrs:
-//!   a:
-//!     name: "Task 1"
-//!     after: [b, c]
-//!     run:
-//!       type: sh
-//!       script: echo a
-//!   b:
-//!     name: "Task 2"
-//!     after: [c, f, g]
-//!     run:
-//!       type: sh
-//!       script: echo b
-//!   c:
-//!     name: "Task 3"
-//!     after: [e, g]
-//!     run:
-//!       type: sh
-//!       script: echo c
-//!   d:
-//!     name: "Task 4"
-//!     after: [c, e]
-//!     run:
-//!       type: sh
-//!       script: echo d
-//!   e:
-//!     name: "Task 5"
-//!     after: [h]
-//!     run:
-//!       type: sh
-//!       script: echo e
-//!   f:
-//!     name: "Task 6"
-//!     after: [g]
-//!     run:
-//!       type: deno
-//!       script: Deno.core.print("f\n")
-//!   g:
-//!     name: "Task 7"
-//!     after: [h]
-//!     run:
-//!       type: deno
-//!       script: Deno.core.print("g\n")
-//!   h:
-//!     name: "Task 8"
-//!     run:
-//!       type: sh
-//!       script: sh_script.sh
+//！   a:
+//！      name: "Task 1"
+//！      after: [ b, c ]
+//！      cmd: echo a
+//！   b:
+//！     name: "Task 2"
+//！     after: [ c, f, g ]
+//！     cmd: echo b
+//！   c:
+//！     name: "Task 3"
+//！     after: [ e, g ]
+//！     cmd: echo c
+//！   d:
+//！     name: "Task 4"
+//！     after: [ c, e ]
+//！     cmd: echo d
+//！   e:
+//！     name: "Task 5"
+//！     after: [ h ]
+//！     cmd: echo e
+//！   f:
+//！     name: "Task 6"
+//！     after: [ g ]
+//！     cmd: python3 ./tests/config/test.py
+//！   g:
+//！     name: "Task 7"
+//！     after: [ h ]
+//！     cmd: deno run ./tests/config/test.js
+//！   h:
+//！     name: "Task 8"
+//！     cmd: echo h
 //! ```
 //! The necessary attributes for tasks in the yaml configuration file are:
 //! id: unique identifier, such as 'a'
 //! name: task name
 //! after: Indicates which task to execute after, this attribute is optional
-//! run:
-//!    type: sh or deno
-//!    script: command or file path
+//! cmd: command to execute, such as 'ls ./'
 //!
 //!
 //! The second mode is that the user program defines the task, which requires the
@@ -116,14 +96,14 @@ use std::sync::atomic::AtomicUsize;
 
 use crate::utils::EnvVar;
 
-pub use self::error::{RunningError,JavaScriptExecuteError,ShExecuteError};
-pub use self::script::{JavaScript,ShScript};
+pub use self::error::{RunningError,CmdExecuteError};
+pub use self::cmd::CommandAction;
 pub use self::specific_task::YamlTask;
 pub use self::state::{Output,Input};
 pub(crate) use self::state::ExecState;
 
 mod error;
-mod script;
+mod cmd;
 mod specific_task;
 mod state;
 
