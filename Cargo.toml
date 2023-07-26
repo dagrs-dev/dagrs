@@ -1,7 +1,7 @@
 [package]
 name = "dagrs"
 authors = ["Quanyi Ma <eli@patch.sh>", "Zhilei Qiu <qzl2503687@gmail.com>"]
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "The DAG engine, named dagrs, is designed to execute multiple tasks with graph-like dependencies. It offers high performance and asynchronous execution, providing a convenient programming interface for Rust developers."
