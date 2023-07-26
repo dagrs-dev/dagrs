@@ -14,19 +14,10 @@ pub struct RunningError {
     msg: String,
 }
 
-/// Sh script produces incorrect behavior when run.
+/// command produces incorrect behavior when run.
 #[derive(Error, Debug)]
-pub struct ShExecuteError {
+pub struct CmdExecuteError {
     msg: String,
-}
-
-/// Javascript script produces incorrect behavior when run.
-#[derive(Error, Debug)]
-pub enum JavaScriptExecuteError {
-    #[error("{0}")]
-    AnyHowError(deno_core::anyhow::Error),
-    #[error("{0}")]
-    SerializeError(deno_core::serde_v8::Error),
 }
 
 impl RunningError {
@@ -46,26 +37,20 @@ impl Display for RunningError {
     }
 }
 
-impl ShExecuteError {
+impl CmdExecuteError {
     pub fn new(msg: String) -> Self {
         Self { msg }
     }
 }
 
-impl Display for ShExecuteError {
+impl Display for CmdExecuteError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "sh script execution error: {}", self.msg)
+        write!(f, "cmd execution error: {}", self.msg)
     }
 }
 
-impl From<ShExecuteError> for RunningError {
-    fn from(value: ShExecuteError) -> Self {
-        RunningError { msg: value.to_string() }
-    }
-}
-
-impl From<JavaScriptExecuteError> for RunningError {
-    fn from(value: JavaScriptExecuteError) -> Self {
+impl From<CmdExecuteError> for RunningError {
+    fn from(value: CmdExecuteError) -> Self {
         RunningError { msg: value.to_string() }
     }
 }

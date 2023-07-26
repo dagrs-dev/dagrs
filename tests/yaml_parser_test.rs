@@ -44,24 +44,6 @@ fn yaml_task_not_found_precursor() {
 }
 
 #[test]
-fn yaml_task_no_run_config() {
-    let no_run = YamlParser.parse_tasks("tests/config/no_run.yaml",HashMap::new());
-    assert!(matches!(no_run,Err(ParserError::YamlTaskError(YamlTaskError::NoRunAttr(_)))));
-}
-
-#[test]
-fn yaml_task_no_run_type_config() {
-    let no_run_type = YamlParser.parse_tasks("tests/config/no_type.yaml",HashMap::new());
-    assert!(matches!(no_run_type,Err(ParserError::YamlTaskError(YamlTaskError::NoTypeAttr(_)))));
-}
-
-#[test]
-fn yaml_task_unsupported_type_config() {
-    let unsupported_type = YamlParser.parse_tasks("tests/config/unsupported_type.yaml",HashMap::new());
-    assert!(matches!(unsupported_type,Err(ParserError::YamlTaskError(YamlTaskError::UnsupportedType(_)))));
-}
-
-#[test]
 fn yaml_task_no_script_config() {
     let script = YamlParser.parse_tasks("tests/config/no_script.yaml",HashMap::new());
     assert!(matches!(script,Err(ParserError::YamlTaskError(YamlTaskError::NoScriptAttr(_)))));

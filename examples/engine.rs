@@ -9,7 +9,7 @@ use dagrs::{
 };
 fn main() {
     // initialization log.
-    log::init_logger(LogLevel::Error, None);
+    log::init_logger(LogLevel::Info, None);
     // Create an Engine.
     let mut engine = Engine::default();
 
