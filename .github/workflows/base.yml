@@ -22,6 +22,9 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: check
+      - uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
 
   test:
     name: Test Suite
