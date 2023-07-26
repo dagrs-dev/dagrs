@@ -8,7 +8,7 @@
 //! d,Task d,c e,echo d
 //! e,Task e,h,echo e
 //! f,Task f,g,python3 tests/config/test.py
-//! g,Task g,h,deno run tests/config/test.js
+//! g,Task g,h,node tests/config/test.js
 //! h,Task h,,echo h
 //! ```
 

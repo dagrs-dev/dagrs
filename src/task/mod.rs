@@ -36,7 +36,7 @@
 //！   g:
 //！     name: "Task 7"
 //！     after: [ h ]
-//！     cmd: deno run ./tests/config/test.js
+//！     cmd: node ./tests/config/test.js
 //！   h:
 //！     name: "Task 8"
 //！     cmd: echo h
