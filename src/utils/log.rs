@@ -20,6 +20,8 @@ use std::{
     sync::{Arc, Mutex, OnceLock},
 };
 
+use thiserror::Error;
+
 /// Log level.
 #[derive(Clone, Copy, Debug)]
 pub enum LogLevel {
@@ -124,6 +126,12 @@ impl Display for LogLevel {
 /// Logger instance.
 static LOG: OnceLock<Arc<dyn Logger + Sync + Send + 'static>> = OnceLock::new();
 
+#[derive(Debug, Error)]
+pub enum LoggerError {
+    #[error("Logger has been already initialized!")]
+    AlreadyInitialized,
+}
+
 /// Initialize the default logger, the user needs to specify the logging level of the logger,
 /// and can also specify the location of the log output, if the log_file parameter is passed in
 /// None, the log information will be printed to the terminal, otherwise, the log information
@@ -132,10 +140,10 @@ static LOG: OnceLock<Arc<dyn Logger + Sync + Send + 'static>> = OnceLock::new();
 /// # Example
 ///
 /// ```rust
-/// use dagrs::{log,LogLevel};
-/// log::init_logger(LogLevel::Info,None);
+/// use dagrs::{log, LogLevel, is_logger_initialized};
+/// let _initialized = log::init_logger(LogLevel::Info,None);
 /// ```
-pub fn init_logger(fix_log_level: LogLevel, log_file: Option<File>) {
+pub fn init_logger(fix_log_level: LogLevel, log_file: Option<File>) -> Result<(), LoggerError> {
     let logger = match log_file {
         Some(file) => DefaultLogger {
             level: fix_log_level,
@@ -147,8 +155,9 @@ pub fn init_logger(fix_log_level: LogLevel, log_file: Option<File>) {
         },
     };
     if LOG.set(Arc::new(logger)).is_err() {
-        println!("Logger has been initialized!");
+        return Err(LoggerError::AlreadyInitialized);
     }
+    Ok(())
 }
 
 /// Initialize a custom logger. Users implement the [`Logger`] trait to implement logging logic.
@@ -157,14 +166,15 @@ pub fn init_logger(fix_log_level: LogLevel, log_file: Option<File>) {
 ///
 /// ```rust
 /// use dagrs::{log,LogLevel};
-/// log::init_logger(LogLevel::Info,None);
+/// let _initialized = log::init_logger(LogLevel::Info,None);
 /// log::info("some message.".to_string())
 /// ```
 
-pub fn init_custom_logger(logger: impl Logger + Send + Sync + 'static) {
+pub fn init_custom_logger(logger: impl Logger + Send + Sync + 'static) -> Result<(), LoggerError> {
     if LOG.set(Arc::new(logger)).is_err() {
-        println!("Logger has been initialized!");
+        return Err(LoggerError::AlreadyInitialized);
     }
+    Ok(())
 }
 
 /// The following `debug`, `info`, `warn`, and `error` functions are the recording functions

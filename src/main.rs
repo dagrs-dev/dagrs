@@ -32,7 +32,7 @@ fn main() {
             }
         }
     });
-    match args.log_path {
+    let _initialized = match args.log_path {
         None => {log::init_logger(log_level,None)}
         Some(path) => {log::init_logger(log_level,Some(std::fs::File::create(path).unwrap()))}
     };

@@ -26,7 +26,7 @@ impl Action for SimpleAction {
 
 fn main() {
     // Initialize the global logger
-    log::init_logger(LogLevel::Info, None);
+    let _initialized = log::init_logger(LogLevel::Info, None);
     // Generate four tasks.
     let a = DefaultTask::new(SimpleAction(10), "Task a");
     let mut b = DefaultTask::new(SimpleAction(20), "Task b");

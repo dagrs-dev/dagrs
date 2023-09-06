@@ -63,7 +63,7 @@ use dagrs::{
 };
 
 struct SimpleAction(usize);
-/// Implement the `Action` trait for `SimpleAction`, defining the logic of the `run` function. 
+/// Implement the `Action` trait for `SimpleAction`, defining the logic of the `run` function.
 /// The logic here is simply to get the output value (`usize`) of all predecessor tasks and then accumulate.
 impl Action for SimpleAction{
     fn run(&self, input: Input,env:Arc<EnvVar>) -> Result<Output,RunningError> {
@@ -77,7 +77,7 @@ impl Action for SimpleAction{
 }
 
 // Initialize the global logger
-log::init_logger(LogLevel::Info,None);
+let _initialized = log::init_logger(LogLevel::Info,None);
 // Generate four tasks.
 let a= DefaultTask::new(SimpleAction(10),"Task a");
 let mut b=DefaultTask::new(SimpleAction(20),"Task b");
@@ -119,7 +119,7 @@ flowchart LR;
 	A((Task a))-->B;	A-->C;	B((Task b))-->D;	C((Task c))-->D((Task d));
 ```
 
-The execution order is a->c->b->d. 
+The execution order is a->c->b->d.
 
 ```bash
 $cargo run
@@ -255,7 +255,7 @@ You can see an example: `examples/yaml_dag.rs`.  In fact, you can also programma
   	tasks==Generate execution sequence based on topological sort==>seq
   ```
 
-  
+
 
 - The task is scheduled to start executing asynchronously.
 
@@ -282,11 +282,11 @@ You can see an example: `examples/yaml_dag.rs`.  In fact, you can also programma
   	F-->of((out))
   ```
 
-  
+
 
 - If the result of the predecessor task can be obtained, check the continuation status`can_continue`, if it is true, continue to execute the defined logic, if it is false, trigger`handle_error`, and cancel the execution of the subsequent task.
 
-- After all tasks are executed, set the continuation status to false, which means that the tasks of the `dag` cannot be scheduled for execution again. 
+- After all tasks are executed, set the continuation status to false, which means that the tasks of the `dag` cannot be scheduled for execution again.
 
 The task execution mode of `dagrs` is parallel. In the figure, the execution sequence is divided into four intervals by the vertical dividing line. During the overall execution of the task, it will go through four parallel execution stages. As shown in the figure: first task A is executed, and tasks B and C obtain the output of A as the input of their own tasks and start to execute in parallel; similarly, tasks D and E must wait until they obtain the output of their predecessors before starting to execute in parallel; finally, Task F must wait for the execution of tasks B, D, and E to complete before it can start executing.
 

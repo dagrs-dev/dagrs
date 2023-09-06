@@ -15,7 +15,7 @@ use dagrs::{
 };
 
 fn main() {
-    log::init_logger(LogLevel::Info, None);
+    let _initialized = log::init_logger(LogLevel::Info, None);
     let a = gen_task!("Compute A", |_input: Input, _env: Arc<EnvVar>| Ok(
         Output::new(20usize)
     ));

@@ -37,7 +37,7 @@ macro_rules! generate_task {
 
 fn main() {
     // initialization log.
-    log::init_logger(LogLevel::Info, None);
+    let _initialized = log::init_logger(LogLevel::Info, None);
     // generate some tasks.
     let a = generate_task!(A(1), "Compute A");
     let mut b = generate_task!(B(2), "Compute B");

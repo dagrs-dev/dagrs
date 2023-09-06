@@ -1,6 +1,6 @@
 //! Implement the Parser interface to customize the task configuration file parser.
 //! The content of the configuration file is as follows:
-//! 
+//!
 //! ```
 //! a,Task a,b c,echo a
 //! b,Task b,c f g,echo b
@@ -138,7 +138,7 @@ impl Parser for ConfigParser {
 }
 
 fn main() {
-    log::init_logger(LogLevel::Info, None);
+    let _initialized = log::init_logger(LogLevel::Info, None);
     let file = "tests/config/custom_file_task.txt";
     let mut dag = Dag::with_config_file_and_parser(file, Box::new(ConfigParser),HashMap::new()).unwrap();
     assert!(dag.start().unwrap());
