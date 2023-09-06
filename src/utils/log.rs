@@ -140,7 +140,7 @@ pub enum LoggerError {
 /// # Example
 ///
 /// ```rust
-/// use dagrs::{log, LogLevel, is_logger_initialized};
+/// use dagrs::{log, LogLevel};
 /// let _initialized = log::init_logger(LogLevel::Info,None);
 /// ```
 pub fn init_logger(fix_log_level: LogLevel, log_file: Option<File>) -> Result<(), LoggerError> {
