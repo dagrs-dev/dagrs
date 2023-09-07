@@ -121,7 +121,7 @@ pub trait Action {
 ///
 /// A task must provide methods to obtain precursors and required attributes, just as
 /// the methods defined below, users who want to customize tasks must implement these methods.
-pub trait Task {
+pub trait Task: Send + Sync {
     /// Get a reference to an executable action.
     fn action(&self) -> Arc<dyn Action + Send + Sync>;
     /// Get the id of all predecessor tasks of this task.
