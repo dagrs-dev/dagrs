@@ -13,14 +13,12 @@
 //! Logs are generally recorded in two locations, which are printed on the terminal or output
 //! to a file, which needs to be specified by the user.
 
-use std::{
-    fmt::Display,
-    fs::File,
-    io::Write,
-    sync::{Arc, Mutex, OnceLock},
-};
+use std::{sync::{OnceLock, Arc}, fs::File};
 
 use thiserror::Error;
+
+#[cfg(feature = "logger")]
+use super::default_logger::{init_default_logger, default_debug, default_info, default_warn, default_error};
 
 /// Log level.
 #[derive(Clone, Copy, Debug)]
@@ -30,26 +28,6 @@ pub enum LogLevel {
     Warn,
     Error,
     Off,
-}
-
-/// Log interface.
-pub trait Logger {
-    /// Returns the current log level.
-    fn level(&self) -> LogLevel;
-    /// Record debug information.
-    fn debug(&self, msg: String);
-    /// Record info information.
-    fn info(&self, msg: String);
-    /// Record warn information.
-    fn warn(&self, msg: String);
-    /// Record error information.
-    fn error(&self, msg: String);
-}
-
-/// Default logger.
-struct DefaultLogger {
-    level: LogLevel,
-    log_pos: Option<Mutex<File>>,
 }
 
 impl LogLevel {
@@ -75,62 +53,28 @@ impl LogLevel {
     }
 }
 
-impl DefaultLogger {
-    fn log(&self, msg: String) {
-        match self.log_pos {
-            Some(ref file) => {
-                let mut file = file.lock().unwrap();
-                let _ = writeln!(file, "{}", msg);
-            }
-            None => {
-                println!("{}", msg);
-            }
-        }
-    }
+/// Log interface.
+pub trait Logger {
+    /// Returns the current log level.
+    fn level(&self) -> LogLevel;
+    /// Record debug information.
+    fn debug(&self, msg: String);
+    /// Record info information.
+    fn info(&self, msg: String);
+    /// Record warn information.
+    fn warn(&self, msg: String);
+    /// Record error information.
+    fn error(&self, msg: String);
 }
-
-impl Logger for DefaultLogger {
-    fn level(&self) -> LogLevel {
-        self.level
-    }
-
-    fn debug(&self, msg: String) {
-        self.log(msg)
-    }
-
-    fn info(&self, msg: String) {
-        self.log(msg)
-    }
-
-    fn warn(&self, msg: String) {
-        self.log(msg)
-    }
-
-    fn error(&self, msg: String) {
-        self.log(msg)
-    }
-}
-
-impl Display for LogLevel {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            LogLevel::Debug => write!(f, "Debug"),
-            LogLevel::Info => write!(f, "Info"),
-            LogLevel::Warn => write!(f, "warn"),
-            LogLevel::Error => write!(f, "error"),
-            LogLevel::Off => write!(f, "off"),
-        }
-    }
-}
-
-/// Logger instance.
-static LOG: OnceLock<Arc<dyn Logger + Sync + Send + 'static>> = OnceLock::new();
 
 #[derive(Debug, Error)]
 pub enum LoggerError {
     #[error("Logger has been already initialized!")]
     AlreadyInitialized,
 }
+
+/// Logger instance.
+pub(crate) static LOG: OnceLock<Arc<dyn Logger + Sync + Send + 'static>> = OnceLock::new();
 
 /// Initialize the default logger, the user needs to specify the logging level of the logger,
 /// and can also specify the location of the log output, if the log_file parameter is passed in
@@ -143,21 +87,14 @@ pub enum LoggerError {
 /// use dagrs::{log, LogLevel};
 /// let _initialized = log::init_logger(LogLevel::Info,None);
 /// ```
+#[allow(unused_variables)]
 pub fn init_logger(fix_log_level: LogLevel, log_file: Option<File>) -> Result<(), LoggerError> {
-    let logger = match log_file {
-        Some(file) => DefaultLogger {
-            level: fix_log_level,
-            log_pos: Some(Mutex::new(file)),
-        },
-        None => DefaultLogger {
-            level: fix_log_level,
-            log_pos: None,
-        },
-    };
-    if LOG.set(Arc::new(logger)).is_err() {
-        return Err(LoggerError::AlreadyInitialized);
+    #[cfg(feature = "logger")] {
+        init_default_logger(fix_log_level, log_file)
     }
-    Ok(())
+    #[cfg(not(feature = "logger"))] {
+        Ok(())
+    }
 }
 
 /// Initialize a custom logger. Users implement the [`Logger`] trait to implement logging logic.
@@ -180,34 +117,30 @@ pub fn init_custom_logger(logger: impl Logger + Send + Sync + 'static) -> Result
 /// The following `debug`, `info`, `warn`, and `error` functions are the recording functions
 /// provided by the logger for users.
 
+#[allow(unused_variables)]
 pub fn debug(msg: String) {
-    let logger = get_logger();
-    if logger.level().check_level(LogLevel::Debug) {
-        logger.debug(msg);
+    #[cfg(feature = "logger")] {
+        default_debug(msg);
     }
 }
 
+#[allow(unused_variables)]
 pub fn info(msg: String) {
-    let logger = get_logger();
-    if logger.level().check_level(LogLevel::Info) {
-        logger.info(msg);
+    #[cfg(feature = "logger")] {
+        default_info(msg);
     }
 }
 
+#[allow(unused_variables)]
 pub fn warn(msg: String) {
-    let logger = get_logger();
-    if logger.level().check_level(LogLevel::Warn) {
-        logger.warn(msg);
+    #[cfg(feature = "logger")] {
+        default_warn(msg);
     }
 }
 
+#[allow(unused_variables)]
 pub fn error(msg: String) {
-    let logger = get_logger();
-    if logger.level().check_level(LogLevel::Error) {
-        logger.error(msg);
+    #[cfg(feature = "logger")] {
+        default_error(msg);
     }
-}
-
-fn get_logger() -> Arc<dyn Logger + Send + Sync + 'static> {
-    LOG.get().expect("Logger is not initialized!").clone()
 }
