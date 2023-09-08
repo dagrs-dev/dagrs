@@ -5,14 +5,14 @@ use dagrs::{Action, Dag, DagError, DefaultTask, EnvVar, Input, Output, RunningEr
 
 #[test]
 fn yaml_task_correct_execute() {
-    log::init_logger(LogLevel::Info, None);
+    let _initialized = log::init_logger(LogLevel::Info, None);
     let mut job = Dag::with_yaml("tests/config/correct.yaml",HashMap::new()).unwrap();
     assert!(job.start().unwrap());
 }
 
 #[test]
 fn yaml_task_loop_graph() {
-    log::init_logger(LogLevel::Info, None);
+    let _initialized = log::init_logger(LogLevel::Info, None);
     let res = Dag::with_yaml("tests/config/loop_error.yaml",HashMap::new())
         .unwrap()
         .start();
@@ -21,7 +21,7 @@ fn yaml_task_loop_graph() {
 
 #[test]
 fn yaml_task_self_loop_graph() {
-    log::init_logger(LogLevel::Info, None);
+    let _initialized = log::init_logger(LogLevel::Info, None);
     let res = Dag::with_yaml("tests/config/self_loop_error.yaml",HashMap::new())
         .unwrap()
         .start();
@@ -30,7 +30,7 @@ fn yaml_task_self_loop_graph() {
 
 #[test]
 fn yaml_task_failed_execute() {
-    log::init_logger(LogLevel::Info, None);
+    let _initialized = log::init_logger(LogLevel::Info, None);
     let res = Dag::with_yaml("tests/config/script_run_failed.yaml",HashMap::new())
         .unwrap()
         .start();
@@ -56,7 +56,7 @@ macro_rules! generate_task {
 
 #[test]
 fn task_loop_graph() {
-    log::init_logger(LogLevel::Info, None);
+    let _initialized = log::init_logger(LogLevel::Info, None);
     let mut a = generate_task!(A(1), "Compute A");
     let mut b = generate_task!(B(2), "Compute B");
     let mut c = generate_task!(C(4), "Compute C");
@@ -75,7 +75,7 @@ fn task_loop_graph() {
 
 #[test]
 fn non_job() {
-    log::init_logger(LogLevel::Info, None);
+    let _initialized = log::init_logger(LogLevel::Info, None);
     let tasks: Vec<DefaultTask> = Vec::new();
     let res = Dag::with_tasks(tasks).start();
     assert!(res.is_err());
@@ -101,7 +101,7 @@ impl Action for FailedActionD {
 
 #[test]
 fn task_failed_execute() {
-    log::init_logger(LogLevel::Info, None);
+    let _initialized = log::init_logger(LogLevel::Info, None);
     let a = generate_task!(A(1), "Compute A");
     let mut b = generate_task!(B(2), "Compute B");
     let mut c = DefaultTask::new(FailedActionC(0), "Compute C");
