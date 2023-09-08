@@ -331,6 +331,18 @@ impl Dag {
         }
     }
 
+    pub fn get_results<T: CloneAnySendSync + Send + Sync>(&self) -> HashMap<usize,Option<T>> {
+		let mut hm = HashMap::new();
+		for (id,state) in &self.execute_states {
+			let output = match state.get_output() {
+				Some(ref content) => content.clone().remove(),
+				None => None,
+			};
+			hm.insert(*id,output);
+		}
+		hm
+    }
+
     /// Before the dag starts executing, set the dag's global environment variable.
     pub fn set_env(&mut self, env: EnvVar) {
         self.env = Arc::new(env);
