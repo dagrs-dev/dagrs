@@ -41,13 +41,19 @@ impl Action for CommandAction {
                 args.push(inp)
             }
         });
-        let out = cmd.args(args).output().unwrap();
-        if !out.stderr.is_empty() {
+        let out = match cmd.args(args).output() {
+            Ok(o) => o,
+            Err(e) => {
+                return Err(CmdExecuteError::new(e.to_string()).into())
+            }
+        };
+        let code = out.status.code().unwrap_or(-1);
+        if code == 0 {
+            Ok(Output::new(String::from_utf8(out.stdout).unwrap()))
+        } else {
             let err_msg = String::from_utf8(out.stderr).unwrap();
             log::error(err_msg.clone());
             Err(CmdExecuteError::new(err_msg).into())
-        } else {
-            Ok(Output::new(String::from_utf8(out.stdout).unwrap()))
         }
     }
 }
