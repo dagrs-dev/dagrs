@@ -17,5 +17,11 @@ clap = { version = "4.2.2", features = ["derive"] }
 anymap2 = "0.13.0"
 thiserror = "1.0.30"
 tokio = { version = "1.28", features = ["rt", "sync","rt-multi-thread"] }
+
+[dev-dependencies]
 log = "0.4"
 simplelog = "0.12"
+
+[features]
+default = ["logger"]
+logger = []
