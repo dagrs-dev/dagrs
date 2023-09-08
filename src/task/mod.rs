@@ -201,14 +201,14 @@ impl DefaultTask {
     /// t2.set_predecessors(&[&t1]);
     /// ```
     /// In above code, `t1` will be executed before `t2`.
-    pub fn set_predecessors(&mut self, predecessors: &[&DefaultTask]) {
+    pub fn set_predecessors<'a>(&mut self, predecessors: impl IntoIterator<Item = &'a&'a DefaultTask>) {
         self.predecessor_tasks
-            .extend(predecessors.iter().map(|t| t.id()))
+            .extend(predecessors.into_iter().map(|t| t.id()))
     }
 
     /// The same as `exec_after`, but input are tasks' ids
     /// rather than reference to [`DefaultTask`].
-    pub fn set_predecessors_by_id(&mut self, predecessors_id: &[usize]) {
+    pub fn set_predecessors_by_id(&mut self, predecessors_id: impl IntoIterator<Item = usize>) {
         self.predecessor_tasks.extend(predecessors_id)
     }
 }
