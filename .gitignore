@@ -13,8 +13,5 @@ Cargo.lock
 .idea
 .vscode
 
-# Exclude test output result files
-/test/*.txt
-
 # Exclude execute log
 /*.log

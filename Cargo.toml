@@ -9,7 +9,6 @@ readme = "README.md"
 repository = "https://github.com/open-rust-initiative/dagrs"
 keywords = ["DAG", "task", "async", "parallel", "concurrent"]
 
-
 [dependencies]
 yaml-rust = "0.4.5"
 bimap = "0.6.1"
@@ -25,3 +24,4 @@ simplelog = "0.12"
 [features]
 default = ["logger"]
 logger = []
+yaml = []

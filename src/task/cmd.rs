@@ -29,8 +29,8 @@ impl Action for CommandAction {
     fn run(&self, input: Input, _env: Arc<EnvVar>) -> Result<Output, RunningError> {
         let mut args = Vec::new();
         let mut cmd = if cfg!(target_os = "windows") {
-            args.push("/c");
-            Command::new("cmd")
+            args.push("-Command");
+            Command::new("powershell")
         } else {
             args.push("-c");
             Command::new("sh")

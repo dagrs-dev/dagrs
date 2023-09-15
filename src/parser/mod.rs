@@ -55,12 +55,15 @@
 use std::{collections::HashMap, sync::Arc};
 
 pub use error::*;
+#[cfg(feature = "yaml")]
 pub use yaml_parser::YamlParser;
+#[cfg(feature = "yaml")]
+mod yaml_parser;
 
 use crate::{task::Task, Action};
 
 mod error;
-mod yaml_parser;
+
 
 /// Generic parser traits. If users want to customize the configuration file parser, they must implement this trait.
 /// [`YamlParser`] is an example of [`Parser`]
