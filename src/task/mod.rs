@@ -97,14 +97,16 @@ use std::sync::atomic::AtomicUsize;
 use crate::utils::EnvVar;
 
 pub use self::error::{RunningError,CmdExecuteError};
+#[cfg(feature = "yaml")]
 pub use self::cmd::CommandAction;
-pub use self::specific_task::YamlTask;
+#[cfg(feature = "yaml")]
+pub use self::yaml_task::YamlTask;
 pub use self::state::{Output,Input};
 pub(crate) use self::state::ExecState;
 
 mod error;
 mod cmd;
-mod specific_task;
+mod yaml_task;
 mod state;
 
 /// Action Trait.
