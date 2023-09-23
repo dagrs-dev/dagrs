@@ -13,16 +13,19 @@ use super::{Action, ID_ALLOCATOR, Task};
 
 /// Task struct for yaml file.
 pub struct YamlTask {
-    /// `tid.0` is the unique identifier defined in yaml, and `tid.1` is the id assigned by the global id assigner.
-    tid: (String, usize),
+    /// `yid` is the unique identifier defined in yaml, and `id` is the id assigned by the global id assigner.
+    yid: String,
+    id: usize,
     name: String,
     /// Precursor identifier defined in yaml.
+    #[allow(unused)]
     precursors: Vec<String>,
     precursors_id: Vec<usize>,
     action: Arc<dyn Action + Sync + Send>,
 }
 
 impl YamlTask {
+    #[allow(unused)]
     pub fn new(
         yaml_id: &str,
         precursors: Vec<String>,
@@ -30,7 +33,8 @@ impl YamlTask {
         action: Arc<dyn Action + Send + Sync + 'static>,
     ) -> Self {
         Self {
-            tid: (yaml_id.to_owned(), ID_ALLOCATOR.alloc()),
+            yid: yaml_id.to_owned(),
+            id:ID_ALLOCATOR.alloc(),
             name,
             precursors,
             precursors_id: Vec::new(),
@@ -40,17 +44,20 @@ impl YamlTask {
     /// After the configuration file is parsed, the id of each task has been assigned.
     /// At this time, the `precursors_id` of this task will be initialized according to
     /// the id of the predecessor task of each task.
+    #[allow(unused)]
     pub fn init_precursors(&mut self, pres_id: Vec<usize>) {
         self.precursors_id = pres_id;
     }
 
     /// Get the precursor identifier defined in yaml.
+    #[allow(unused)]
     pub fn str_precursors(&self) -> Vec<String> {
         self.precursors.clone()
     }
     /// Get the unique ID of the task defined in yaml.
-    pub fn str_id(&self) -> String {
-        self.tid.0.clone()
+    #[allow(unused)]
+    pub fn str_id(&self) -> &str {
+        &self.yid
     }
 }
 
@@ -58,11 +65,11 @@ impl Task for YamlTask {
     fn action(&self) -> Arc<dyn Action + Sync + Send> {
         self.action.clone()
     }
-    fn predecessors(&self) -> &[usize] {
+    fn precursors(&self) -> &[usize] {
         &self.precursors_id
     }
     fn id(&self) -> usize {
-        self.tid.1
+        self.id
     }
     fn name(&self) -> String {
         self.name.clone()

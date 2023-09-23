@@ -61,7 +61,7 @@ impl Task for MyTask {
     fn action(&self) -> Arc<dyn Action + Sync + Send> {
         self.action.clone()
     }
-    fn predecessors(&self) -> &[usize] {
+    fn precursors(&self) -> &[usize] {
         &self.precursors_id
     }
     fn id(&self) -> usize {

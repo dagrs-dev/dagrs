@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use clap::Parser;
-use dagrs::{Dag, log, LogLevel};
+use dagrs_core::{Dag, log, LogLevel};
 
 #[derive(Parser, Debug)]
 #[command(name= "dagrs",version= "0.2.0")]

@@ -127,7 +127,7 @@ pub trait Task: Send + Sync {
     /// Get a reference to an executable action.
     fn action(&self) -> Arc<dyn Action + Send + Sync>;
     /// Get the id of all predecessor tasks of this task.
-    fn predecessors(&self) -> &[usize];
+    fn precursors(&self) -> &[usize];
     /// Get the id of this task.
     fn id(&self) -> usize;
     /// Get the name of this task.
@@ -136,7 +136,7 @@ pub trait Task: Send + Sync {
 
 impl Debug for dyn Task {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "{},\t{},\t{:?}", self.id(),self.name(),self.predecessors())
+        writeln!(f, "{},\t{},\t{:?}", self.id(),self.name(),self.precursors())
     }
 }
 
@@ -148,7 +148,7 @@ pub struct DefaultTask {
     /// The task's name.
     name: String,
     /// Id of the predecessor tasks.
-    predecessor_tasks: Vec<usize>,
+    precursors: Vec<usize>,
     /// Perform specific actions.
     action: Arc<dyn Action + Send + Sync>,
 }
@@ -182,7 +182,7 @@ impl DefaultTask {
             id: ID_ALLOCATOR.alloc(),
             action: Arc::new(action),
             name: name.to_owned(),
-            predecessor_tasks: Vec::new(),
+            precursors: Vec::new(),
         }
     }
 
@@ -204,14 +204,14 @@ impl DefaultTask {
     /// ```
     /// In above code, `t1` will be executed before `t2`.
     pub fn set_predecessors<'a>(&mut self, predecessors: impl IntoIterator<Item = &'a&'a DefaultTask>) {
-        self.predecessor_tasks
+        self.precursors
             .extend(predecessors.into_iter().map(|t| t.id()))
     }
 
     /// The same as `exec_after`, but input are tasks' ids
     /// rather than reference to [`DefaultTask`].
     pub fn set_predecessors_by_id(&mut self, predecessors_id: impl IntoIterator<Item = usize>) {
-        self.predecessor_tasks.extend(predecessors_id)
+        self.precursors.extend(predecessors_id)
     }
 }
 
@@ -220,8 +220,8 @@ impl Task for DefaultTask {
         self.action.clone()
     }
 
-    fn predecessors(&self) -> &[usize] {
-        &self.predecessor_tasks
+    fn precursors(&self) -> &[usize] {
+        &self.precursors
     }
 
     fn id(&self) -> usize {

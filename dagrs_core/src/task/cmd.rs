@@ -18,6 +18,7 @@ pub struct CommandAction {
 }
 
 impl CommandAction {
+    #[allow(unused)]
     pub fn new(cmd: &str) -> Self {
         Self {
             command: cmd.to_owned(),
@@ -49,7 +50,11 @@ impl Action for CommandAction {
         };
         let code = out.status.code().unwrap_or(-1);
         if code == 0 {
-            Ok(Output::new(String::from_utf8(out.stdout).unwrap()))
+            let mut out =String::from_utf8(out.stdout).unwrap();
+            if cfg!(target_os = "windows"){
+                out=out.replace("\r\n", " ");
+            }
+            Ok(Output::new(out))
         } else {
             let err_msg = String::from_utf8(out.stderr).unwrap();
             log::error(err_msg.clone());

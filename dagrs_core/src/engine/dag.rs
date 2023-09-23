@@ -143,7 +143,7 @@ impl Dag {
         for (&id, task) in self.tasks.iter() {
             let index = self.rely_graph.find_index_by_id(&id).unwrap();
 
-            for rely_task_id in task.predecessors() {
+            for rely_task_id in task.precursors() {
                 // Rely task existence check
                 let rely_index = self
                     .rely_graph
@@ -247,7 +247,7 @@ impl Dag {
         let execute_state = self.execute_states[&task_id].clone();
         let task_out_degree = self.rely_graph.get_node_out_degree(&task_id);
         let wait_for_input: Vec<Arc<ExecState>> = task
-            .predecessors()
+            .precursors()
             .iter()
             .map(|id| self.execute_states[id].clone())
             .collect();

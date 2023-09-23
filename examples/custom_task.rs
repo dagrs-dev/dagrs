@@ -33,7 +33,7 @@ impl Task for MyTask {
         self.action.clone()
     }
 
-    fn predecessors(&self) -> &[usize] {
+    fn precursors(&self) -> &[usize] {
         &self.predecessor_tasks
     }
 

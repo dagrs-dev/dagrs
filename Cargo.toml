@@ -1,7 +1,7 @@
 [package]
 name = "dagrs"
 authors = ["Quanyi Ma <eli@patch.sh>", "Zhilei Qiu <qzl2503687@gmail.com>"]
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "The DAG engine, named dagrs, is designed to execute multiple tasks with graph-like dependencies. It offers high performance and asynchronous execution, providing a convenient programming interface for Rust developers."
@@ -9,19 +9,49 @@ readme = "README.md"
 repository = "https://github.com/open-rust-initiative/dagrs"
 keywords = ["DAG", "task", "async", "parallel", "concurrent"]
 
-[dependencies]
-yaml-rust = "0.4.5"
-bimap = "0.6.1"
-clap = { version = "4.2.2", features = ["derive"] }
-anymap2 = "0.13.0"
-thiserror = "1.0.30"
-tokio = { version = "1.28", features = ["rt", "sync","rt-multi-thread"] }
 
 [dev-dependencies]
 log = "0.4"
 simplelog = "0.12"
 
+[workspace]
+members = ["dagrs_derive","dagrs_core"]
+
+
+[dependencies]
+dagrs_core = {path = "dagrs_core" , version = "0.3.0"}
+dagrs_derive ={ path = "dagrs_derive", version = "0.3.0"}
+
 [features]
-default = ["logger"]
-logger = []
-yaml = []
+default = ["dagrs_core/logger"]
+yaml = ["dagrs_core/yaml"]
+derive = ["dagrs_derive/derive"]
+
+[[example]]
+name = "custom_log"
+required-features = ["yaml"]
+
+[[example]]
+name = "custom_parser"
+required-features = ["yaml"]
+
+[[example]]
+name = "engine"
+required-features = ["yaml"]
+
+[[example]]
+name = "derive_task"
+required-features = ["derive"]
+
+
+[[example]]
+name = "yaml_dag"
+required-features = ["yaml"]
+
+[[test]]
+name = "dag_job_test"
+required-features = ["yaml"]
+
+[[test]]
+name = "yaml_parser_test"
+required-features = ["yaml"]
