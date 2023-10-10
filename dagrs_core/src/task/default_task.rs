@@ -1,3 +1,5 @@
+use crate::NopAction;
+
 use super::{Action, Task, ID_ALLOCATOR};
 use std::sync::Arc;
 
@@ -107,12 +109,11 @@ impl Task for DefaultTask {
 
 impl Default for DefaultTask {
     fn default() -> Self {
-        let action = crate::gen_action!(|_input: Input, _env: Arc<EnvVar>| { Output::empty() });
         Self {
             id: ID_ALLOCATOR.alloc(),
             name: "default".to_owned(),
             precursors: Vec::new(),
-            action: Arc::new(action),
+            action: Arc::new(NopAction),
         }
     }
 }

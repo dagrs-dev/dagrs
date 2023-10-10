@@ -8,7 +8,7 @@ extern crate yaml_rust;
 
 pub use engine::{Dag, DagError, Engine};
 pub use parser::*;
-pub use task::{alloc_id, Action, DefaultTask, Input, Output, RunningError, Task};
+pub use task::{alloc_id, Action, DefaultTask, Input, NopAction, Output, RunningError, Task};
 #[cfg(feature = "yaml")]
 pub use task::{CommandAction, YamlTask};
 pub use utils::{gen_macro, log, EnvVar, LogLevel, Logger};

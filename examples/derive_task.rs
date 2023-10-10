@@ -5,13 +5,13 @@ use dagrs_core::Output;
 
 #[derive(Task)]
 struct MyTask {
-    #[attr = "id"]
+    #[task(attr = "id")]
     id: usize,
-    #[attr = "name"]
+    #[task(attr = "name")]
     name: String,
-    #[attr = "precursors"]
+    #[task(attr = "precursors")]
     pre: Vec<usize>,
-    #[attr = "action"]
+    #[task(attr = "action")]
     action: Arc<dyn Action + Send + Sync>,
 }
 

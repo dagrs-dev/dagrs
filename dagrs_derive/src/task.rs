@@ -1,7 +1,7 @@
 use proc_macro2::TokenStream;
 use syn::{
-    Data, DeriveInput, Expr, Field, Fields, GenericArgument, Ident, Lit, Meta, PathArguments, Type,
-    TypeParamBound,
+    Data, DeriveInput, Expr, ExprLit, Field, Fields, GenericArgument, Ident, Lit, MetaNameValue,
+    PathArguments, Type, TypeParamBound,
 };
 
 const ID: &str = "id";
@@ -9,238 +9,198 @@ const NAME: &str = "name";
 const PRECURSORS: &str = "precursors";
 const ACTION: &str = "action";
 
-enum Attr<'a> {
-    Name(&'a Ident),
-    Action(&'a Ident),
-    Precursors(&'a Ident),
-    Id(&'a Ident),
-    Non,
-}
-
 #[allow(unused)]
 pub fn parse_task(input: &DeriveInput) -> TokenStream {
-    let struct_name = &input.ident;
-    let mut id: Option<&Ident> = None;
-    let mut name: Option<&Ident> = None;
-    let mut precursors: Option<&Ident> = None;
-    let mut action: Option<&Ident> = None;
-    match input.data {
-        Data::Struct(ref data) => {
-            if let Fields::Named(ref named) = data.fields {
-                named
-                    .named
-                    .iter()
-                    .for_each(|field| match parse_attribute(field) {
-                        Attr::Name(ident) => name = Some(ident),
-                        Attr::Action(ident) => action = Some(ident),
-                        Attr::Precursors(ident) => precursors = Some(ident),
-                        Attr::Id(ident) => id = Some(ident),
-                        Attr::Non => {}
-                    })
+    let struct_ident = &input.ident;
+    let fields = match input.data {
+        Data::Struct(ref str) => &str.fields,
+        _ => {
+            return syn::Error::new_spanned(
+                struct_ident,
+                "Task macros can only be annotated on struct.",
+            )
+            .into_compile_error();
+        }
+    };
+    let attr_token = generate_field_function(fields);
+    if let Err(e) = attr_token {
+        return e.into_compile_error();
+    }
+    generate_impl(struct_ident, attr_token.unwrap())
+}
+
+fn generate_field_function(fields: &Fields) -> syn::Result<proc_macro2::TokenStream> {
+    let mut token = proc_macro2::TokenStream::new();
+    for field in fields.iter() {
+        for attr in field.attrs.iter() {
+            if attr.path().is_ident("task") {
+                let kv: MetaNameValue = attr.parse_args()?;
+                if kv.path.is_ident("attr") {
+                    let err_msg = format!(
+                        "The optional value of attr is [{},{},{},{}]",
+                        ID, NAME, PRECURSORS, ACTION
+                    );
+                    let err = Err(syn::Error::new_spanned(&kv.value, err_msg));
+                    if let Expr::Lit(ExprLit {
+                        lit: Lit::Str(lit), ..
+                    }) = kv.value
+                    {
+                        let tk = match lit.value().as_str() {
+                            ID => validate_id(field),
+                            NAME => validate_name(field),
+                            PRECURSORS => validate_precursors(field),
+                            ACTION => validate_action(field),
+                            _ => return err,
+                        }?;
+                        token.extend(tk);
+                    } else {
+                        return err;
+                    }
+                } else {
+                    return Err(syn::Error::new_spanned(kv, "expect `task(attr = \"...\")`"));
+                }
             }
         }
-        _ => {
-            unimplemented!("`Task` can only be marked on struct.")
-        }
     }
-    if let [Some(id), Some(name), Some(precursors), Some(action)] = [id, name, precursors, action] {
-        generate_impl(struct_name, id, name, precursors, action)
+    Ok(token)
+}
+
+fn validate_id(field: &Field) -> syn::Result<proc_macro2::TokenStream> {
+    let ident = &field.ident;
+    let err = Err(syn::Error::new_spanned(
+        &field.ty,
+        "The type of `id` should be `usize`",
+    ));
+    if let Type::Path(ref str) = field.ty {
+        let ty = str.path.segments.last().unwrap();
+        if ty.ident.eq("usize") {
+            Ok(quote::quote!(
+                fn id(&self) -> usize {
+                    self.#ident
+                }
+            ))
+        } else {
+            err
+        }
     } else {
-        let example = "#[derive(Task)]\n".to_string()
-            + "struct MyTask {\n"
-            + "\t#[attr = \"id\"]\n"
-            + "\tid: usize,\n"
-            + "\t#[attr = \"name\"]\n"
-            + "\tname: String,\n"
-            + "\t#[attr = \"precursors\"]\n"
-            + "\tpre: Vec<usize>,\n"
-            + "\t#[attr = \"action\"]\n"
-            + "\taction: Arc<dyn Action+Send+Sync>,\n"
-            + "}";
-        panic!(
-            "Four required attributes must be marked with `attr`, for example:\n{}",
-            example
-        )
+        err
     }
 }
 
-const REQUIRED_ATTRS: &str =
-    "`attr` value optional values: [\"id\",\"name\",\"action\",\"precursors\"]";
-
-fn parse_attribute(field: &Field) -> Attr {
-    let attrs = &field.attrs;
-    let ty = &field.ty;
-    for attr in attrs {
-        let attr_ident = attr.path().get_ident();
-        if attr_ident.is_some() && attr_ident.unwrap().eq("attr") {
-            let ident = field.ident.as_ref().unwrap();
-            if let Meta::NameValue(ref kv) = attr.meta {
-                if let Expr::Lit(ref v) = kv.value {
-                    match v.lit {
-                        Lit::Str(ref attr_value) => match attr_value.value().as_str() {
-                            ID => {
-                                validate_id(ty);
-                                return Attr::Id(ident);
-                            }
-                            NAME => {
-                                validate_name(ty);
-                                return Attr::Name(ident);
-                            }
-                            PRECURSORS => {
-                                validate_precursors(ty);
-                                return Attr::Precursors(ident);
-                            }
-                            ACTION => {
-                                validate_action(ty);
-                                return Attr::Action(ident);
-                            }
-                            _ => unimplemented!("{}", REQUIRED_ATTRS),
-                        },
-                        _ => {
-                            unimplemented!("{}", REQUIRED_ATTRS)
-                        }
-                    }
+fn validate_name(field: &Field) -> syn::Result<proc_macro2::TokenStream> {
+    let ident = &field.ident;
+    let err = Err(syn::Error::new_spanned(
+        &field.ty,
+        "The type of `name` should be `String`",
+    ));
+    if let Type::Path(ref str) = field.ty {
+        let ty = str.path.segments.last().unwrap();
+        if ty.ident.eq("String") {
+            Ok(quote::quote!(
+                fn name(&self) -> String {
+                    self.#ident.clone()
                 }
-            }
+            ))
+        } else {
+            err
         }
-    }
-    Attr::Non
-}
-
-const FIX_ID: &str = "The id field must be of type usize. id: usize";
-
-fn validate_id(ty: &Type) {
-    match ty {
-        Type::Path(ref p) => {
-            if !p.path.get_ident().unwrap().eq("usize") {
-                unimplemented!("{}", FIX_ID)
-            }
-        }
-        _ => {
-            unimplemented!("{}", FIX_ID)
-        }
+    } else {
+        err
     }
 }
 
-const FIX_NAME: &str = "The name field must be of type String. name: String";
-
-fn validate_name(ty: &Type) {
-    match ty {
-        Type::Path(ref p) => {
-            if !p.path.get_ident().unwrap().eq("String") {
-                unimplemented!("{}", FIX_NAME)
-            }
-        }
-        _ => {
-            unimplemented!("{}", FIX_NAME)
-        }
-    }
-}
-
-const FIX_PRE: &str = "The precursors field must be of type Vec<usize>";
-
-fn validate_precursors(ty: &Type) {
-    match ty {
-        Type::Path(ref p) => {
-            let seg = &p.path.segments.first().unwrap();
-            let generic_type = match seg.arguments {
-                PathArguments::AngleBracketed(ref ab) => {
-                    let pt = &ab.args;
-                    let generic = pt.first().unwrap();
-                    match generic {
-                        GenericArgument::Type(ref t) => match t {
-                            Type::Path(ref p) => &p.path.segments.first().unwrap().ident,
-                            _ => unimplemented!(),
-                        },
-                        _ => unimplemented!("{}", FIX_PRE),
-                    }
-                }
-                _ => unimplemented!("{}", FIX_PRE),
-            };
-            if !seg.ident.eq("Vec") || !generic_type.eq("usize") {
-                unimplemented!("{}", FIX_PRE)
-            }
-        }
-        _ => {
-            unimplemented!("{}", FIX_PRE)
-        }
-    }
-}
-
-const FIX_ACTION: &str = "The action field must be of type Arc<Action+Sync+Send>";
-
-fn validate_action(ty: &Type) {
-    let mut v_action = false;
-    let mut v_sync = false;
-    let mut v_send = false;
-    match ty {
-        Type::Path(ref p) => {
-            let seg = &p.path.segments.first().unwrap();
-            match seg.arguments {
-                PathArguments::AngleBracketed(ref ab) => match ab.args.first().unwrap() {
-                    GenericArgument::Type(ref t) => match t {
-                        Type::TraitObject(ref to) => {
-                            let bounds = &to.bounds;
-                            if bounds.len() != 3 {
-                                unimplemented!("{}", FIX_ACTION)
-                            }
-                            bounds.into_iter().for_each(|bound| match bound {
-                                TypeParamBound::Trait(tb) => {
-                                    let ident = tb.path.get_ident().unwrap();
-                                    match ident.to_string().as_str() {
-                                        "Action" => v_action = true,
-                                        "Sync" => v_sync = true,
-                                        "Send" => v_send = true,
-                                        _ => unimplemented!("{}", FIX_ACTION),
-                                    }
+fn validate_precursors(field: &Field) -> syn::Result<proc_macro2::TokenStream> {
+    let ident = &field.ident;
+    let err = Err(syn::Error::new_spanned(
+        &field.ty,
+        "The type of `id` should be `Vec<usize>`",
+    ));
+    if let Type::Path(ref str) = field.ty {
+        let ty = str.path.segments.last().unwrap();
+        if ty.ident.eq("Vec") {
+            match ty.arguments {
+                PathArguments::AngleBracketed(ref inner) => {
+                    if let GenericArgument::Type(Type::Path(inner_ty)) = inner.args.last().unwrap()
+                    {
+                        if inner_ty.path.is_ident("usize") {
+                            Ok(quote::quote!(
+                                fn precursors(&self) -> &[usize] {
+                                    &self.#ident
                                 }
-                                _ => unimplemented!("{}", FIX_ACTION),
-                            });
+                            ))
+                        } else {
+                            err
                         }
-                        _ => {
-                            unimplemented!("{}", FIX_ACTION)
-                        }
-                    },
-                    _ => unimplemented!("{}", FIX_ACTION),
-                },
-                _ => unimplemented!("{}", FIX_ACTION),
-            };
-            if !seg.ident.eq("Arc") || !v_action || !v_send || !v_sync {
-                unimplemented!("{}", FIX_ACTION)
+                    } else {
+                        err
+                    }
+                }
+                _ => err,
             }
+        } else {
+            err
         }
-        _ => {
-            unimplemented!("{}", FIX_ACTION)
-        }
+    } else {
+        err
     }
 }
 
-fn generate_impl(
-    struct_name: &Ident,
-    id: &Ident,
-    name: &Ident,
-    precursors: &Ident,
-    action: &Ident,
-) -> TokenStream {
-    quote::quote!(
-        impl Task for #struct_name{
-            fn action(&self) -> Arc<dyn Action + Send + Sync>{
-                self.#action.clone()
+fn validate_action(field: &Field) -> syn::Result<proc_macro2::TokenStream> {
+    let ident = &field.ident;
+    let err = Err(syn::Error::new_spanned(
+        &field.ty,
+        "The type of `id` should be `Arc<dyn Action+Send+Sync>`",
+    ));
+    if let Type::Path(ref str) = field.ty {
+        let ty = str.path.segments.last().unwrap();
+        if ty.ident.eq("Arc") {
+            match ty.arguments {
+                PathArguments::AngleBracketed(ref inner) => {
+                    if let GenericArgument::Type(Type::TraitObject(tto)) =
+                        inner.args.last().unwrap()
+                    {
+                        let bounds_ident = tto
+                            .bounds
+                            .iter()
+                            .map(|bound| {
+                                if let TypeParamBound::Trait(ref t) = bound {
+                                    Some(t)
+                                } else {
+                                    None
+                                }
+                            })
+                            .filter(|bound| !bound.is_none())
+                            .map(|bound| bound.unwrap().path.get_ident().unwrap().to_string())
+                            .collect::<Vec<String>>();
+                        if bounds_ident.iter().any(|bound| bound.eq("Action")) {
+                            Ok(quote::quote!(
+                                fn action(&self) -> Arc<dyn Action + Send + Sync> {
+                                    self.#ident.clone()
+                                }
+                            ))
+                        } else {
+                            err
+                        }
+                    } else {
+                        err
+                    }
+                }
+                _ => err,
             }
-
-            fn precursors(&self) -> &[usize]{
-                &self.#precursors[..]
-            }
-
-            fn id(&self) -> usize{
-                self.#id
-            }
-
-            fn name(&self) -> String{
-                self.#name.clone()
-            }
+        } else {
+            err
         }
-        unsafe impl Send for #struct_name{}
-        unsafe impl Sync for #struct_name{}
+    } else {
+        err
+    }
+}
+
+fn generate_impl(struct_ident: &Ident, fields_function: proc_macro2::TokenStream) -> TokenStream {
+    quote::quote!(
+        impl Task for #struct_ident{
+            #fields_function
+        }
+        unsafe impl Send for #struct_ident{}
+        unsafe impl Sync for #struct_ident{}
     )
 }

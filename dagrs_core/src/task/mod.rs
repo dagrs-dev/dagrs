@@ -136,6 +136,13 @@ pub trait Task: Send + Sync {
     fn name(&self) -> String;
 }
 
+/// IDAllocator for DefaultTask
+struct IDAllocator {
+    id: AtomicUsize,
+}
+
+pub struct NopAction;
+
 impl Debug for dyn Task {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(
@@ -148,11 +155,6 @@ impl Debug for dyn Task {
     }
 }
 
-/// IDAllocator for DefaultTask
-struct IDAllocator {
-    id: AtomicUsize,
-}
-
 impl IDAllocator {
     fn alloc(&self) -> usize {
         let origin = self.id.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
@@ -161,6 +163,12 @@ impl IDAllocator {
         } else {
             origin
         }
+    }
+}
+
+impl Action for NopAction {
+    fn run(&self, _input: Input, _env: Arc<EnvVar>) -> Result<Output, RunningError> {
+        Ok(Output::empty())
     }
 }
 
