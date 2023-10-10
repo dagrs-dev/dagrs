@@ -13,13 +13,30 @@
 /// ```
 #[macro_export]
 macro_rules! gen_task {
-    ($task_name:expr,$action:expr) => {{
+    ($task_name:literal,$action:expr) => {{
+        use std::sync::Arc;
+        use $crate::{Action, EnvVar, Input, Output, RunningError};
         pub struct SimpleAction;
         impl Action for SimpleAction {
             fn run(&self, input: Input, env: Arc<EnvVar>) -> Result<Output, RunningError> {
-                $action(input,env)
+                Ok($action(input, env))
             }
         }
         DefaultTask::new(SimpleAction, $task_name)
+    }};
+}
+
+#[macro_export]
+macro_rules! gen_action {
+    ($action:expr) => {{
+        use std::sync::Arc;
+        use $crate::{Action, EnvVar, Input, Output, RunningError};
+        pub struct SimpleAction;
+        impl Action for SimpleAction {
+            fn run(&self, input: Input, env: Arc<EnvVar>) -> Result<Output, RunningError> {
+                Ok($action(input, env))
+            }
+        }
+        SimpleAction
     }};
 }

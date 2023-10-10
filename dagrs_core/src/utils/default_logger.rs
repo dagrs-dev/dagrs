@@ -7,7 +7,10 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use crate::{LogLevel, Logger, log::{LoggerError, LOG}};
+use crate::{
+    log::{LoggerError, LOG},
+    LogLevel, Logger,
+};
 
 /// Default logger.
 pub(crate) struct DefaultLogger {
@@ -74,7 +77,10 @@ impl Display for LogLevel {
 /// use dagrs::{log, LogLevel};
 /// let _initialized = log::init_logger(LogLevel::Info,None);
 /// ```
-pub(crate) fn init_default_logger(fix_log_level: LogLevel, log_file: Option<File>) -> Result<(), LoggerError> {
+pub(crate) fn init_default_logger(
+    fix_log_level: LogLevel,
+    log_file: Option<File>,
+) -> Result<(), LoggerError> {
     let logger = match log_file {
         Some(file) => DefaultLogger {
             level: fix_log_level,

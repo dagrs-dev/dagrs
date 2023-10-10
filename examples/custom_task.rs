@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 
-use dagrs::{log, Action, Dag, EnvVar, Input, LogLevel, Output, RunningError, Task,alloc_id};
+use dagrs::{alloc_id, log, Action, Dag, EnvVar, Input, LogLevel, Output, RunningError, Task};
 
 struct MyTask {
     id: usize,
@@ -33,7 +33,7 @@ impl Task for MyTask {
         self.action.clone()
     }
 
-    fn predecessors(&self) -> &[usize] {
+    fn precursors(&self) -> &[usize] {
         &self.predecessor_tasks
     }
 

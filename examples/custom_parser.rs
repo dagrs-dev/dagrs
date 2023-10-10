@@ -14,11 +14,11 @@
 
 extern crate dagrs;
 
-use std::{fs, sync::Arc};
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
+use std::{fs, sync::Arc};
 
-use dagrs::{Action, Dag, log,LogLevel, Parser, ParserError, CommandAction, Task};
+use dagrs::{log, Action, CommandAction, Dag, LogLevel, Parser, ParserError, Task};
 
 struct MyTask {
     tid: (String, usize),
@@ -61,7 +61,7 @@ impl Task for MyTask {
     fn action(&self) -> Arc<dyn Action + Sync + Send> {
         self.action.clone()
     }
-    fn predecessors(&self) -> &[usize] {
+    fn precursors(&self) -> &[usize] {
         &self.precursors_id
     }
     fn id(&self) -> usize {
@@ -74,7 +74,11 @@ impl Task for MyTask {
 
 impl Display for MyTask {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{},{},{},{:?}", self.name, self.tid.0, self.tid.1, self.precursors)
+        write!(
+            f,
+            "{},{},{},{:?}",
+            self.name, self.tid.0, self.tid.1, self.precursors
+        )
     }
 }
 
@@ -100,17 +104,16 @@ impl ConfigParser {
         let id = *attr.get(0).unwrap();
         let name = attr.get(1).unwrap().to_string();
         let cmd = *attr.get(3).unwrap();
-        MyTask::new(
-            id,
-            pres,
-            name,
-            CommandAction::new(cmd),
-        )
+        MyTask::new(id, pres, name, CommandAction::new(cmd))
     }
 }
 
 impl Parser for ConfigParser {
-    fn parse_tasks(&self, file: &str,_specific_actions:HashMap<String,Arc<dyn Action+Send+Sync+'static>>) -> Result<Vec<Box<dyn Task>>, ParserError> {
+    fn parse_tasks(
+        &self,
+        file: &str,
+        _specific_actions: HashMap<String, Arc<dyn Action + Send + Sync + 'static>>,
+    ) -> Result<Vec<Box<dyn Task>>, ParserError> {
         let content = self.load_file(file)?;
         let mut map = HashMap::new();
         let mut tasks = Vec::new();
@@ -140,6 +143,7 @@ impl Parser for ConfigParser {
 fn main() {
     let _initialized = log::init_logger(LogLevel::Info, None);
     let file = "tests/config/custom_file_task.txt";
-    let mut dag = Dag::with_config_file_and_parser(file, Box::new(ConfigParser),HashMap::new()).unwrap();
+    let mut dag =
+        Dag::with_config_file_and_parser(file, Box::new(ConfigParser), HashMap::new()).unwrap();
     assert!(dag.start().unwrap());
 }

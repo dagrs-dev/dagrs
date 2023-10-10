@@ -91,23 +91,25 @@
 //! If users want to customize Task, they can refer to the implementation of these two specific [`Task`].
 
 use std::fmt::Debug;
-use std::sync::Arc;
 use std::sync::atomic::AtomicUsize;
+use std::sync::Arc;
 
 use crate::utils::EnvVar;
 
-pub use self::error::{RunningError,CmdExecuteError};
 #[cfg(feature = "yaml")]
 pub use self::cmd::CommandAction;
+pub use self::default_task::DefaultTask;
+pub use self::error::{CmdExecuteError, RunningError};
+pub(crate) use self::state::ExecState;
+pub use self::state::{Input, Output};
 #[cfg(feature = "yaml")]
 pub use self::yaml_task::YamlTask;
-pub use self::state::{Output,Input};
-pub(crate) use self::state::ExecState;
 
-mod error;
 mod cmd;
-mod yaml_task;
+mod default_task;
+mod error;
 mod state;
+mod yaml_task;
 
 /// Action Trait.
 /// [`Action`] represents the specific behavior to be executed.
@@ -127,114 +129,30 @@ pub trait Task: Send + Sync {
     /// Get a reference to an executable action.
     fn action(&self) -> Arc<dyn Action + Send + Sync>;
     /// Get the id of all predecessor tasks of this task.
-    fn predecessors(&self) -> &[usize];
+    fn precursors(&self) -> &[usize];
     /// Get the id of this task.
     fn id(&self) -> usize;
     /// Get the name of this task.
     fn name(&self) -> String;
 }
 
-impl Debug for dyn Task {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "{},\t{},\t{:?}", self.id(),self.name(),self.predecessors())
-    }
-}
-
-/// A default implementation of the Task trait. In general, use it to define the tasks of dagrs.
-pub struct DefaultTask {
-    /// id is the unique identifier of each task, it will be assigned by the global [`IDAllocator`]
-    /// when creating a new task, you can find this task through this identifier.
-    id: usize,
-    /// The task's name.
-    name: String,
-    /// Id of the predecessor tasks.
-    predecessor_tasks: Vec<usize>,
-    /// Perform specific actions.
-    action: Arc<dyn Action + Send + Sync>,
-}
-
-impl DefaultTask {
-    /// Allocate a new [`DefaultTask`], the specific task behavior is a structure that implements [`Action`].
-    ///
-    /// # Example
-    ///
-    /// ```rust
-    /// use dagrs::{DefaultTask, Output,Input, Action,EnvVar,RunningError};
-    /// use std::sync::Arc;
-    /// struct SimpleAction(usize);
-    ///
-    /// impl Action for SimpleAction {
-    /// fn run(&self, input: Input, env: Arc<EnvVar>) -> Result<Output,RunningError> {
-    ///     Ok(Output::new(self.0 + 10))
-    /// }
-    /// }
-    ///
-    /// let action = SimpleAction(10);
-    /// let task = DefaultTask::new(action, "Increment action");
-    /// ```
-    ///
-    /// `SimpleAction` is a struct that impl [`Action`]. Since task will be
-    ///  executed in separated threads, [`Send`] and [`Sync`] is needed.
-    ///
-    /// **Note:** This method will take the ownership of struct that impl [`Action`].
-    pub fn new(action: impl Action + 'static + Send + Sync, name: &str) -> Self {
-        DefaultTask {
-            id: ID_ALLOCATOR.alloc(),
-            action: Arc::new(action),
-            name: name.to_owned(),
-            predecessor_tasks: Vec::new(),
-        }
-    }
-
-    /// Tasks that shall be executed before this one.
-    ///
-    /// # Example
-    /// ```rust
-    /// use dagrs::{Action,DefaultTask,Input,Output,RunningError,EnvVar};
-    /// use std::sync::Arc;
-    /// struct SimpleAction {};
-    /// impl Action for SimpleAction {
-    ///     fn run(&self, input: Input, env: Arc<EnvVar>) -> Result<Output,RunningError> {
-    ///         Ok(Output::empty())
-    ///     }
-    /// }
-    /// let mut t1 = DefaultTask::new(SimpleAction{}, "Task 1");
-    /// let mut t2 = DefaultTask::new(SimpleAction{}, "Task 2");
-    /// t2.set_predecessors(&[&t1]);
-    /// ```
-    /// In above code, `t1` will be executed before `t2`.
-    pub fn set_predecessors<'a>(&mut self, predecessors: impl IntoIterator<Item = &'a&'a DefaultTask>) {
-        self.predecessor_tasks
-            .extend(predecessors.into_iter().map(|t| t.id()))
-    }
-
-    /// The same as `exec_after`, but input are tasks' ids
-    /// rather than reference to [`DefaultTask`].
-    pub fn set_predecessors_by_id(&mut self, predecessors_id: impl IntoIterator<Item = usize>) {
-        self.predecessor_tasks.extend(predecessors_id)
-    }
-}
-
-impl Task for DefaultTask {
-    fn action(&self) -> Arc<dyn Action + Send + Sync> {
-        self.action.clone()
-    }
-
-    fn predecessors(&self) -> &[usize] {
-        &self.predecessor_tasks
-    }
-
-    fn id(&self) -> usize {
-        self.id
-    }
-    fn name(&self) -> String {
-        self.name.clone()
-    }
-}
-
 /// IDAllocator for DefaultTask
 struct IDAllocator {
     id: AtomicUsize,
+}
+
+pub struct NopAction;
+
+impl Debug for dyn Task {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(
+            f,
+            "{},\t{},\t{:?}",
+            self.id(),
+            self.name(),
+            self.precursors()
+        )
+    }
 }
 
 impl IDAllocator {
@@ -248,12 +166,18 @@ impl IDAllocator {
     }
 }
 
+impl Action for NopAction {
+    fn run(&self, _input: Input, _env: Arc<EnvVar>) -> Result<Output, RunningError> {
+        Ok(Output::empty())
+    }
+}
+
 /// The global task uniquely identifies an instance of the allocator.
 static ID_ALLOCATOR: IDAllocator = IDAllocator {
     id: AtomicUsize::new(1),
 };
 
 /// public function to assign task's id.
-pub fn alloc_id()->usize{
+pub fn alloc_id() -> usize {
     ID_ALLOCATOR.alloc()
 }

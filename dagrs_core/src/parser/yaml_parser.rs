@@ -29,11 +29,9 @@ impl YamlParser {
     /// An item refers to:
     ///
     /// ```yaml
-    ///   name: "Task 1"
+    ///    name: "Task 1"
     ///    after: [b, c]
-    ///    run:
-    ///      type: sh
-    ///      script: echo a
+    ///    cmd: echo a
     /// ```
     fn parse_one(
         &self,
