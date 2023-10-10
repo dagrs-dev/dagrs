@@ -43,7 +43,7 @@ impl Tasks {
             if !set.contains(task) {
                 set.insert(task);
             } else {
-                let err_msg = format!("Duplicate task definition! [{}]", task.to_string());
+                let err_msg = format!("Duplicate task definition! [{}]", task);
                 return Err(syn::Error::new_spanned(task, err_msg));
             }
         }
@@ -66,7 +66,7 @@ impl Tasks {
             .map(|item| {
                 let mut pre = Vec::new();
                 tasks.iter().for_each(|(k, v)| {
-                    if v.into_iter().find(|ele| ele.eq(&&item)).is_some() {
+                    if v.iter().any(|ele| ele.eq(&item)) {
                         pre.push(k.clone());
                     }
                 });
@@ -93,7 +93,7 @@ pub fn generate_task(tasks: Vec<Task>) -> proc_macro2::TokenStream {
 
 fn init_tasks(tasks: &[Task]) -> proc_macro2::TokenStream {
     let mut token = proc_macro2::TokenStream::new();
-    for task in tasks.into_iter() {
+    for task in tasks.iter() {
         let ident = &task.task;
         let name = ident.to_string();
         token.extend(quote::quote!(
@@ -106,7 +106,7 @@ fn init_tasks(tasks: &[Task]) -> proc_macro2::TokenStream {
 
 fn init_precursors(tasks: &[Task]) -> proc_macro2::TokenStream {
     let mut token = proc_macro2::TokenStream::new();
-    for task in tasks.into_iter() {
+    for task in tasks.iter() {
         let ident = &task.task;
         let mut pres_token = proc_macro2::TokenStream::new();
         task.precursors.iter().for_each(|item| {

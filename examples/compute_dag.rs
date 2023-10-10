@@ -13,10 +13,7 @@ extern crate dagrs;
 
 use std::sync::Arc;
 
-use dagrs::{
-    Action,
-    Dag, DefaultTask, EnvVar,log, Input, Output, RunningError,LogLevel
-};
+use dagrs::{log, Action, Dag, DefaultTask, EnvVar, Input, LogLevel, Output, RunningError};
 
 macro_rules! generate_task {
     ($action:ident($val:expr),$name:expr) => {{

@@ -9,9 +9,9 @@
 pub mod gen_macro;
 mod env;
 
-pub mod log;
 #[cfg(feature = "logger")]
 mod default_logger;
+pub mod log;
 
 pub use self::env::EnvVar;
-pub use self::log::{LogLevel,Logger};
+pub use self::log::{LogLevel, Logger};

@@ -4,10 +4,7 @@ extern crate dagrs;
 
 use std::sync::Arc;
 
-use dagrs::{
-    Action,
-    Dag, DefaultTask, EnvVar, Input, log, LogLevel, Output, RunningError,
-};
+use dagrs::{log, Action, Dag, DefaultTask, EnvVar, Input, LogLevel, Output, RunningError};
 
 struct SimpleAction(usize);
 

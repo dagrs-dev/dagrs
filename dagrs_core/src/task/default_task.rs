@@ -1,6 +1,5 @@
-use std::sync::Arc;
-
 use super::{Action, Task, ID_ALLOCATOR};
+use std::sync::Arc;
 
 /// A default implementation of the Task trait. In general, use it to define the tasks of dagrs.
 pub struct DefaultTask {
@@ -79,12 +78,12 @@ impl DefaultTask {
         self.precursors.extend(predecessors_id)
     }
 
-    pub fn set_name(&mut self,name: &str){
-        self.name=name.to_owned();
+    pub fn set_name(&mut self, name: &str) {
+        self.name = name.to_owned();
     }
 
-    pub fn set_action(&mut self,action: impl Action + 'static + Send + Sync){
-        self.action=Arc::new(action);
+    pub fn set_action(&mut self, action: impl Action + 'static + Send + Sync) {
+        self.action = Arc::new(action);
     }
 }
 
@@ -108,7 +107,7 @@ impl Task for DefaultTask {
 
 impl Default for DefaultTask {
     fn default() -> Self {
-        let action = crate::gen_action!(|_input, _env| { Output::empty() });
+        let action = crate::gen_action!(|_input: Input, _env: Arc<EnvVar>| { Output::empty() });
         Self {
             id: ID_ALLOCATOR.alloc(),
             name: "default".to_owned(),

@@ -51,7 +51,8 @@ impl Display for CmdExecuteError {
 
 impl From<CmdExecuteError> for RunningError {
     fn from(value: CmdExecuteError) -> Self {
-        RunningError { msg: value.to_string() }
+        RunningError {
+            msg: value.to_string(),
+        }
     }
 }
-

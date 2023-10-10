@@ -64,12 +64,15 @@ use crate::{task::Task, Action};
 
 mod error;
 
-
 /// Generic parser traits. If users want to customize the configuration file parser, they must implement this trait.
 /// [`YamlParser`] is an example of [`Parser`]
 pub trait Parser {
     /// Parses the contents of a configuration file into a series of tasks with dependencies.
     /// If the user customizes the script execution logic, it is necessary to provide specific
     /// types that implement the [`Action`] trait for certain tasks in the form of key-value pairs.
-    fn parse_tasks(&self, file: &str,specific_actions:HashMap<String,Arc<dyn Action+Send+Sync+'static>>) -> Result<Vec<Box<dyn Task>>, ParserError>;
+    fn parse_tasks(
+        &self,
+        file: &str,
+        specific_actions: HashMap<String, Arc<dyn Action + Send + Sync + 'static>>,
+    ) -> Result<Vec<Box<dyn Task>>, ParserError>;
 }

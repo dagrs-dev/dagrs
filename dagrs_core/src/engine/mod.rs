@@ -68,8 +68,8 @@ impl Engine {
 
     /// Execute all the Dags in the Engine in sequence according to the order numbers of the Dags in
     /// the sequence from small to large. The return value is the execution status of all tasks.
-    pub fn run_sequential(&mut self) ->Vec<bool>{
-        let mut res=Vec::new();
+    pub fn run_sequential(&mut self) -> Vec<bool> {
+        let mut res = Vec::new();
         for seq in 1..self.sequence.len() + 1 {
             let name = self.sequence.get(&seq).unwrap().clone();
             res.push(self.run_dag(name.as_str()));
@@ -78,7 +78,7 @@ impl Engine {
     }
 
     /// Given the name of the Dag, get the execution result of the specified Dag.
-    pub fn get_dag_result<T: CloneAnySendSync + Send + Sync>(&self,name:&str)->Option<T>{
+    pub fn get_dag_result<T: CloneAnySendSync + Send + Sync>(&self, name: &str) -> Option<T> {
         if self.dags.contains_key(name) {
             self.dags.get(name).unwrap().get_result()
         } else {

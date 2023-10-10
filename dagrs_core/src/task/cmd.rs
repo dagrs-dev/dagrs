@@ -44,15 +44,13 @@ impl Action for CommandAction {
         });
         let out = match cmd.args(args).output() {
             Ok(o) => o,
-            Err(e) => {
-                return Err(CmdExecuteError::new(e.to_string()).into())
-            }
+            Err(e) => return Err(CmdExecuteError::new(e.to_string()).into()),
         };
         let code = out.status.code().unwrap_or(-1);
         if code == 0 {
-            let mut out =String::from_utf8(out.stdout).unwrap();
-            if cfg!(target_os = "windows"){
-                out=out.replace("\r\n", " ");
+            let mut out = String::from_utf8(out.stdout).unwrap();
+            if cfg!(target_os = "windows") {
+                out = out.replace("\r\n", " ");
             }
             Ok(Output::new(out))
         } else {

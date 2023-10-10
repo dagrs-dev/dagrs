@@ -13,12 +13,17 @@
 //! Logs are generally recorded in two locations, which are printed on the terminal or output
 //! to a file, which needs to be specified by the user.
 
-use std::{sync::{OnceLock, Arc}, fs::File};
+use std::{
+    fs::File,
+    sync::{Arc, OnceLock},
+};
 
 use thiserror::Error;
 
 #[cfg(feature = "logger")]
-use super::default_logger::{init_default_logger, default_debug, default_info, default_warn, default_error};
+use super::default_logger::{
+    default_debug, default_error, default_info, default_warn, init_default_logger,
+};
 
 /// Log level.
 #[derive(Clone, Copy, Debug)]
@@ -89,10 +94,12 @@ pub(crate) static LOG: OnceLock<Arc<dyn Logger + Sync + Send + 'static>> = OnceL
 /// ```
 #[allow(unused_variables)]
 pub fn init_logger(fix_log_level: LogLevel, log_file: Option<File>) -> Result<(), LoggerError> {
-    #[cfg(feature = "logger")] {
+    #[cfg(feature = "logger")]
+    {
         init_default_logger(fix_log_level, log_file)
     }
-    #[cfg(not(feature = "logger"))] {
+    #[cfg(not(feature = "logger"))]
+    {
         Ok(())
     }
 }
@@ -119,28 +126,32 @@ pub fn init_custom_logger(logger: impl Logger + Send + Sync + 'static) -> Result
 
 #[allow(unused_variables)]
 pub fn debug(msg: String) {
-    #[cfg(feature = "logger")] {
+    #[cfg(feature = "logger")]
+    {
         default_debug(msg);
     }
 }
 
 #[allow(unused_variables)]
 pub fn info(msg: String) {
-    #[cfg(feature = "logger")] {
+    #[cfg(feature = "logger")]
+    {
         default_info(msg);
     }
 }
 
 #[allow(unused_variables)]
 pub fn warn(msg: String) {
-    #[cfg(feature = "logger")] {
+    #[cfg(feature = "logger")]
+    {
         default_warn(msg);
     }
 }
 
 #[allow(unused_variables)]
 pub fn error(msg: String) {
-    #[cfg(feature = "logger")] {
+    #[cfg(feature = "logger")]
+    {
         default_error(msg);
     }
 }

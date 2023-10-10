@@ -15,7 +15,7 @@ use anymap2::{any::CloneAnySendSync, Map};
 pub type Variable = Map<dyn CloneAnySendSync + Send + Sync>;
 
 /// environment variable.
-#[derive(Debug,Default)]
+#[derive(Debug, Default)]
 pub struct EnvVar {
     variables: HashMap<String, Variable>,
 }

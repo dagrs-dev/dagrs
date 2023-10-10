@@ -114,7 +114,7 @@ impl Graph {
             })
             .count();
 
-        while let Some(v)=queue.pop() {
+        while let Some(v) = queue.pop() {
             sequence.push(v);
             count += 1;
 

@@ -9,7 +9,7 @@
 
 use std::sync::Arc;
 
-use super::{Action, ID_ALLOCATOR, Task};
+use super::{Action, Task, ID_ALLOCATOR};
 
 /// Task struct for yaml file.
 pub struct YamlTask {
@@ -34,7 +34,7 @@ impl YamlTask {
     ) -> Self {
         Self {
             yid: yaml_id.to_owned(),
-            id:ID_ALLOCATOR.alloc(),
+            id: ID_ALLOCATOR.alloc(),
             name,
             precursors,
             precursors_id: Vec::new(),

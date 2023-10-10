@@ -1,4 +1,6 @@
-use dagrs_core::{log, Action, Dag, DefaultTask, EnvVar, Input, LogLevel, Output, RunningError, Task};
+use dagrs_core::{
+    log, Action, Dag, DefaultTask, EnvVar, Input, LogLevel, Output, RunningError, Task,
+};
 use dagrs_derive::dependencies;
 
 macro_rules! action {

@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 
-use dagrs::{log, Action, Dag, EnvVar, Input, LogLevel, Output, RunningError, Task,alloc_id};
+use dagrs::{alloc_id, log, Action, Dag, EnvVar, Input, LogLevel, Output, RunningError, Task};
 
 struct MyTask {
     id: usize,

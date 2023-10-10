@@ -98,12 +98,12 @@ use crate::utils::EnvVar;
 
 #[cfg(feature = "yaml")]
 pub use self::cmd::CommandAction;
+pub use self::default_task::DefaultTask;
 pub use self::error::{CmdExecuteError, RunningError};
 pub(crate) use self::state::ExecState;
 pub use self::state::{Input, Output};
 #[cfg(feature = "yaml")]
 pub use self::yaml_task::YamlTask;
-pub use self::default_task::DefaultTask;
 
 mod cmd;
 mod default_task;

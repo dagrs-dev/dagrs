@@ -60,6 +60,6 @@ impl Logger for MyLogger {
 fn main() {
     // Initialize the global logger with a custom logger.
     let _initialized = dagrs::log::init_custom_logger(MyLogger::new(LogLevel::Info));
-    let mut dag = Dag::with_yaml("tests/config/correct.yaml",HashMap::new()).unwrap();
+    let mut dag = Dag::with_yaml("tests/config/correct.yaml", HashMap::new()).unwrap();
     assert!(dag.start().unwrap());
 }

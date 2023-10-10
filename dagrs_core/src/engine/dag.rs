@@ -40,13 +40,14 @@ use std::{
     },
 };
 
-use anymap2::any::CloneAnySendSync;
-use tokio::task::JoinHandle;
 use crate::{
     parser::Parser,
     task::{ExecState, Input, Task},
-    utils::{log, EnvVar}, Action,
+    utils::{log, EnvVar},
+    Action,
 };
+use anymap2::any::CloneAnySendSync;
+use tokio::task::JoinHandle;
 
 use super::{error::DagError, graph::Graph};
 
@@ -100,26 +101,33 @@ impl Dag {
 
     /// Given a yaml configuration file parsing task to generate a dag.
     #[cfg(feature = "yaml")]
-    pub fn with_yaml(file: &str,specific_actions: HashMap<String,Arc<dyn Action+Send+Sync+'static>>) -> Result<Dag, DagError> {
+    pub fn with_yaml(
+        file: &str,
+        specific_actions: HashMap<String, Arc<dyn Action + Send + Sync + 'static>>,
+    ) -> Result<Dag, DagError> {
         use crate::YamlParser;
-        let parser=Box::new(YamlParser);
-        Dag::read_tasks(file, parser,specific_actions)
+        let parser = Box::new(YamlParser);
+        Dag::read_tasks(file, parser, specific_actions)
     }
 
     /// Generates a dag with the user given path to a custom parser and task config file.
     pub fn with_config_file_and_parser(
         file: &str,
         parser: Box<dyn Parser>,
-        specific_actions: HashMap<String,Arc<dyn Action+Send+Sync+'static>>
+        specific_actions: HashMap<String, Arc<dyn Action + Send + Sync + 'static>>,
     ) -> Result<Dag, DagError> {
-        Dag::read_tasks(file, parser,specific_actions)
+        Dag::read_tasks(file, parser, specific_actions)
     }
 
     /// Parse the content of the configuration file into a series of tasks and generate a dag.
 
-    fn read_tasks(file: &str, parser: Box<dyn Parser>,specific_actions: HashMap<String,Arc<dyn Action+Send+Sync+'static>>) -> Result<Dag, DagError> {
+    fn read_tasks(
+        file: &str,
+        parser: Box<dyn Parser>,
+        specific_actions: HashMap<String, Arc<dyn Action + Send + Sync + 'static>>,
+    ) -> Result<Dag, DagError> {
         let mut dag = Dag::new();
-        let tasks = parser.parse_tasks(file,specific_actions)?;
+        let tasks = parser.parse_tasks(file, specific_actions)?;
         tasks.into_iter().for_each(|task| {
             dag.tasks.insert(task.id(), Arc::new(task));
         });
@@ -277,7 +285,7 @@ impl Dag {
                     // Store execution results
                     execute_state.set_output(out);
                     execute_state.semaphore().add_permits(task_out_degree);
-                    log::info(format!("Task executed successfully. [name: {}]",task_name));
+                    log::info(format!("Task executed successfully. [name: {}]", task_name));
                     true
                 }
                 Err(err) => {
@@ -328,16 +336,16 @@ impl Dag {
         }
     }
 
-    pub fn get_results<T: CloneAnySendSync + Send + Sync>(&self) -> HashMap<usize,Option<T>> {
-		let mut hm = HashMap::new();
-		for (id,state) in &self.execute_states {
-			let output = match state.get_output() {
-				Some(ref content) => content.clone().remove(),
-				None => None,
-			};
-			hm.insert(*id,output);
-		}
-		hm
+    pub fn get_results<T: CloneAnySendSync + Send + Sync>(&self) -> HashMap<usize, Option<T>> {
+        let mut hm = HashMap::new();
+        for (id, state) in &self.execute_states {
+            let output = match state.get_output() {
+                Some(ref content) => content.clone().remove(),
+                None => None,
+            };
+            hm.insert(*id, output);
+        }
+        hm
     }
 
     /// Before the dag starts executing, set the dag's global environment variable.

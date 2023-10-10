@@ -26,11 +26,11 @@ pub fn dependencies(input: TokenStream) -> TokenStream {
 
     use crate::dependencies::generate_task;
 
-    let tasks=syn::parse_macro_input!(input as Tasks);
-    let relies= tasks.resolve_dependencies();
-    if let Err(err)=relies{
+    let tasks = syn::parse_macro_input!(input as Tasks);
+    let relies = tasks.resolve_dependencies();
+    if let Err(err) = relies {
         return err.into_compile_error().into();
     }
-    let token=generate_task(relies.unwrap());
+    let token = generate_task(relies.unwrap());
     token.into()
 }

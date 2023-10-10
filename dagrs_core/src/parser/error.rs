@@ -53,4 +53,3 @@ impl From<YamlTaskError> for ParserError {
         ParserError::YamlTaskError(value)
     }
 }
-
