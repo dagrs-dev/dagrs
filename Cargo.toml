@@ -43,6 +43,9 @@ required-features = ["yaml"]
 name = "derive_task"
 required-features = ["derive"]
 
+[[example]]
+name = "dependencies"
+required-features = ["derive"]
 
 [[example]]
 name = "yaml_dag"

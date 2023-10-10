@@ -8,8 +8,6 @@
 
 extern crate dagrs;
 
-use std::sync::Arc;
-
 use dagrs::{
     gen_task, log, Action, Dag, DefaultTask, EnvVar, Input, LogLevel, Output, RunningError,
 };
@@ -17,7 +15,7 @@ use dagrs_core::gen_action;
 
 fn main() {
     let _initialized = log::init_logger(LogLevel::Info, None);
-    let a = gen_task!("Compute A", |_input: Input, _env: Arc<EnvVar>| Output::new(20usize));
+    let a = gen_task!("Compute A", |_input, _env| Output::new(20usize));
     let mut b = gen_task!("Compute B", |input: Input, _env: Arc<EnvVar>| {
         let mut sum = 0;
         input
@@ -34,7 +32,7 @@ fn main() {
             .for_each(|i| sum += i.get::<usize>().unwrap() * base);
         Output::new(sum)
     });
-    let action=gen_action!(|input: Input,env:Arc<EnvVar>|{
+    let action = gen_action!(|input: Input, env: Arc<EnvVar>| {
         let mut sum = 0;
         let base = env.get::<usize>("base").unwrap();
         input
@@ -42,7 +40,7 @@ fn main() {
             .for_each(|i| sum += i.get::<usize>().unwrap() - base);
         Output::new(sum)
     });
-    let mut d=DefaultTask::new(action, "Compute D");
+    let mut d = DefaultTask::new(action, "Compute D");
 
     b.set_predecessors(&[&a]);
     c.set_predecessors(&[&a]);

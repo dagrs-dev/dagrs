@@ -14,6 +14,8 @@
 #[macro_export]
 macro_rules! gen_task {
     ($task_name:literal,$action:expr) => {{
+        use crate::{EnvVar, Input, Output,RunningError};
+        use std::sync::Arc;
         pub struct SimpleAction;
         impl Action for SimpleAction {
             fn run(&self, input: Input, env: Arc<EnvVar>) -> Result<Output, RunningError> {
@@ -27,6 +29,8 @@ macro_rules! gen_task {
 #[macro_export]
 macro_rules! gen_action {
     ($action:expr) => {{
+        use crate::{EnvVar, Input, Output,RunningError};
+        use std::sync::Arc;
         pub struct SimpleAction;
         impl Action for SimpleAction {
             fn run(&self, input: Input, env: Arc<EnvVar>) -> Result<Output, RunningError> {
