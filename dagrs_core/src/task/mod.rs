@@ -94,6 +94,8 @@ use std::fmt::Debug;
 use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
 
+use async_trait::async_trait;
+
 use crate::utils::EnvVar;
 
 #[cfg(feature = "yaml")]
@@ -113,9 +115,17 @@ mod yaml_task;
 
 /// Action Trait.
 /// [`Action`] represents the specific behavior to be executed.
+#[async_trait]
 pub trait Action {
     /// The specific behavior to be performed by the task.
     fn run(&self, input: Input, env: Arc<EnvVar>) -> Result<Output, RunningError>;
+    async fn async_run(&self, _input: Input, _env: Arc<EnvVar>) -> Result<Output, RunningError> {
+        Ok(Output::empty())
+    }
+
+    fn is_async(&self) -> bool {
+        false
+    }
 }
 
 /// Tasks can have many attributes, among which `id`, `name`, `predecessor_tasks`, and

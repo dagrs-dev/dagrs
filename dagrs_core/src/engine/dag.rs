@@ -280,17 +280,34 @@ impl Dag {
             }
             log::info(format!("Executing Task[name: {}]", task_name));
             // Concrete logical behavior for performing tasks.
-            match action.run(Input::new(inputs), env) {
-                Ok(out) => {
-                    // Store execution results
-                    execute_state.set_output(out);
-                    execute_state.semaphore().add_permits(task_out_degree);
-                    log::info(format!("Task executed successfully. [name: {}]", task_name));
-                    true
+
+            if action.is_async() {
+                match action.async_run(Input::new(inputs), env).await {
+                    Ok(out) => {
+                        // Store execution results
+                        execute_state.set_output(out);
+                        execute_state.semaphore().add_permits(task_out_degree);
+                        log::info(format!("Task executed successfully. [name: {}]", task_name));
+                        true
+                    }
+                    Err(err) => {
+                        log::error(format!("Task failed[name: {}]. {}", task_name, err));
+                        false
+                    }
                 }
-                Err(err) => {
-                    log::error(format!("Task failed[name: {}]. {}", task_name, err));
-                    false
+            } else {
+                match action.run(Input::new(inputs), env) {
+                    Ok(out) => {
+                        // Store execution results
+                        execute_state.set_output(out);
+                        execute_state.semaphore().add_permits(task_out_degree);
+                        log::info(format!("Task executed successfully. [name: {}]", task_name));
+                        true
+                    }
+                    Err(err) => {
+                        log::error(format!("Task failed[name: {}]. {}", task_name, err));
+                        false
+                    }
                 }
             }
         })
