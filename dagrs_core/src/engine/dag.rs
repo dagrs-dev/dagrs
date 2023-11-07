@@ -207,6 +207,18 @@ impl Dag {
         }
     }
 
+    pub async fn async_start(&mut self) -> Result<bool, DagError> {
+        // If the current continuable state is false, the task will start failing.
+        if self.can_continue.load(Ordering::Acquire) {
+            match self.init() {
+                Ok(_) => Ok(self.run().await),
+                Err(err) => Err(err),
+            }
+        } else {
+            Ok(false)
+        }
+    }
+
     /// Execute tasks sequentially according to the execution sequence given by
     /// topological sorting, and cancel the execution of subsequent tasks if an
     /// error is encountered during task execution.
