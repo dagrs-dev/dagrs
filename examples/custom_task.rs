@@ -13,10 +13,10 @@ struct MyTask {
 }
 
 impl MyTask {
-    pub fn new(action: impl Action + 'static + Send + Sync, name: &str) -> Self {
+    pub fn new(action: Arc<dyn Action  + Send + Sync>, name: &str) -> Self {
         MyTask {
             id: alloc_id(),
-            action: Arc::new(action),
+            action,
             name: name.to_owned(),
             predecessor_tasks: Vec::new(),
         }
@@ -59,7 +59,7 @@ macro_rules! generate_task {
                 Ok(Output::new(sum))
             }
         }
-        MyTask::new($action($val), $name)
+        MyTask::new(Arc::new($action($val)), $name)
     }};
 }
 

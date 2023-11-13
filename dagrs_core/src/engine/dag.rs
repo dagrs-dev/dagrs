@@ -90,7 +90,7 @@ impl Dag {
     }
 
     /// Create a dag by adding a series of tasks.
-    pub fn with_tasks(tasks: Vec<impl Task + 'static>) -> Dag {
+    pub fn with_tasks(tasks: Vec<impl Task + 'static>) -> Self {
         let mut dag = Dag::new();
         tasks.into_iter().for_each(|task| {
             let task = Box::new(task) as Box<dyn Task>;
@@ -103,7 +103,7 @@ impl Dag {
     #[cfg(feature = "yaml")]
     pub fn with_yaml(
         file: &str,
-        specific_actions: HashMap<String, Arc<dyn Action + Send + Sync + 'static>>,
+        specific_actions: HashMap<String, Arc<dyn Action + Send + Sync>>,
     ) -> Result<Dag, DagError> {
         use crate::YamlParser;
         let parser = Box::new(YamlParser);
@@ -114,7 +114,7 @@ impl Dag {
     pub fn with_config_file_and_parser(
         file: &str,
         parser: Box<dyn Parser>,
-        specific_actions: HashMap<String, Arc<dyn Action + Send + Sync + 'static>>,
+        specific_actions: HashMap<String, Arc<dyn Action + Send + Sync>>,
     ) -> Result<Dag, DagError> {
         Dag::read_tasks(file, parser, specific_actions)
     }
@@ -124,7 +124,7 @@ impl Dag {
     fn read_tasks(
         file: &str,
         parser: Box<dyn Parser>,
-        specific_actions: HashMap<String, Arc<dyn Action + Send + Sync + 'static>>,
+        specific_actions: HashMap<String, Arc<dyn Action + Send + Sync>>,
     ) -> Result<Dag, DagError> {
         let mut dag = Dag::new();
         let tasks = parser.parse_tasks(file, specific_actions)?;

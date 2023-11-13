@@ -37,7 +37,7 @@ impl YamlParser {
         &self,
         id: &str,
         item: &Yaml,
-        specific_action: Option<Arc<dyn Action + Send + Sync + 'static>>,
+        specific_action: Option<Arc<dyn Action + Send + Sync>>,
     ) -> Result<YamlTask, YamlTaskError> {
         // Get name first
         let name = item["name"]
@@ -63,7 +63,7 @@ impl YamlParser {
                 id,
                 precursors,
                 name,
-                Arc::new(CommandAction::new(cmd)) as Arc<dyn Action + Send + Sync + 'static>,
+                Arc::new(CommandAction::new(cmd)) as Arc<dyn Action + Send + Sync >,
             ))
         }
     }
@@ -73,7 +73,7 @@ impl Parser for YamlParser {
     fn parse_tasks(
         &self,
         file: &str,
-        mut specific_actions: HashMap<String, Arc<dyn Action + Send + Sync + 'static>>,
+        mut specific_actions: HashMap<String, Arc<dyn Action + Send + Sync>>,
     ) -> Result<Vec<Box<dyn Task>>, ParserError> {
         let content = self.load_file(file)?;
         // Parse Yaml
