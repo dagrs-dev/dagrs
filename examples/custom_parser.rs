@@ -33,14 +33,14 @@ impl MyTask {
         txt_id: &str,
         precursors: Vec<String>,
         name: String,
-        action: impl Action + Send + Sync + 'static,
+        action: Arc<dyn Action + Send + Sync>,
     ) -> Self {
         Self {
             tid: (txt_id.to_owned(), dagrs::alloc_id()),
             name,
             precursors,
             precursors_id: Vec::new(),
-            action: Arc::new(action),
+            action,
         }
     }
 
@@ -92,19 +92,19 @@ impl ConfigParser {
     }
 
     fn parse_one(&self, item: String) -> MyTask {
-        let attr: Vec<&str> = item.split(",").collect();
+        let attr: Vec<&str> = item.split(',').collect();
 
         let pres_item = *attr.get(2).unwrap();
         let pres = if pres_item.eq("") {
             Vec::new()
         } else {
-            pres_item.split(" ").map(|pre| pre.to_string()).collect()
+            pres_item.split(' ').map(|pre| pre.to_string()).collect()
         };
 
-        let id = *attr.get(0).unwrap();
+        let id = *attr.first().unwrap();
         let name = attr.get(1).unwrap().to_string();
         let cmd = *attr.get(3).unwrap();
-        MyTask::new(id, pres, name, CommandAction::new(cmd))
+        MyTask::new(id, pres, name, Arc::new(CommandAction::new(cmd)))
     }
 }
 

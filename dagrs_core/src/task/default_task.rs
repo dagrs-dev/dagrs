@@ -49,6 +49,39 @@ impl DefaultTask {
         }
     }
 
+    /// Allocate a new [`DefaultTask`] from any action and name.
+    /// The specific task behavior is a structure that implements [`Action`].
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use dagrs::{DefaultTask, Output,Input, Action,EnvVar,RunningError};
+    /// use std::sync::Arc;
+    /// struct SimpleAction(usize);
+    ///
+    /// impl Action for SimpleAction {
+    /// fn run(&self, input: Input, env: Arc<EnvVar>) -> Result<Output,RunningError> {
+    ///     Ok(Output::new(self.0 + 10))
+    /// }
+    /// }
+    ///
+    /// let action = Arc::new(SimpleAction(10));
+    /// let task = DefaultTask::from(action, String::from("Increment action"));
+    /// ```
+    ///
+    /// `SimpleAction` is a struct that impl [`Action`]. Since task will be
+    ///  executed in separated threads, [`Send`] and [`Sync`] is needed.
+    ///
+    /// **Note:** This method will take the ownership of struct that impl [`Action`].
+    pub fn from(action: Arc<dyn Action + Send + Sync>, name: String) -> Self {
+        DefaultTask {
+            id: ID_ALLOCATOR.alloc(),
+            action,
+            name,
+            precursors: Vec::new(),
+        }
+    }
+
     /// Tasks that shall be executed before this one.
     ///
     /// # Example

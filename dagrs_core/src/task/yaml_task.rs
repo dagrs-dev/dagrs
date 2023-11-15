@@ -30,7 +30,7 @@ impl YamlTask {
         yaml_id: &str,
         precursors: Vec<String>,
         name: String,
-        action: Arc<dyn Action + Send + Sync + 'static>,
+        action: Arc<dyn Action + Send + Sync>,
     ) -> Self {
         Self {
             yid: yaml_id.to_owned(),

@@ -11,7 +11,8 @@ Cargo.lock
 
 # IDE
 .idea
-.vscode
+/.vscode/*
+!/.vscode/settings.json
 
 # Exclude execute log
 /*.log

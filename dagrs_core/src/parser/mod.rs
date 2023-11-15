@@ -73,6 +73,6 @@ pub trait Parser {
     fn parse_tasks(
         &self,
         file: &str,
-        specific_actions: HashMap<String, Arc<dyn Action + Send + Sync + 'static>>,
+        specific_actions: HashMap<String, Arc<dyn Action + Send + Sync>>,
     ) -> Result<Vec<Box<dyn Task>>, ParserError>;
 }
