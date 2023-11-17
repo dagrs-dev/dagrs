@@ -22,11 +22,11 @@ dagrs:
   f:
     name: "Task 6"
     after: [ g ]
-    cmd: Deno.core.print("f\n")
+    cmd: err_cmd
   g:
     name: "Task 7"
     after: [ h ]
-    cmd: Deno.core.print("g\n")
+    cmd: err_cmd
   h:
     name: "Task 8"
     cmd: echo h

@@ -1,9 +1,27 @@
+use dagrs::{Action, CustomTask, Output, Task};
 use std::sync::Arc;
 
-use dagrs::{Action, Task};
-use dagrs_core::Output;
-
-#[derive(Task)]
+/// `CustomTask` is a derived macro that may be used when customizing tasks. It can only be
+/// marked on the structure, and the user needs to specify four attributes of the custom task
+/// type, which are task(attr="id"), task(attr = "name"), task(attr = "precursors ") and
+/// task(attr = "action"), which are used in the `derive_task` example.
+///
+/// # Example
+///
+/// ```rust
+/// #[derive(CustomTask)]
+/// struct MyTask {
+///     #[task(attr = "id")]
+///     id: usize,
+///     #[task(attr = "name")]
+///     name: String,
+///     #[task(attr = "precursors")]
+///     pre: Vec<usize>,
+///     #[task(attr = "action")]
+///     action: Action,
+/// }
+/// ```
+#[derive(CustomTask)]
 struct MyTask {
     #[task(attr = "id")]
     id: usize,
@@ -12,22 +30,11 @@ struct MyTask {
     #[task(attr = "precursors")]
     pre: Vec<usize>,
     #[task(attr = "action")]
-    action: Arc<dyn Action + Send + Sync>,
-}
-
-struct SimpleAction(i32);
-impl Action for SimpleAction {
-    fn run(
-        &self,
-        _input: dagrs_core::Input,
-        _env: Arc<dagrs_core::EnvVar>,
-    ) -> Result<dagrs_core::Output, dagrs_core::RunningError> {
-        Ok(Output::empty())
-    }
+    action: Action,
 }
 
 fn main() {
-    let action = Arc::new(SimpleAction(10));
+    let action = Action::Closure(Arc::new(|_, _| Output::empty()));
     let task = MyTask {
         id: 10,
         name: "mytask".to_owned(),

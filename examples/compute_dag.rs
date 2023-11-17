@@ -12,37 +12,62 @@
 extern crate dagrs;
 
 use std::sync::Arc;
+use dagrs::{log, Complex, Dag, DefaultTask, EnvVar, Input, LogLevel, Output};
 
-use dagrs::{log, Action, Dag, DefaultTask, EnvVar, Input, LogLevel, Output, RunningError};
+struct Compute(usize);
 
-macro_rules! generate_task {
-    ($action:ident($val:expr),$name:expr) => {{
-        pub struct $action(usize);
-        impl Action for $action {
-            fn run(&self, input: Input, env: Arc<EnvVar>) -> Result<Output, RunningError> {
-                let base = env.get::<usize>("base").unwrap();
-                let mut sum = self.0;
-                input
-                    .get_iter()
-                    .for_each(|i| sum += i.get::<usize>().unwrap() * base);
-                Ok(Output::new(sum))
-            }
-        }
-        DefaultTask::new($action($val), $name)
-    }};
+impl Complex for Compute {
+    fn run(&self, input: Input, env: Arc<EnvVar>) -> Output {
+        let base = env.get::<usize>("base").unwrap();
+        let mut sum = self.0;
+        input
+            .get_iter()
+            .for_each(|i| sum += i.get::<usize>().unwrap() * base);
+        Output::new(sum)
+    }
 }
 
 fn main() {
     // initialization log.
     let _initialized = log::init_logger(LogLevel::Info, None);
     // generate some tasks.
-    let a = generate_task!(A(1), "Compute A");
-    let mut b = generate_task!(B(2), "Compute B");
-    let mut c = generate_task!(C(4), "Compute C");
-    let mut d = generate_task!(D(8), "Compute D");
-    let mut e = generate_task!(E(16), "Compute E");
-    let mut f = generate_task!(F(32), "Compute F");
-    let mut g = generate_task!(G(64), "Compute G");
+    let a = DefaultTask::with_action("Compute A", Compute(1));
+
+    let mut b = DefaultTask::with_action("Compute B", Compute(2));
+
+    let mut c = DefaultTask::new("Compute C");
+    c.set_action(Compute(4));
+
+    let mut d = DefaultTask::new("Compute D");
+    d.set_action(Compute(8));
+
+    let mut e = DefaultTask::with_closure("Compute E", |input, env| {
+        let base = env.get::<usize>("base").unwrap();
+        let mut sum = 16;
+        input
+            .get_iter()
+            .for_each(|i| sum += i.get::<usize>().unwrap() * base);
+        Output::new(sum)
+    });
+    let mut f = DefaultTask::with_closure("Compute F", |input, env| {
+        let base = env.get::<usize>("base").unwrap();
+        let mut sum = 32;
+        input
+            .get_iter()
+            .for_each(|i| sum += i.get::<usize>().unwrap() * base);
+        Output::new(sum)
+    });
+
+    let mut g = DefaultTask::new("Compute G");
+    g.set_closure(|input, env| {
+        let base = env.get::<usize>("base").unwrap();
+        let mut sum = 64;
+        input
+            .get_iter()
+            .for_each(|i| sum += i.get::<usize>().unwrap() * base);
+        Output::new(sum)
+    });
+
     // Set up task dependencies.
     b.set_predecessors(&[&a]);
     c.set_predecessors(&[&a]);

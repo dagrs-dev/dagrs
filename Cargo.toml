@@ -9,30 +9,33 @@ readme = "README.md"
 repository = "https://github.com/open-rust-initiative/dagrs"
 keywords = ["DAG", "task", "async", "parallel", "concurrent"]
 
+[workspace]
+members = ["derive","."]
+
+[dependencies]
+yaml-rust = "0.4.5"
+bimap = "0.6.1"
+clap = { version = "4.2.2", features = ["derive"] }
+anymap2 = "0.13.0"
+tokio = { version = "1.28", features = ["rt", "sync","rt-multi-thread"] }
+derive ={ path = "derive", version = "0.3.0"}
 
 [dev-dependencies]
 log = "0.4"
 simplelog = "0.12"
 
-[workspace]
-members = ["dagrs_derive","dagrs_core"]
-
-
-[dependencies]
-dagrs_core = {path = "dagrs_core" , version = "0.3.0"}
-dagrs_derive ={ path = "dagrs_derive", version = "0.3.0"}
-
 [features]
-default = ["dagrs_core/logger"]
-yaml = ["dagrs_core/yaml"]
-derive = ["dagrs_derive/derive"]
+default = ["logger"]
+logger = []
+yaml = []
+derive = ["derive/derive"]
 
-[[example]]
-name = "custom_log"
+[[bin]]
+name = "dagrs"
 required-features = ["yaml"]
 
 [[example]]
-name = "custom_parser"
+name = "custom_log"
 required-features = ["yaml"]
 
 [[example]]

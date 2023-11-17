@@ -2,11 +2,9 @@
 
 extern crate dagrs;
 
-use std::{collections::HashMap};
+use std::collections::HashMap;
 
-use dagrs::{
-    gen_task, log, Dag, DefaultTask, Engine, LogLevel,
-};
+use dagrs::{log, Dag, DefaultTask, Engine, LogLevel, Output};
 fn main() {
     // initialization log.
     let _initialized = log::init_logger(LogLevel::Info, None);
@@ -14,18 +12,15 @@ fn main() {
     let mut engine = Engine::default();
 
     // Create some task for dag1.
-    let t1_a = gen_task!(
-        "Compute A1",
-        |_input: Input, _env: Arc<EnvVar>| Output::new(20usize)
-    );
-    let mut t1_b = gen_task!("Compute B1", |input: Input, _env: Arc<EnvVar>| {
+    let t1_a = DefaultTask::with_closure("Compute A1", |_, _| Output::new(20usize));
+    let mut t1_b = DefaultTask::with_closure("Compute B1", |input, _| {
         let mut sum = 10;
         input.get_iter().for_each(|input| {
             sum += input.get::<usize>().unwrap();
         });
         Output::new(sum)
     });
-    let mut t1_c = gen_task!("Compute C1", |input: Input, _env: Arc<EnvVar>| {
+    let mut t1_c = DefaultTask::with_closure("Compute C1", |input, _| {
         let mut sum = 20;
         input.get_iter().for_each(|input| {
             sum += input.get::<usize>().unwrap();
@@ -33,7 +28,7 @@ fn main() {
         Output::new(sum)
     });
 
-    let mut t1_d = gen_task!("Compute D1", |input: Input, _env: Arc<EnvVar>| {
+    let mut t1_d = DefaultTask::with_closure("Compute D1", |input, _| {
         let mut sum = 30;
         input.get_iter().for_each(|input| {
             sum += input.get::<usize>().unwrap();
@@ -48,25 +43,22 @@ fn main() {
     engine.append_dag("graph1", dag1);
 
     // Create some task for dag2.
-    let t2_a = gen_task!(
-        "Compute A2",
-        |_input: Input, _env: Arc<EnvVar>| Output::new(2usize)
-    );
-    let mut t2_b = gen_task!("Compute B2", |input: Input, _env: Arc<EnvVar>| {
+    let t2_a = DefaultTask::with_closure("Compute A2", |_, _| Output::new(2usize));
+    let mut t2_b = DefaultTask::with_closure("Compute B2", |input, _| {
         let mut sum = 4;
         input.get_iter().for_each(|input| {
             sum *= input.get::<usize>().unwrap();
         });
         Output::new(sum)
     });
-    let mut t2_c = gen_task!("Compute C2", |input: Input, _env: Arc<EnvVar>| {
+    let mut t2_c = DefaultTask::with_closure("Compute C2", |input, _| {
         let mut sum = 8;
         input.get_iter().for_each(|input| {
             sum *= input.get::<usize>().unwrap();
         });
         Output::new(sum)
     });
-    let mut t2_d = gen_task!("Compute D2", |input: Input, _env: Arc<EnvVar>| {
+    let mut t2_d = DefaultTask::with_closure("Compute D2", |input, _| {
         let mut sum = 16;
         input.get_iter().for_each(|input| {
             sum *= input.get::<usize>().unwrap();
