@@ -12,7 +12,6 @@
 extern crate dagrs;
 
 use std::sync::Arc;
-
 use dagrs::{log, Complex, Dag, DefaultTask, EnvVar, Input, LogLevel, Output};
 
 struct Compute(usize);
