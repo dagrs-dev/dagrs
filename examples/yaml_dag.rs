@@ -2,9 +2,8 @@
 
 extern crate dagrs;
 
-use std::collections::HashMap;
-
 use dagrs::{log, Dag, LogLevel};
+use std::collections::HashMap;
 
 fn main() {
     let _initialized = log::init_logger(LogLevel::Info, None);
