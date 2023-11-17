@@ -31,24 +31,24 @@ pub type Simple = dyn Fn(Input, Arc<EnvVar>) -> Output + Send + Sync + 'static;
 /// use dagrs::{Action,Input,EnvVar,Output,Complex};
 ///
 /// struct HelloAction{
-///    statement:String,
-///    repeat:usize,
+///    statement: String,
+///    repeat: usize,
 /// }
 ///
 /// impl Complex for HelloAction{
 ///     fn run(&self, input: Input, env: Arc<EnvVar>) -> Output{
-///         for i in 0..self.repeat{
-/// 		    println!("{}",self.statement);
-/// 	    }
-/// 	    Output::empty()
-/// 	}
+///         for i in 0..self.repeat {
+///             println!("{}",self.statement);
+///         }
+///         Output::empty()
+///     }
 /// }
 ///
-/// let hello=HelloAction{
-///     statement:"hello world!".to_string(),
-///     repeat:10
+/// let hello=HelloAction {
+///     statement: "hello world!".to_string(),
+///     repeat: 10
 /// };
-/// let action=Action::Structure(Arc::new(hello));
+/// let action = Action::Structure(Arc::new(hello));
 /// ```
 pub trait Complex {
     fn run(&self, input: Input, env: Arc<EnvVar>) -> Output;
