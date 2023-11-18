@@ -10,7 +10,7 @@ repository = "https://github.com/open-rust-initiative/dagrs"
 keywords = ["DAG", "task", "async", "parallel", "concurrent"]
 
 [workspace]
-members = ["derive","."]
+members = ["derive", "."]
 
 [dependencies]
 yaml-rust = "0.4.5"
@@ -18,7 +18,7 @@ bimap = "0.6.1"
 clap = { version = "4.2.2", features = ["derive"] }
 anymap2 = "0.13.0"
 tokio = { version = "1.28", features = ["rt", "sync","rt-multi-thread"] }
-derive ={ path = "derive", version = "0.3.0"}
+derive ={ path = "derive", version = "0.3.0" }
 
 [dev-dependencies]
 log = "0.4"
