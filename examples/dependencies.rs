@@ -54,13 +54,13 @@ fn main() {
             g ->
     );
     let mut x = 1;
-    for index in 0..4 {
-        tasks[index].set_action(Compute(x * 2));
+    for task in tasks.iter_mut().take(4) {
+        task.set_action(Compute(x * 2));
         x *= 2;
     }
 
-    for index in 4..7 {
-        tasks[index].set_closure(|input, env| {
+    for task in tasks.iter_mut().skip(4) {
+        task.set_closure(|input, env| {
             let base = env.get::<usize>("base").unwrap();
             let mut sum = 0;
             input

@@ -48,7 +48,7 @@ Among them, each task may produce output, and may also require the output of som
 
 ### Programmatically implement task definition
 
-Users need to program to implement the `Action` trait to define the specific logic of the task, and then build a series of `DefaultTask`. 
+Users need to program to implement the `Action` trait to define the specific logic of the task, and then build a series of `DefaultTask`.
 
 First, users need to define some specific task logic. There are two ways to define task logic:
 
@@ -70,7 +70,7 @@ Finally, don’t forget to initialize the logger, and then you can call the `sta
 You can refer to an example for the above complete steps: `examples/compute_dag.rs`
 
 
-Here is the `examples/impl_action.rs` example:
+Here is the `examples/compute_dag.rs` example:
 
 ```rust
 //! Only use Dag, execute a job. The graph is as follows:
