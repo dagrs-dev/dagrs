@@ -55,65 +55,60 @@
 mod yaml_parser;
 mod yaml_task;
 
+use thiserror::Error;
+
 pub use self::yaml_parser::YamlParser;
 pub use self::yaml_task::YamlTask;
 
 use crate::ParseError;
 
 /// Errors about task configuration items.
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum YamlTaskError {
     /// The configuration file should start with `dagrs:`.
+    #[error("File content is not start with 'dagrs'.")]
     StartWordError,
     /// No task name configured.
+    #[error("Task has no name field. [{0}]")]
     NoNameAttr(String),
     /// The specified task predecessor was not found.
+    #[error("Task cannot find the specified predecessor. [{0}]")]
     NotFoundPrecursor(String),
     /// `script` is not defined.
+    #[error("The 'script' attribute is not defined. [{0}]")]
     NoScriptAttr(String),
 }
 
 /// Error about file information.
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum FileContentError {
     /// The format of the yaml configuration file is not standardized.
+    #[error("Illegal yaml content: {0}")]
     IllegalYamlContent(yaml_rust::ScanError),
+    /// The file is empty.
+    #[error("File is empty! [{0}]")]
     Empty(String),
 }
 
 /// Configuration file not found.
+#[derive(Debug, Error)]
+#[error("File not found. [{0}]")]
 pub struct FileNotFound(pub std::io::Error);
 
 impl From<YamlTaskError> for ParseError {
     fn from(value: YamlTaskError) -> Self {
-        match value {
-            YamlTaskError::StartWordError => {
-                "File content is not start with 'dagrs'.".to_string().into()
-            }
-            YamlTaskError::NoNameAttr(ref msg) => {
-                format!("Task has no name field. [{}]", msg).into()
-            }
-            YamlTaskError::NotFoundPrecursor(ref msg) => {
-                format!("Task cannot find the specified predecessor. [{}]", msg).into()
-            }
-            YamlTaskError::NoScriptAttr(ref msg) => {
-                format!("The 'script' attribute is not defined. [{}]", msg).into()
-            }
-        }
+        value.to_string().into()
     }
 }
 
 impl From<FileContentError> for ParseError {
     fn from(value: FileContentError) -> Self {
-        match value {
-            FileContentError::IllegalYamlContent(ref err) => err.to_string().into(),
-            FileContentError::Empty(ref file) => format!("File is empty! [{}]", file).into(),
-        }
+        value.to_string().into()
     }
 }
 
 impl From<FileNotFound> for ParseError {
     fn from(value: FileNotFound) -> Self {
-        format!("File not found. [{}]", value.0).into()
+        value.to_string().into()
     }
 }
