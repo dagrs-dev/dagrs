@@ -1,6 +1,8 @@
 //! Task configuration file parser interface
+use thiserror::Error;
+
 use crate::{task::Task, Action};
-use std::{collections::HashMap, error::Error, fmt::Display};
+use std::{collections::HashMap, error::Error};
 
 /// Generic parser traits. If users want to customize the configuration file parser, they must implement this trait.
 /// The yaml module's `YamlParser` is an example.
@@ -29,14 +31,9 @@ pub trait Parser {
 /// This structure stores error information. Users need to customize error types and implement conversion
 /// from custom error types to [`ParseError`].
 /// By default, a conversion from `String` type to [`ParseError`] is provided.
-#[derive(Debug)]
+#[derive(Debug, Error)]
+#[error("{0}")]
 pub struct ParseError(pub Box<dyn Error>);
-
-impl Display for ParseError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&self.0.to_string())
-    }
-}
 
 impl From<String> for ParseError {
     fn from(value: String) -> Self {
