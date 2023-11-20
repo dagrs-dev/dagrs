@@ -1,6 +1,7 @@
+//! Some tests of the dag engine.
+
 use std::{collections::HashMap, sync::Arc};
 
-///! Some tests of the dag engine.
 use dagrs::{log, Complex, Dag, DagError, DefaultTask, EnvVar, Input, LogLevel, Output};
 
 #[test]

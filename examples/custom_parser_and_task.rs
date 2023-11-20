@@ -89,16 +89,16 @@ impl ConfigParser {
     }
 
     fn parse_one(&self, item: String) -> MyTask {
-        let attr: Vec<&str> = item.split(",").collect();
+        let attr: Vec<&str> = item.split(',').collect();
 
         let pres_item = *attr.get(2).unwrap();
         let pres = if pres_item.eq("") {
             Vec::new()
         } else {
-            pres_item.split(" ").map(|pre| pre.to_string()).collect()
+            pres_item.split(' ').map(|pre| pre.to_string()).collect()
         };
 
-        let id = *attr.get(0).unwrap();
+        let id = *attr.first().unwrap();
         let name = attr.get(1).unwrap().to_string();
         let cmd = *attr.get(3).unwrap();
         MyTask::new(id, pres, name, CommandAction::new(cmd))

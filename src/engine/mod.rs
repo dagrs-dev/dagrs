@@ -10,6 +10,7 @@
 //! the Dags are added to the Engine , executing each Dag in turn.
 
 pub use dag::Dag;
+use thiserror::Error;
 
 mod dag;
 mod graph;
@@ -33,16 +34,20 @@ pub struct Engine {
 }
 
 /// Errors that may be raised by building and running dag jobs.
-#[derive(Debug)]
+#[derive(Debug, Error)]
 /// A synthesis of all possible errors.
 pub enum DagError {
     /// Yaml file parsing error.
+    #[error("Parsing error: {0}")]
     ParserError(ParseError),
     /// Task dependency error.
+    #[error("Task[{0}] dependency task not exist.")]
     RelyTaskIllegal(String),
     /// There are loops in task dependencies.
+    #[error("Illegal directed a cyclic graph, loop Detect!")]
     LoopGraph,
     /// There are no tasks in the job.
+    #[error("There are no tasks in the job.")]
     EmptyJob,
 }
 
@@ -58,7 +63,7 @@ impl Engine {
                     self.sequence.insert(len + 1, name.to_string());
                 }
                 Err(err) => {
-                    log::error(format!("Some error occur: {}", err.to_err_msg()));
+                    log::error(format!("Some error occur: {}", err));
                 }
             }
         }
@@ -103,19 +108,6 @@ impl Default for Engine {
             dags: HashMap::new(),
             runtime: Runtime::new().unwrap(),
             sequence: HashMap::new(),
-        }
-    }
-}
-
-impl DagError {
-    fn to_err_msg(&self) -> String {
-        match self {
-            Self::EmptyJob => "There are no tasks in the job.".to_string(),
-            Self::LoopGraph => "Illegal directed a cyclic graph, loop Detect!".to_string(),
-            Self::RelyTaskIllegal(ref name) => {
-                format!("Task[{}] dependency task not exist.", name)
-            }
-            Self::ParserError(ref msg) => msg.0.to_string(),
         }
     }
 }
