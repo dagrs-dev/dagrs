@@ -83,7 +83,7 @@ impl Display for LoggerError {
 }
 
 /// Logger instance.
-pub(crate) static LOG: OnceLock<Arc<dyn Logger + Sync + Send + 'static>> = OnceLock::new();
+pub(crate) static LOG: OnceLock<Arc<dyn Logger + Sync + Send>> = OnceLock::new();
 
 /// Initialize the default logger, the user needs to specify the logging level of the logger,
 /// and can also specify the location of the log output, if the log_file parameter is passed in
@@ -119,7 +119,11 @@ pub fn init_logger(fix_log_level: LogLevel, log_file: Option<File>) -> Result<()
 /// ```
 
 pub fn init_custom_logger(logger: impl Logger + Send + Sync + 'static) -> Result<(), LoggerError> {
-    if LOG.set(Arc::new(logger)).is_err() {
+    init_custom_logger_dyn(Arc::new(logger))
+}
+
+pub fn init_custom_logger_dyn(logger: Arc<dyn Logger + Send + Sync>) -> Result<(), LoggerError> {
+    if LOG.set(logger).is_err() {
         return Err(LoggerError::AlreadyInitialized);
     }
     Ok(())

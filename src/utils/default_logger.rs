@@ -97,7 +97,7 @@ pub(crate) fn init_default_logger(
     Ok(())
 }
 
-pub(crate) fn get_logger() -> Arc<dyn Logger + Send + Sync + 'static> {
+pub(crate) fn get_logger() -> Arc<dyn Logger + Send + Sync> {
     LOG.get().expect("Logger is not initialized!").clone()
 }
 
