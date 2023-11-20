@@ -4,7 +4,7 @@ use std::sync::Arc;
 /// The type of closure that performs logic.
 /// # [`Simple`]
 ///
-/// The specific type of [`Simple`] is `dyn Fn(Input, Arc<EnvVar>) -> Output + Send + Sync + 'static`,
+/// The specific type of [`Simple`] is `dyn Fn(Input, Arc<EnvVar>) -> Output + Send + Sync`,
 /// which represents a closure.
 ///
 /// # Example
@@ -16,7 +16,7 @@ use std::sync::Arc;
 /// let closure=|_input,_env|Output::new(10);
 /// let action=Action::Closure(Arc::new(closure));
 /// ```
-pub type Simple = dyn Fn(Input, Arc<EnvVar>) -> Output + Send + Sync + 'static;
+pub type Simple = dyn Fn(Input, Arc<EnvVar>) -> Output + Send + Sync;
 
 /// More complex types of execution logic.
 /// # [`Complex`]
@@ -57,14 +57,14 @@ pub trait Complex {
 /// Task specific behavior
 ///
 /// [`Action`] stores the specific execution logic of a task. Action::Closure(Arc<[`Simple`]>) represents a
-/// closure, and Action::Structure(Arc<dyn Complex + Send + Sync + 'static>) represents a specific type that
+/// closure, and Action::Structure(Arc<dyn Complex + Send + Sync>) represents a specific type that
 /// implements the [`Complex`] trait.
 /// Attributes that must exist in each task are used to store specific execution logic. Specific
 /// execution logic can be given in two forms: given a closure or a specific type that implements
 /// a Complex trait.
 pub enum Action {
     Closure(Arc<Simple>),
-    Structure(Arc<dyn Complex + Send + Sync + 'static>),
+    Structure(Arc<dyn Complex + Send + Sync>),
 }
 
 impl Action {

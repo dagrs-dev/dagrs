@@ -83,9 +83,15 @@ impl DefaultTask {
     /// Create a task, give the task name, and provide a specific type that implements the [`Complex`] trait as the specific
     /// execution logic of the task.
     pub fn with_action(name: &str, action: impl Complex + Send + Sync + 'static) -> Self {
+        Self::with_action_dyn(name, Arc::new(action))
+    }
+
+    /// Create a task, give the task name, and provide a dynamic task that implements the [`Complex`] trait as the specific
+    /// execution logic of the task.
+    pub fn with_action_dyn(name: &str, action: Arc<dyn Complex + Send + Sync>) -> Self {
         DefaultTask {
             id: ID_ALLOCATOR.alloc(),
-            action: Action::Structure(Arc::new(action)),
+            action: Action::Structure(action),
             name: name.to_owned(),
             precursors: Vec::new(),
         }
@@ -96,9 +102,17 @@ impl DefaultTask {
         name: &str,
         action: impl Fn(Input, Arc<EnvVar>) -> Output + Send + Sync + 'static,
     ) -> Self {
+        Self::with_closure_dyn(name, Arc::new(action))
+    }
+
+    /// Create a task, give the task name, and provide a closure as the specific execution logic of the task.
+    pub fn with_closure_dyn(
+        name: &str,
+        action: Arc<dyn Fn(Input, Arc<EnvVar>) -> Output + Send + Sync>,
+    ) -> Self {
         DefaultTask {
             id: ID_ALLOCATOR.alloc(),
-            action: Action::Closure(Arc::new(action)),
+            action: Action::Closure(action),
             name: name.to_owned(),
             precursors: Vec::new(),
         }

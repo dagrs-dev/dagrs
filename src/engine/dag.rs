@@ -93,6 +93,15 @@ impl Dag {
         dag
     }
 
+    /// Create a dag by adding a series of tasks that implement the [`Task`] trait.
+    pub fn with_tasks_dyn(tasks: Vec<Arc<Box<dyn Task>>>) -> Dag {
+        let mut dag = Dag::new();
+        tasks.into_iter().for_each(|task| {
+            dag.tasks.insert(task.id(), task);
+        });
+        dag
+    }
+
     /// Given a yaml configuration file parsing task to generate a dag.
     #[cfg(feature = "yaml")]
     pub fn with_yaml(
