@@ -2,7 +2,7 @@
 use thiserror::Error;
 
 use crate::{task::Task, Action};
-use std::{collections::HashMap, error::Error};
+use std::collections::HashMap;
 
 /// Generic parser traits. If users want to customize the configuration file parser, they must implement this trait.
 /// The yaml module's `YamlParser` is an example.
@@ -33,10 +33,10 @@ pub trait Parser {
 /// By default, a conversion from `String` type to [`ParseError`] is provided.
 #[derive(Debug, Error)]
 #[error("{0}")]
-pub struct ParseError(pub Box<dyn Error>);
+pub struct ParseError(pub String);
 
 impl From<String> for ParseError {
     fn from(value: String) -> Self {
-        ParseError(value.into())
+        ParseError(value)
     }
 }
