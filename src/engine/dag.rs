@@ -52,7 +52,7 @@ pub struct Dag {
     ///
     /// Arc but no mutex, because only one thread will change [`TaskWrapper`]at a time.
     /// And no modification to [`TaskWrapper`] happens during the execution of it.
-    tasks: HashMap<usize, Arc<Box<dyn Task>>>,
+    tasks: HashMap<usize, Box<dyn Task>>,
     /// Store dependency relations.
     rely_graph: Graph,
     /// Store a task's running result.Execution results will be read and written asynchronously by several threads.
@@ -87,14 +87,13 @@ impl Dag {
     pub fn with_tasks(tasks: Vec<impl Task + 'static>) -> Dag {
         let mut dag = Dag::new();
         tasks.into_iter().for_each(|task| {
-            let task = Box::new(task) as Box<dyn Task>;
-            dag.tasks.insert(task.id(), Arc::new(task));
+            dag.tasks.insert(task.id(), Box::new(task));
         });
         dag
     }
 
     /// Create a dag by adding a series of tasks that implement the [`Task`] trait.
-    pub fn with_tasks_dyn(tasks: Vec<Arc<Box<dyn Task>>>) -> Dag {
+    pub fn with_tasks_dyn(tasks: Vec<Box<dyn Task>>) -> Dag {
         let mut dag = Dag::new();
         tasks.into_iter().for_each(|task| {
             dag.tasks.insert(task.id(), task);
@@ -132,7 +131,7 @@ impl Dag {
         let mut dag = Dag::new();
         let tasks = parser.parse_tasks(file, specific_actions)?;
         tasks.into_iter().for_each(|task| {
-            dag.tasks.insert(task.id(), Arc::new(task));
+            dag.tasks.insert(task.id(), task);
         });
         Ok(dag)
     }
@@ -223,7 +222,7 @@ impl Dag {
         log::info(format!("{} -> [End]", exe_seq));
         let mut handles = Vec::new();
         self.exe_sequence.iter().for_each(|id| {
-            handles.push((*id, self.execute_task(self.tasks[id].clone())));
+            handles.push((*id, self.execute_task(&self.tasks[id])));
         });
         // Wait for the status of each task to execute. If there is an error in the execution of a task,
         // the engine will fail to execute and give up executing tasks that have not yet been executed.
@@ -249,7 +248,8 @@ impl Dag {
     }
 
     /// Execute a given task asynchronously.
-    fn execute_task(&self, task: Arc<Box<dyn Task>>) -> JoinHandle<bool> {
+    #[allow(clippy::borrowed_box)]
+    fn execute_task(&self, task: &Box<dyn Task>) -> JoinHandle<bool> {
         let env = self.env.clone();
         let task_id = task.id();
         let task_name = task.name().to_string();
