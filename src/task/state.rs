@@ -75,6 +75,7 @@ pub enum Output {
 }
 
 /// Task's input value.
+#[derive(Debug)]
 pub struct Input(Vec<Content>);
 
 #[allow(dead_code)]
