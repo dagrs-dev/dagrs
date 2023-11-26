@@ -24,6 +24,8 @@ thiserror = "1.0.50"
 [dev-dependencies]
 log = "0.4"
 simplelog = "0.12"
+criterion = { version = "0.5.1", features = ["html_reports"] }
+rand = "0.8.5"
 
 [features]
 default = ["logger"]
@@ -62,3 +64,7 @@ required-features = ["yaml"]
 [[test]]
 name = "yaml_parser_test"
 required-features = ["yaml"]
+
+[[bench]]
+name = "compute_dag_bench"
+harness = false
