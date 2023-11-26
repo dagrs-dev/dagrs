@@ -57,6 +57,7 @@ use std::sync::Arc;
 /// ```
 ///
 /// A default implementation of the Task trait. In general, use it to define the tasks of dagrs.
+#[derive(Clone)]
 pub struct DefaultTask {
     /// id is the unique identifier of each task, it will be assigned by the global [`IDAllocator`]
     /// when creating a new task, you can find this task through this identifier.
