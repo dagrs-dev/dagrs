@@ -27,9 +27,18 @@ env_logger = "0.10.1"
 simplelog = "0.12"
 criterion = { version = "0.5.1", features = ["html_reports"] }
 
+[target.'cfg(unix)'.dev-dependencies]
+pprof = { version = "0.13.0" }
+
 [features]
 yaml = []
 derive = ["derive/derive"]
+bench-prost-codec = [
+    "pprof/criterion",
+    "pprof/prost-codec",
+    "pprof/_protobuf",
+    "pprof/protobuf-codec",
+]
 
 [[bin]]
 name = "dagrs"
