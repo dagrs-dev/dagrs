@@ -4,7 +4,6 @@ use crate::{
     utils::EnvVar,
     Action, Parser,
 };
-use anymap2::any::CloneAnySendSync;
 use log::{debug, error};
 use std::{
     collections::HashMap,
@@ -274,7 +273,7 @@ impl Dag {
                     return true;
                 }
                 if let Some(content) = wait_for.get_output() {
-                    if !content.is_empty() {
+                    if content.is_some() {
                         inputs.push(content);
                     }
                 }
@@ -343,7 +342,7 @@ impl Dag {
     }
 
     /// Get the final execution result.
-    pub fn get_result<T: CloneAnySendSync + Send + Sync + Clone>(&self) -> Option<T> {
+    pub fn get_result<T: Send + Sync + Clone + 'static>(&self) -> Option<T> {
         if self.exe_sequence.is_empty() {
             None
         } else {
@@ -356,9 +355,7 @@ impl Dag {
     }
 
     /// Get the output of all tasks.
-    pub fn get_results<T: CloneAnySendSync + Send + Sync + Clone>(
-        &self,
-    ) -> HashMap<usize, Option<T>> {
+    pub fn get_results<T: Send + Sync + Clone + 'static>(&self) -> HashMap<usize, Option<T>> {
         let mut hm = HashMap::new();
         for (id, state) in &self.execute_states {
             let output = match state.get_output() {

@@ -35,15 +35,50 @@
 //! to implement the logic of the program.
 
 use std::{
+    any::Any,
     slice::Iter,
-    sync::atomic::{AtomicBool, AtomicPtr, Ordering},
+    sync::{
+        atomic::{AtomicBool, AtomicPtr, Ordering},
+        Arc,
+    },
 };
 
-use anymap2::{any::CloneAnySendSync, Map};
 use tokio::sync::Semaphore;
 
 /// Container type to store task output.
-type Content = Map<dyn CloneAnySendSync + Send + Sync>;
+#[derive(Debug, Clone)]
+pub struct Content {
+    content: Option<Arc<dyn Any + Send + Sync>>,
+}
+
+impl Content {
+    /// Construct a new [`Content`].
+    pub fn new<H: Send + Sync + 'static>(val: H) -> Self {
+        Self {
+            content: Some(Arc::new(val)),
+        }
+    }
+
+    pub fn from_arc<H: Send + Sync + 'static>(val: Arc<H>) -> Self {
+        Self { content: Some(val) }
+    }
+
+    pub fn get<H: 'static>(&self) -> Option<&H> {
+        if let Some(content) = self.content.as_ref() {
+            content.downcast_ref::<H>()
+        } else {
+            None
+        }
+    }
+
+    pub fn is_some(&self) -> bool {
+        self.content.is_some()
+    }
+
+    pub fn as_ref(&self) -> Option<&Arc<dyn Any + Send + Sync>> {
+        self.content.as_ref()
+    }
+}
 
 /// [`ExeState`] internally stores [`Output`], which represents whether the execution of
 /// the task is successful, and its internal semaphore is used to synchronously obtain
@@ -149,11 +184,9 @@ impl Output {
     /// Construct a new [`Output`].
     ///
     /// Since the return value may be transferred between threads,
-    /// [`Send`], [`Sync`], [`CloneAnySendSync`] is needed.
-    pub fn new<H: Send + Sync + CloneAnySendSync>(val: H) -> Self {
-        let mut map = Content::new();
-        assert!(map.insert(val).is_none(), "[Error] map insert fails.");
-        Self::Out(Some(map))
+    /// [`Send`], [`Sync`] is needed.
+    pub fn new<H: Send + Sync + 'static>(val: H) -> Self {
+        Self::Out(Some(Content::new(val)))
     }
 
     /// Construct an empty [`Output`].

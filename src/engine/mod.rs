@@ -17,7 +17,6 @@ mod dag;
 mod graph;
 
 use crate::ParseError;
-use anymap2::any::CloneAnySendSync;
 use std::collections::HashMap;
 use tokio::runtime::Runtime;
 
@@ -92,7 +91,7 @@ impl Engine {
     }
 
     /// Given the name of the Dag, get the execution result of the specified Dag.
-    pub fn get_dag_result<T: CloneAnySendSync + Send + Sync + Clone>(&self, name: &str) -> Option<T> {
+    pub fn get_dag_result<T: Send + Sync + Clone + 'static>(&self, name: &str) -> Option<T> {
         if self.dags.contains_key(name) {
             self.dags.get(name).unwrap().get_result()
         } else {
