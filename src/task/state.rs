@@ -48,35 +48,23 @@ use tokio::sync::Semaphore;
 /// Container type to store task output.
 #[derive(Debug, Clone)]
 pub struct Content {
-    content: Option<Arc<dyn Any + Send + Sync>>,
+    content: Arc<dyn Any + Send + Sync>,
 }
 
 impl Content {
     /// Construct a new [`Content`].
     pub fn new<H: Send + Sync + 'static>(val: H) -> Self {
         Self {
-            content: Some(Arc::new(val)),
+            content: Arc::new(val),
         }
     }
 
     pub fn from_arc<H: Send + Sync + 'static>(val: Arc<H>) -> Self {
-        Self { content: Some(val) }
+        Self { content: val }
     }
 
     pub fn get<H: 'static>(&self) -> Option<&H> {
-        if let Some(content) = self.content.as_ref() {
-            content.downcast_ref::<H>()
-        } else {
-            None
-        }
-    }
-
-    pub fn is_some(&self) -> bool {
-        self.content.is_some()
-    }
-
-    pub fn as_ref(&self) -> Option<&Arc<dyn Any + Send + Sync>> {
-        self.content.as_ref()
+        self.content.downcast_ref::<H>()
     }
 }
 

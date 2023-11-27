@@ -273,9 +273,7 @@ impl Dag {
                     return true;
                 }
                 if let Some(content) = wait_for.get_output() {
-                    if content.is_some() {
-                        inputs.push(content);
-                    }
+                    inputs.push(content);
                 }
             }
             debug!("Executing task [name: {}, id: {}]", task_name, task_id);
