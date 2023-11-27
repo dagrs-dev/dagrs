@@ -25,6 +25,8 @@ fn compute_dag(tasks: Vec<DefaultTask>) {
     dag.set_env(env);
 
     assert!(dag.start().unwrap());
+    // Get execution result.
+    let _res = dag.get_result::<usize>().unwrap();
 }
 
 fn compute_dag_bench(bencher: &mut Criterion) {

@@ -1,4 +1,3 @@
-extern crate anymap2;
 extern crate bimap;
 extern crate clap;
 #[cfg(feature = "derive")]

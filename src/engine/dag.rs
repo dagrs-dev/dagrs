@@ -4,7 +4,6 @@ use crate::{
     utils::EnvVar,
     Action, Parser,
 };
-use anymap2::any::CloneAnySendSync;
 use log::{debug, error};
 use std::{
     collections::HashMap,
@@ -274,9 +273,7 @@ impl Dag {
                     return true;
                 }
                 if let Some(content) = wait_for.get_output() {
-                    if !content.is_empty() {
-                        inputs.push(content);
-                    }
+                    inputs.push(content);
                 }
             }
             debug!("Executing task [name: {}, id: {}]", task_name, task_id);
@@ -343,24 +340,24 @@ impl Dag {
     }
 
     /// Get the final execution result.
-    pub fn get_result<T: CloneAnySendSync + Send + Sync>(&self) -> Option<T> {
+    pub fn get_result<T: Send + Sync + 'static>(&self) -> Option<Arc<T>> {
         if self.exe_sequence.is_empty() {
             None
         } else {
             let last_id = self.exe_sequence.last().unwrap();
             match self.execute_states[last_id].get_output() {
-                Some(ref content) => content.clone().remove(),
+                Some(content) => content.into_inner(),
                 None => None,
             }
         }
     }
 
     /// Get the output of all tasks.
-    pub fn get_results<T: CloneAnySendSync + Send + Sync>(&self) -> HashMap<usize, Option<T>> {
+    pub fn get_results<T: Send + Sync + 'static>(&self) -> HashMap<usize, Option<Arc<T>>> {
         let mut hm = HashMap::new();
         for (id, state) in &self.execute_states {
             let output = match state.get_output() {
-                Some(ref content) => content.clone().remove(),
+                Some(content) => content.into_inner(),
                 None => None,
             };
             hm.insert(*id, output);
