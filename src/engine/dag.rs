@@ -216,14 +216,19 @@ impl Dag {
     /// topological sorting, and cancel the execution of subsequent tasks if an
     /// error is encountered during task execution.
     pub(crate) async fn run(&self) -> bool {
-        let mut exe_seq = String::from("[Start]");
-        self.exe_sequence
-            .iter()
-            .for_each(|id| exe_seq.push_str(&format!(" -> {}", self.tasks[id].name())));
-        info!("{} -> [End]", exe_seq);
+        info!(
+            "[Start]{} -> [End]",
+            {
+                let mut exe_seq = String::new();
+                self.exe_sequence
+                    .iter()
+                    .for_each(|id| exe_seq.push_str(&format!(" -> {}", self.tasks[id].name())));
+                exe_seq
+            }
+        );
         let mut handles = Vec::new();
         self.exe_sequence.iter().for_each(|id| {
-            handles.push((*id, self.execute_task(&self.tasks[id])));
+            handles.push((*id, self.execute_task(self.tasks[id].as_ref())));
         });
         // Wait for the status of each task to execute. If there is an error in the execution of a task,
         // the engine will fail to execute and give up executing tasks that have not yet been executed.
@@ -246,8 +251,7 @@ impl Dag {
     }
 
     /// Execute a given task asynchronously.
-    #[allow(clippy::borrowed_box)]
-    fn execute_task(&self, task: &Box<dyn Task>) -> JoinHandle<bool> {
+    fn execute_task(&self, task: &dyn Task) -> JoinHandle<bool> {
         let env = self.env.clone();
         let task_id = task.id();
         let task_name = task.name().to_string();
