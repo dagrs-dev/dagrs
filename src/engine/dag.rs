@@ -340,8 +340,21 @@ impl Dag {
     }
 
     /// Get the final execution result.
+    pub fn into_result<T: Send + Sync + 'static>(&self) -> Option<Arc<T>> {
+        if self.exe_sequence.is_empty() {
+            None
+        } else {
+            let last_id = self.exe_sequence.last().unwrap();
+            match self.execute_states[last_id].get_output() {
+                Some(content) => content.into_inner(),
+                None => None,
+            }
+        }
+    }
+
+    /// Get the final execution result.
     ///
-    /// Note: This method will clone the value.
+    /// Note: This method will clone the value. To avoid cloning, use [`Dag::into_result`].
     pub fn get_result<T: Send + Sync + Clone + 'static>(&self) -> Option<T> {
         if self.exe_sequence.is_empty() {
             None
@@ -355,8 +368,21 @@ impl Dag {
     }
 
     /// Get the output of all tasks.
+    pub fn into_results<T: Send + Sync + 'static>(&self) -> HashMap<usize, Option<Arc<T>>> {
+        let mut hm = HashMap::new();
+        for (id, state) in &self.execute_states {
+            let output = match state.get_output() {
+                Some(content) => content.into_inner(),
+                None => None,
+            };
+            hm.insert(*id, output);
+        }
+        hm
+    }
+
+    /// Get the output of all tasks.
     ///
-    /// Note: This method will clone the value.
+    /// Note: This method will clone the value. To avoid cloning, use [`Dag::into_results`].
     pub fn get_results<T: Send + Sync + Clone + 'static>(&self) -> HashMap<usize, Option<T>> {
         let mut hm = HashMap::new();
         for (id, state) in &self.execute_states {

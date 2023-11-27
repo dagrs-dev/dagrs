@@ -66,6 +66,10 @@ impl Content {
     pub fn get<H: 'static>(&self) -> Option<&H> {
         self.content.downcast_ref::<H>()
     }
+
+    pub fn into_inner<H: Send + Sync + 'static>(self) -> Option<Arc<H>> {
+        self.content.downcast::<H>().ok()
+    }
 }
 
 /// [`ExeState`] internally stores [`Output`], which represents whether the execution of

@@ -85,6 +85,6 @@ fn main() {
     // Start executing this dag
     assert!(dag.start().unwrap());
     // Get execution result.
-    let res = dag.get_result::<usize>().unwrap();
+    let res = dag.into_result::<usize>().unwrap();
     println!("The result is {}.", res);
 }
