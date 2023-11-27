@@ -343,24 +343,26 @@ impl Dag {
     }
 
     /// Get the final execution result.
-    pub fn get_result<T: CloneAnySendSync + Send + Sync>(&self) -> Option<T> {
+    pub fn get_result<T: CloneAnySendSync + Send + Sync + Clone>(&self) -> Option<T> {
         if self.exe_sequence.is_empty() {
             None
         } else {
             let last_id = self.exe_sequence.last().unwrap();
             match self.execute_states[last_id].get_output() {
-                Some(ref content) => content.clone().remove(),
+                Some(ref content) => content.get().cloned(),
                 None => None,
             }
         }
     }
 
     /// Get the output of all tasks.
-    pub fn get_results<T: CloneAnySendSync + Send + Sync>(&self) -> HashMap<usize, Option<T>> {
+    pub fn get_results<T: CloneAnySendSync + Send + Sync + Clone>(
+        &self,
+    ) -> HashMap<usize, Option<T>> {
         let mut hm = HashMap::new();
         for (id, state) in &self.execute_states {
             let output = match state.get_output() {
-                Some(ref content) => content.clone().remove(),
+                Some(ref content) => content.get().cloned(),
                 None => None,
             };
             hm.insert(*id, output);
