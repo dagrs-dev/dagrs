@@ -37,11 +37,17 @@ impl EnvVar {
         self.variables.insert(name.to_owned(), v);
     }
 
-    #[allow(unused)]
     /// Get environment variables through keys of type &str.
+    ///
+    /// Note: This method will clone the value. To avoid cloning, use [`get_ref`].
     pub fn get<H: Send + Sync + Clone + 'static>(&self, name: &str) -> Option<H> {
+        self.get_ref(name).cloned()
+    }
+
+    /// Get environment variables through keys of type &str.
+    pub fn get_ref<H: Send + Sync + 'static>(&self, name: &str) -> Option<&H> {
         if let Some(content) = self.variables.get(name) {
-            content.get().cloned()
+            content.get()
         } else {
             None
         }

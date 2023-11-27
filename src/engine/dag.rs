@@ -340,6 +340,8 @@ impl Dag {
     }
 
     /// Get the final execution result.
+    ///
+    /// Note: This method will clone the value.
     pub fn get_result<T: Send + Sync + Clone + 'static>(&self) -> Option<T> {
         if self.exe_sequence.is_empty() {
             None
@@ -353,6 +355,8 @@ impl Dag {
     }
 
     /// Get the output of all tasks.
+    ///
+    /// Note: This method will clone the value.
     pub fn get_results<T: Send + Sync + Clone + 'static>(&self) -> HashMap<usize, Option<T>> {
         let mut hm = HashMap::new();
         for (id, state) in &self.execute_states {

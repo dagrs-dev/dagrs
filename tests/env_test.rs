@@ -7,7 +7,7 @@ fn env_set_get_test() {
     let env = init_env();
     assert_eq!(env.get::<usize>("test1"), Some(1usize));
     assert_eq!(env.get::<usize>("test2"), None);
-    assert_eq!(env.get::<String>("test3"), Some("3".to_string()))
+    assert_eq!(env.get_ref::<String>("test3"), Some(&"3".to_string()))
 }
 
 #[test]
