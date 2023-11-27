@@ -52,7 +52,17 @@ criterion_group!(
   name = benches;
   config = {
 
-    Criterion::default().sample_size(4000).noise_threshold(0.05)
+    #[allow(unused_mut)]
+    let mut criterion = Criterion::default().sample_size(4000).noise_threshold(0.05);
+
+    #[cfg(feature = "bench-prost-codec")]
+    {
+      use pprof::criterion::{PProfProfiler, Output::Protobuf};
+
+      criterion = criterion.with_profiler(PProfProfiler::new(4000, Protobuf));
+    }
+
+    criterion
   };
   targets = compute_dag_bench
 );

@@ -13,7 +13,7 @@ keywords = ["DAG", "task", "async", "parallel", "concurrent"]
 members = ["derive", "."]
 
 [dependencies]
-yaml-rust = "0.4.5"
+yaml-rust = { version = "0.4.5", optional = true }
 bimap = "0.6.1"
 clap = { version = "4.2.2", features = ["derive"] }
 tokio = { version = "1.28", features = ["rt", "sync", "rt-multi-thread"] }
@@ -26,9 +26,18 @@ env_logger = "0.10.1"
 simplelog = "0.12"
 criterion = { version = "0.5.1", features = ["html_reports"] }
 
+[target.'cfg(unix)'.dev-dependencies]
+pprof = { version = "0.13.0" }
+
 [features]
-yaml = []
+yaml = ["dep:yaml-rust"]
 derive = ["derive/derive"]
+bench-prost-codec = [
+    "pprof/criterion",
+    "pprof/prost-codec",
+    "pprof/_protobuf",
+    "pprof/protobuf-codec",
+]
 
 [[bin]]
 name = "dagrs"
