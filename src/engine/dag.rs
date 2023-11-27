@@ -5,7 +5,7 @@ use crate::{
     Action, Parser,
 };
 use anymap2::any::CloneAnySendSync;
-use log::{error, info};
+use log::{debug, error};
 use std::{
     collections::HashMap,
     panic::{self, AssertUnwindSafe},
@@ -216,16 +216,13 @@ impl Dag {
     /// topological sorting, and cancel the execution of subsequent tasks if an
     /// error is encountered during task execution.
     pub(crate) async fn run(&self) -> bool {
-        info!(
-            "[Start]{} -> [End]",
-            {
-                let mut exe_seq = String::new();
-                self.exe_sequence
-                    .iter()
-                    .for_each(|id| exe_seq.push_str(&format!(" -> {}", self.tasks[id].name())));
-                exe_seq
-            }
-        );
+        debug!("[Start]{} -> [End]", {
+            let mut exe_seq = String::new();
+            self.exe_sequence
+                .iter()
+                .for_each(|id| exe_seq.push_str(&format!(" -> {}", self.tasks[id].name())));
+            exe_seq
+        });
         let mut handles = Vec::new();
         self.exe_sequence.iter().for_each(|id| {
             handles.push((*id, self.execute_task(self.tasks[id].as_ref())));
@@ -282,7 +279,7 @@ impl Dag {
                     }
                 }
             }
-            info!("Executing task [name: {}, id: {}]", task_name, task_id);
+            debug!("Executing task [name: {}, id: {}]", task_name, task_id);
             // Concrete logical behavior for performing tasks.
             panic::catch_unwind(AssertUnwindSafe(|| action.run(Input::new(inputs), env)))
                 .map_or_else(
@@ -304,7 +301,7 @@ impl Dag {
                             execute_state.set_output(out);
                             execute_state.exe_success();
                             execute_state.semaphore().add_permits(task_out_degree);
-                            info!("Execution succeed [name: {}, id: {}]", task_name, task_id);
+                            debug!("Execution succeed [name: {}, id: {}]", task_name, task_id);
                             true
                         }
                     },
