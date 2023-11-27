@@ -2,11 +2,11 @@
 
 extern crate dagrs;
 
-use dagrs::{log, Dag, LogLevel};
+use dagrs::Dag;
 use std::collections::HashMap;
 
 fn main() {
-    let _initialized = log::init_logger(LogLevel::Info, None);
+    env_logger::init();
     let mut job = Dag::with_yaml("tests/config/correct.yaml", HashMap::new()).unwrap();
     assert!(job.start().unwrap());
 }

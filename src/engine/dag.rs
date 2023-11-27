@@ -1,10 +1,11 @@
 use super::{graph::Graph, DagError};
 use crate::{
     task::{ExecState, Input, Task},
-    utils::{log, EnvVar},
+    utils::EnvVar,
     Action, Parser,
 };
 use anymap2::any::CloneAnySendSync;
+use log::{error, info};
 use std::{
     collections::HashMap,
     panic::{self, AssertUnwindSafe},
@@ -36,9 +37,9 @@ use tokio::task::JoinHandle;
 ///
 ///  # Example
 /// ```rust
-/// use dagrs::{log,LogLevel,Dag, DefaultTask, Output,Input,EnvVar,Action};
+/// use dagrs::{Dag, DefaultTask, Output,Input,EnvVar,Action};
 /// use std::sync::Arc;
-/// log::init_logger(LogLevel::Info,None);
+/// env_logger::init();
 /// let task=DefaultTask::with_closure("Simple Task",|_input,_env|{
 ///     Output::new(1)
 /// });
@@ -219,7 +220,7 @@ impl Dag {
         self.exe_sequence
             .iter()
             .for_each(|id| exe_seq.push_str(&format!(" -> {}", self.tasks[id].name())));
-        log::info(format!("{} -> [End]", exe_seq));
+        info!("{} -> [End]", exe_seq);
         let mut handles = Vec::new();
         self.exe_sequence.iter().for_each(|id| {
             handles.push((*id, self.execute_task(&self.tasks[id])));
@@ -234,10 +235,7 @@ impl Dag {
                     }
                 }
                 Err(err) => {
-                    log::error(format!(
-                        "Task execution encountered an unexpected error! {}",
-                        err
-                    ));
+                    error!("Task execution encountered an unexpected error! {}", err);
                     self.handle_error(tid).await;
                 }
             }
@@ -280,38 +278,29 @@ impl Dag {
                     }
                 }
             }
-            log::info(format!(
-                "Executing task [name: {}, id: {}]",
-                task_name, task_id
-            ));
+            info!("Executing task [name: {}, id: {}]", task_name, task_id);
             // Concrete logical behavior for performing tasks.
             panic::catch_unwind(AssertUnwindSafe(|| action.run(Input::new(inputs), env)))
                 .map_or_else(
                     |_| {
-                        log::error(format!(
-                            "Execution failed [name: {}, id: {}]",
-                            task_name, task_id
-                        ));
+                        error!("Execution failed [name: {}, id: {}]", task_name, task_id);
                         false
                     },
                     |out| {
                         // Store execution results
                         if out.is_err() {
-                            log::error(format!(
+                            error!(
                                 "Execution failed [name: {}, id: {}]\nerr: {}",
                                 task_name,
                                 task_id,
                                 out.get_err().unwrap()
-                            ));
+                            );
                             false
                         } else {
                             execute_state.set_output(out);
                             execute_state.exe_success();
                             execute_state.semaphore().add_permits(task_out_degree);
-                            log::info(format!(
-                                "Execution succeed [name: {}, id: {}]",
-                                task_name, task_id
-                            ));
+                            info!("Execution succeed [name: {}, id: {}]", task_name, task_id);
                             true
                         }
                     },

@@ -1,6 +1,6 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 
-use dagrs::{log, Dag, DefaultTask, EnvVar, Input, LogLevel, Output, Task};
+use dagrs::{Dag, DefaultTask, EnvVar, Input, Output, Task};
 use std::sync::Arc;
 
 fn calc(input: Input, env: Arc<EnvVar>) -> Output {
@@ -31,17 +31,15 @@ fn compute_dag(tasks: Vec<DefaultTask>) {
 }
 
 fn compute_dag_bench(bencher: &mut Criterion) {
-    let _initialized = log::init_logger(LogLevel::Off, None);
+    env_logger::init();
 
     let mut tasks = (0..50usize)
-        .into_iter()
         .map(|i_task| DefaultTask::with_closure(&i_task.to_string(), calc))
         .collect::<Vec<_>>();
 
     // consider 8 dependency for each task (except first 20 tasks)
     for i_task in 20..tasks.len() {
         let predecessors_id = ((i_task - 8)..i_task)
-            .into_iter()
             .map(|i_dep| tasks[i_dep].id())
             .collect::<Vec<_>>();
 
@@ -54,8 +52,8 @@ fn compute_dag_bench(bencher: &mut Criterion) {
 criterion_group!(
   name = benches;
   config = {
-    let criterion = Criterion::default().sample_size(4000).noise_threshold(0.05);
-    criterion
+
+    Criterion::default().sample_size(4000).noise_threshold(0.05)
   };
   targets = compute_dag_bench
 );

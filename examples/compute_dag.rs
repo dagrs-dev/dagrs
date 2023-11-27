@@ -11,7 +11,7 @@
 
 extern crate dagrs;
 
-use dagrs::{log, Complex, Dag, DefaultTask, EnvVar, Input, LogLevel, Output};
+use dagrs::{Complex, Dag, DefaultTask, EnvVar, Input, Output};
 use std::sync::Arc;
 
 struct Compute(usize);
@@ -29,7 +29,8 @@ impl Complex for Compute {
 
 fn main() {
     // initialization log.
-    let _initialized = log::init_logger(LogLevel::Info, None);
+    env_logger::init();
+
     // generate some tasks.
     let a = DefaultTask::with_action("Compute A", Compute(1));
 

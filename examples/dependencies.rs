@@ -1,4 +1,4 @@
-use dagrs::{dependencies, log, Complex, EnvVar, Input, LogLevel, Output};
+use dagrs::{dependencies, Complex, EnvVar, Input, Output};
 use std::sync::Arc;
 
 /// The `dependencies` macro allows users to specify all task dependencies in an easy-to-understand
@@ -43,7 +43,7 @@ impl Complex for Compute {
 }
 
 fn main() {
-    let _initialized = log::init_logger(LogLevel::Info, None);
+    env_logger::init();
     let mut tasks = dependencies!(
             a -> b c d,
             b -> e g,

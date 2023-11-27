@@ -17,18 +17,17 @@ yaml-rust = "0.4.5"
 bimap = "0.6.1"
 clap = { version = "4.2.2", features = ["derive"] }
 anymap2 = "0.13.0"
-tokio = { version = "1.28", features = ["rt", "sync","rt-multi-thread"] }
-derive ={ path = "derive", version = "0.3.0" }
+tokio = { version = "1.28", features = ["rt", "sync", "rt-multi-thread"] }
+derive = { path = "derive", version = "0.3.0" }
 thiserror = "1.0.50"
+log = "0.4"
+env_logger = "0.10.1"
 
 [dev-dependencies]
-log = "0.4"
 simplelog = "0.12"
 criterion = { version = "0.5.1", features = ["html_reports"] }
 
 [features]
-default = ["logger"]
-logger = []
 yaml = []
 derive = ["derive/derive"]
 
