@@ -1,10 +1,11 @@
 use super::{graph::Graph, DagError};
 use crate::{
     task::{ExecState, Input, Task},
-    utils::{log, EnvVar},
+    utils::EnvVar,
     Action, Parser,
 };
 use anymap2::any::CloneAnySendSync;
+use log::{debug, error};
 use std::{
     collections::HashMap,
     panic::{self, AssertUnwindSafe},
@@ -36,9 +37,9 @@ use tokio::task::JoinHandle;
 ///
 ///  # Example
 /// ```rust
-/// use dagrs::{log,LogLevel,Dag, DefaultTask, Output,Input,EnvVar,Action};
+/// use dagrs::{Dag, DefaultTask, Output,Input,EnvVar,Action};
 /// use std::sync::Arc;
-/// log::init_logger(LogLevel::Info,None);
+/// env_logger::init();
 /// let task=DefaultTask::with_closure("Simple Task",|_input,_env|{
 ///     Output::new(1)
 /// });
@@ -215,14 +216,16 @@ impl Dag {
     /// topological sorting, and cancel the execution of subsequent tasks if an
     /// error is encountered during task execution.
     pub(crate) async fn run(&self) -> bool {
-        let mut exe_seq = String::from("[Start]");
-        self.exe_sequence
-            .iter()
-            .for_each(|id| exe_seq.push_str(&format!(" -> {}", self.tasks[id].name())));
-        log::info(format!("{} -> [End]", exe_seq));
+        debug!("[Start]{} -> [End]", {
+            let mut exe_seq = String::new();
+            self.exe_sequence
+                .iter()
+                .for_each(|id| exe_seq.push_str(&format!(" -> {}", self.tasks[id].name())));
+            exe_seq
+        });
         let mut handles = Vec::new();
         self.exe_sequence.iter().for_each(|id| {
-            handles.push((*id, self.execute_task(&self.tasks[id])));
+            handles.push((*id, self.execute_task(self.tasks[id].as_ref())));
         });
         // Wait for the status of each task to execute. If there is an error in the execution of a task,
         // the engine will fail to execute and give up executing tasks that have not yet been executed.
@@ -234,10 +237,7 @@ impl Dag {
                     }
                 }
                 Err(err) => {
-                    log::error(format!(
-                        "Task execution encountered an unexpected error! {}",
-                        err
-                    ));
+                    error!("Task execution encountered an unexpected error! {}", err);
                     self.handle_error(tid).await;
                 }
             }
@@ -248,8 +248,7 @@ impl Dag {
     }
 
     /// Execute a given task asynchronously.
-    #[allow(clippy::borrowed_box)]
-    fn execute_task(&self, task: &Box<dyn Task>) -> JoinHandle<bool> {
+    fn execute_task(&self, task: &dyn Task) -> JoinHandle<bool> {
         let env = self.env.clone();
         let task_id = task.id();
         let task_name = task.name().to_string();
@@ -280,38 +279,29 @@ impl Dag {
                     }
                 }
             }
-            log::info(format!(
-                "Executing task [name: {}, id: {}]",
-                task_name, task_id
-            ));
+            debug!("Executing task [name: {}, id: {}]", task_name, task_id);
             // Concrete logical behavior for performing tasks.
             panic::catch_unwind(AssertUnwindSafe(|| action.run(Input::new(inputs), env)))
                 .map_or_else(
                     |_| {
-                        log::error(format!(
-                            "Execution failed [name: {}, id: {}]",
-                            task_name, task_id
-                        ));
+                        error!("Execution failed [name: {}, id: {}]", task_name, task_id);
                         false
                     },
                     |out| {
                         // Store execution results
                         if out.is_err() {
-                            log::error(format!(
+                            error!(
                                 "Execution failed [name: {}, id: {}]\nerr: {}",
                                 task_name,
                                 task_id,
                                 out.get_err().unwrap()
-                            ));
+                            );
                             false
                         } else {
                             execute_state.set_output(out);
                             execute_state.exe_success();
                             execute_state.semaphore().add_permits(task_out_degree);
-                            log::info(format!(
-                                "Execution succeed [name: {}, id: {}]",
-                                task_name, task_id
-                            ));
+                            debug!("Execution succeed [name: {}, id: {}]", task_name, task_id);
                             true
                         }
                     },

@@ -10,6 +10,7 @@
 //! the Dags are added to the Engine , executing each Dag in turn.
 
 pub use dag::Dag;
+use log::error;
 use thiserror::Error;
 
 mod dag;
@@ -19,8 +20,6 @@ use crate::ParseError;
 use anymap2::any::CloneAnySendSync;
 use std::collections::HashMap;
 use tokio::runtime::Runtime;
-
-use crate::log;
 
 /// The Engine. Manage multiple Dags.
 pub struct Engine {
@@ -63,7 +62,7 @@ impl Engine {
                     self.sequence.insert(len + 1, name.to_string());
                 }
                 Err(err) => {
-                    log::error(format!("Some error occur: {}", err));
+                    error!("Some error occur: {}", err);
                 }
             }
         }
@@ -73,7 +72,7 @@ impl Engine {
     /// Returns true if the given Dag executes successfully, otherwise false.
     pub fn run_dag(&mut self, name: &str) -> bool {
         if !self.dags.contains_key(name) {
-            log::error(format!("No job named '{}'", name));
+            error!("No job named '{}'", name);
             false
         } else {
             let job = self.dags.get(name).unwrap();

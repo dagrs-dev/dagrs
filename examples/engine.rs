@@ -4,10 +4,10 @@ extern crate dagrs;
 
 use std::collections::HashMap;
 
-use dagrs::{log, Dag, DefaultTask, Engine, LogLevel, Output};
+use dagrs::{Dag, DefaultTask, Engine, Output};
 fn main() {
     // initialization log.
-    let _initialized = log::init_logger(LogLevel::Info, None);
+    env_logger::init();
     // Create an Engine.
     let mut engine = Engine::default();
 

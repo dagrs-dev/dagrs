@@ -65,7 +65,7 @@ The fourth step is to create a `Dag` and put all the defined tasks into the `Dag
 
 Optional step: You can specify an environment variable for `Dag`. This environment variable is available in all tasks. In some specific tasks, this behavior can be useful.
 
-Finally, don’t forget to initialize the logger, and then you can call the `start` function of `Dag` to start executing all tasks.
+Finally, you can [initialize a logger](https://github.com/rust-lang/log#in-executables), and then you can call the `start` function of `Dag` to start executing all tasks.
 
 You can refer to an example for the above complete steps: `examples/compute_dag.rs`
 
@@ -87,7 +87,7 @@ Here is the `examples/compute_dag.rs` example:
 extern crate dagrs;
 
 use std::sync::Arc;
-use dagrs::{log, Complex, Dag, DefaultTask, EnvVar, Input, LogLevel, Output};
+use dagrs::{Complex, Dag, DefaultTask, EnvVar, Input, Output};
 
 struct Compute(usize);
 
@@ -104,7 +104,8 @@ impl Complex for Compute {
 
 fn main() {
     // initialization log.
-    let _initialized = log::init_logger(LogLevel::Info, None);
+    env_logger::init();
+
     // generate some tasks.
     let a = DefaultTask::with_action("Compute A", Compute(1));
 

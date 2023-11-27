@@ -13,7 +13,7 @@ pub use engine::{Dag, DagError, Engine};
 pub use task::{
     alloc_id, Action, CommandAction, Complex, DefaultTask, Input, Output, Simple, Task,
 };
-pub use utils::{log, EnvVar, LogLevel, Logger, ParseError, Parser};
+pub use utils::{EnvVar, ParseError, Parser};
 #[cfg(feature = "yaml")]
 pub use yaml::{FileContentError, FileNotFound, YamlParser, YamlTask, YamlTaskError};
 

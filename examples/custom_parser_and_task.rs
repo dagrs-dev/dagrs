@@ -20,7 +20,7 @@ use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::{fs, sync::Arc};
 
-use dagrs::{log, Action, CommandAction, Dag, LogLevel, ParseError, Parser, Task};
+use dagrs::{Action, CommandAction, Dag, ParseError, Parser, Task};
 
 struct MyTask {
     tid: (String, usize),
@@ -138,7 +138,7 @@ impl Parser for ConfigParser {
 }
 
 fn main() {
-    let _initialized = log::init_logger(LogLevel::Info, None);
+    env_logger::init();
     let file = "tests/config/custom_file_task.txt";
     let mut dag =
         Dag::with_config_file_and_parser(file, Box::new(ConfigParser), HashMap::new()).unwrap();

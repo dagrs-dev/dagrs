@@ -2,18 +2,16 @@
 
 use std::{collections::HashMap, sync::Arc};
 
-use dagrs::{log, Complex, Dag, DagError, DefaultTask, EnvVar, Input, LogLevel, Output};
+use dagrs::{Complex, Dag, DagError, DefaultTask, EnvVar, Input, Output};
 
 #[test]
 fn yaml_task_correct_execute() {
-    let _initialized = log::init_logger(LogLevel::Off, None);
     let mut job = Dag::with_yaml("tests/config/correct.yaml", HashMap::new()).unwrap();
     assert!(job.start().unwrap());
 }
 
 #[test]
 fn yaml_task_loop_graph() {
-    let _initialized = log::init_logger(LogLevel::Off, None);
     let res = Dag::with_yaml("tests/config/loop_error.yaml", HashMap::new())
         .unwrap()
         .start();
@@ -22,7 +20,6 @@ fn yaml_task_loop_graph() {
 
 #[test]
 fn yaml_task_self_loop_graph() {
-    let _initialized = log::init_logger(LogLevel::Off, None);
     let res = Dag::with_yaml("tests/config/self_loop_error.yaml", HashMap::new())
         .unwrap()
         .start();
@@ -31,7 +28,6 @@ fn yaml_task_self_loop_graph() {
 
 #[test]
 fn yaml_task_failed_execute() {
-    let _initialized = log::init_logger(LogLevel::Off, None);
     let res = Dag::with_yaml("tests/config/script_run_failed.yaml", HashMap::new())
         .unwrap()
         .start();
@@ -40,7 +36,6 @@ fn yaml_task_failed_execute() {
 
 #[test]
 fn task_loop_graph() {
-    let _initialized = log::init_logger(LogLevel::Off, None);
     let mut a = DefaultTask::with_closure("a", |_, _| Output::empty());
     let mut b = DefaultTask::with_closure("b", |_, _| Output::empty());
     let mut c = DefaultTask::with_closure("c", |_, _| Output::empty());
@@ -59,7 +54,6 @@ fn task_loop_graph() {
 
 #[test]
 fn non_job() {
-    let _initialized = log::init_logger(LogLevel::Off, None);
     let tasks: Vec<DefaultTask> = Vec::new();
     let res = Dag::with_tasks(tasks).start();
     assert!(res.is_err());
@@ -101,7 +95,6 @@ macro_rules! generate_task {
 
 #[test]
 fn task_failed_execute() {
-    let _initialized = log::init_logger(LogLevel::Off, None);
     let a = generate_task!(A(1), "Compute A");
     let mut b = generate_task!(B(2), "Compute B");
     let mut c = DefaultTask::with_action("Compute C", FailedActionC(0));
