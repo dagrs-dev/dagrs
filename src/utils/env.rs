@@ -1,7 +1,8 @@
-use anymap2::{any::CloneAnySendSync, Map};
+use crate::task::Content;
+
 use std::collections::HashMap;
 
-pub type Variable = Map<dyn CloneAnySendSync + Send + Sync>;
+pub type Variable = Content;
 
 /// # Environment variable.
 ///
@@ -31,17 +32,16 @@ impl EnvVar {
     /// # let mut env = dagrs::EnvVar::new();
     /// env.set("Hello", "World".to_string());
     /// ```
-    pub fn set<H: Send + Sync + CloneAnySendSync>(&mut self, name: &str, var: H) {
-        let mut v = Variable::new();
-        v.insert(var);
+    pub fn set<H: Send + Sync + 'static>(&mut self, name: &str, var: H) {
+        let mut v = Variable::new(var);
         self.variables.insert(name.to_owned(), v);
     }
 
     #[allow(unused)]
     /// Get environment variables through keys of type &str.
-    pub fn get<H: Send + Sync + CloneAnySendSync>(&self, name: &str) -> Option<H> {
+    pub fn get<H: Send + Sync + Clone + 'static>(&self, name: &str) -> Option<H> {
         if let Some(content) = self.variables.get(name) {
-            content.clone().remove()
+            content.get().cloned()
         } else {
             None
         }
