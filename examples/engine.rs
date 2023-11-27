@@ -78,6 +78,12 @@ fn main() {
     // Execute dag in order, the order should be dag1, dag2, dag3.
     assert_eq!(engine.run_sequential(), vec![true, true, true]);
     // Get the execution results of dag1 and dag2.
-    assert_eq!(engine.get_dag_result::<usize>("graph1").unwrap(), 100);
-    assert_eq!(engine.get_dag_result::<usize>("graph2").unwrap(), 1024);
+    assert_eq!(
+        engine.get_dag_result::<usize>("graph1").unwrap().as_ref(),
+        &100
+    );
+    assert_eq!(
+        engine.get_dag_result::<usize>("graph2").unwrap().as_ref(),
+        &1024
+    );
 }

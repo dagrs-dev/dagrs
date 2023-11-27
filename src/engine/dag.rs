@@ -340,7 +340,7 @@ impl Dag {
     }
 
     /// Get the final execution result.
-    pub fn into_result<T: Send + Sync + 'static>(&self) -> Option<Arc<T>> {
+    pub fn get_result<T: Send + Sync + 'static>(&self) -> Option<Arc<T>> {
         if self.exe_sequence.is_empty() {
             None
         } else {
@@ -352,15 +352,8 @@ impl Dag {
         }
     }
 
-    /// Get the final execution result.
-    ///
-    /// Note: This method might clone the value if there are references to the value. To avoid cloning, use [`Dag::into_result`].
-    pub fn get_result<T: Send + Sync + Clone + 'static>(&self) -> Option<T> {
-        self.into_result::<T>().map(unwrap_or_clone)
-    }
-
     /// Get the output of all tasks.
-    pub fn into_results<T: Send + Sync + 'static>(&self) -> HashMap<usize, Option<Arc<T>>> {
+    pub fn get_results<T: Send + Sync + 'static>(&self) -> HashMap<usize, Option<Arc<T>>> {
         let mut hm = HashMap::new();
         for (id, state) in &self.execute_states {
             let output = match state.get_output() {
@@ -372,29 +365,8 @@ impl Dag {
         hm
     }
 
-    /// Get the output of all tasks.
-    ///
-    /// Note: This method might clone the value if there are references to the value. To avoid cloning, use [`Dag::into_results`].
-    pub fn get_results<T: Send + Sync + Clone + 'static>(&self) -> HashMap<usize, Option<T>> {
-        let mut hm = HashMap::new();
-        for (id, state) in &self.execute_states {
-            let output = match state.get_output() {
-                Some(content) => content.into_inner().map(unwrap_or_clone),
-                None => None,
-            };
-            hm.insert(*id, output);
-        }
-        hm
-    }
-
     /// Before the dag starts executing, set the dag's global environment variable.
     pub fn set_env(&mut self, env: EnvVar) {
         self.env = Arc::new(env);
     }
-}
-
-/// Unwrap an Arc<T> to T if possible, otherwise clone the value.
-// This can be removed when Arc::unwrap_or_clone is stabilized.
-fn unwrap_or_clone<T: Send + Sync + Clone + 'static>(arc: Arc<T>) -> T {
-    Arc::try_unwrap(arc).unwrap_or_else(|arc| (*arc).clone())
 }
