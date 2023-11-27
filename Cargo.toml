@@ -13,7 +13,7 @@ keywords = ["DAG", "task", "async", "parallel", "concurrent"]
 members = ["derive", "."]
 
 [dependencies]
-yaml-rust = "0.4.5"
+yaml-rust = { version = "0.4.5", optional = true }
 bimap = "0.6.1"
 clap = { version = "4.2.2", features = ["derive"] }
 anymap2 = "0.13.0"
@@ -28,7 +28,7 @@ simplelog = "0.12"
 criterion = { version = "0.5.1", features = ["html_reports"] }
 
 [features]
-yaml = []
+yaml = ["dep:yaml-rust"]
 derive = ["derive/derive"]
 
 [[bin]]
