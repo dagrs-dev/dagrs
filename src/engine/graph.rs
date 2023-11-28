@@ -101,32 +101,26 @@ impl Graph {
     /// 4. Just repeat step 2, 3 until no more zero degree nodes can be generated.
     ///    If all tasks have been executed, then it's a DAG, or there must be a loop in the graph.
     pub(crate) fn topo_sort(&self) -> Option<Vec<usize>> {
-        let mut queue = Vec::new();
-        let mut in_degree = self.in_degree.clone();
-        let mut sequence = vec![];
-
-        in_degree
+        let mut queue = self
+            .in_degree
             .iter()
             .enumerate()
-            .map(|(index, &degree)| {
-                if degree == 0 {
-                    queue.push(index)
-                }
-            })
-            .count();
+            .filter_map(|(index, &degree)| if degree == 0 { Some(index) } else { None })
+            .collect::<Vec<_>>();
+
+        let mut in_degree = self.in_degree.clone();
+
+        let mut sequence = Vec::with_capacity(self.size);
 
         while let Some(v) = queue.pop() {
             sequence.push(v);
 
-            self.adj[v]
-                .iter()
-                .map(|&index| {
-                    in_degree[index] -= 1;
-                    if in_degree[index] == 0 {
-                        queue.push(index)
-                    }
-                })
-                .count();
+            for &index in self.adj[v].iter() {
+                in_degree[index] -= 1;
+                if in_degree[index] == 0 {
+                    queue.push(index)
+                }
+            }
         }
 
         if sequence.len() < self.size {
