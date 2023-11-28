@@ -52,7 +52,8 @@ impl Graph {
     pub(crate) fn set_graph_size(&mut self, size: usize) {
         self.size = size;
         self.adj.resize(size, Vec::new());
-        self.in_degree.resize(size, 0)
+        self.in_degree.resize(size, 0);
+        self.nodes.reserve(size);
     }
 
     /// Add a node into the graph
@@ -74,12 +75,12 @@ impl Graph {
 
     /// Find a task's index by its ID
     pub(crate) fn find_index_by_id(&self, id: &usize) -> Option<usize> {
-        self.nodes.get_by_left(id).map(|i| i.to_owned())
+        self.nodes.get_by_left(id).copied()
     }
 
     /// Find a task's ID by its index
     pub(crate) fn find_id_by_index(&self, index: usize) -> Option<usize> {
-        self.nodes.get_by_right(&index).map(|n| n.to_owned())
+        self.nodes.get_by_right(&index).copied()
     }
 
     /// Do topo sort in graph, returns a possible execution sequence if DAG.
