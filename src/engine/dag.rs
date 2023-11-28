@@ -216,16 +216,19 @@ impl Dag {
     /// error is encountered during task execution.
     pub(crate) async fn run(&self) -> bool {
         debug!("[Start]{} -> [End]", {
-            let mut exe_seq = String::new();
             self.exe_sequence
                 .iter()
-                .for_each(|id| exe_seq.push_str(&format!(" -> {}", self.tasks[id].name())));
-            exe_seq
+                .map(|id| self.tasks[id].name())
+                .collect::<Vec<&str>>()
+                .join(" -> ")
         });
-        let mut handles = Vec::new();
-        self.exe_sequence.iter().for_each(|id| {
-            handles.push((*id, self.execute_task(self.tasks[id].as_ref())));
-        });
+
+        let handles = self
+            .exe_sequence
+            .iter()
+            .map(|id| (*id, self.execute_task(self.tasks[id].as_ref())))
+            .collect::<Vec<_>>();
+
         // Wait for the status of each task to execute. If there is an error in the execution of a task,
         // the engine will fail to execute and give up executing tasks that have not yet been executed.
         for (tid, handle) in handles {
@@ -263,7 +266,7 @@ impl Dag {
 
         tokio::spawn(async move {
             // Wait for the execution result of the predecessor task
-            let mut inputs = Vec::new();
+            let mut inputs = Vec::with_capacity(wait_for_input.len());
             for wait_for in wait_for_input {
                 wait_for.semaphore().acquire().await.unwrap().forget();
                 // When the task execution result of the predecessor can be obtained, judge whether
@@ -328,8 +331,7 @@ impl Dag {
             .position(|tid| *tid == error_task_id)
             .unwrap();
 
-        for i in index..self.exe_sequence.len() {
-            let tid = self.exe_sequence.get(i).unwrap();
+        for tid in self.exe_sequence.iter().skip(index) {
             let out_degree = self.rely_graph.get_node_out_degree(tid);
             self.execute_states
                 .get(tid)
