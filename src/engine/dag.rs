@@ -86,18 +86,21 @@ impl Dag {
     /// Create a dag by adding a series of tasks.
     pub fn with_tasks(tasks: Vec<impl Task + 'static>) -> Dag {
         let mut dag = Dag::new();
-        tasks.into_iter().for_each(|task| {
-            dag.tasks.insert(task.id(), Box::new(task));
-        });
+
+        dag.tasks = tasks
+            .into_iter()
+            .map(|task| (task.id(), Box::new(task) as Box<dyn Task>))
+            .collect();
+
         dag
     }
 
     /// Create a dag by adding a series of tasks that implement the [`Task`] trait.
     pub fn with_tasks_dyn(tasks: Vec<Box<dyn Task>>) -> Dag {
         let mut dag = Dag::new();
-        tasks.into_iter().for_each(|task| {
-            dag.tasks.insert(task.id(), task);
-        });
+
+        dag.tasks = tasks.into_iter().map(|task| (task.id(), task)).collect();
+
         dag
     }
 
@@ -128,11 +131,11 @@ impl Dag {
         parser: Box<dyn Parser>,
         specific_actions: HashMap<String, Action>,
     ) -> Result<Dag, DagError> {
-        let mut dag = Dag::new();
         let tasks = parser.parse_tasks(file, specific_actions)?;
-        tasks.into_iter().for_each(|task| {
-            dag.tasks.insert(task.id(), task);
-        });
+
+        let mut dag = Dag::new();
+        dag.tasks = tasks.into_iter().map(|task| (task.id(), task)).collect();
+
         Ok(dag)
     }
 
