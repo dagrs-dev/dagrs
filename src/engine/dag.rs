@@ -345,23 +345,27 @@ impl Dag {
             None
         } else {
             let last_id = self.exe_sequence.last().unwrap();
-            match self.execute_states[last_id].get_output() {
-                Some(content) => content.into_inner(),
-                None => None,
+            if let Some(content) = self.execute_states[last_id].get_output() {
+                content.into_inner()
+            } else {
+                None
             }
         }
     }
 
     /// Get the output of all tasks.
     pub fn get_results<T: Send + Sync + 'static>(&self) -> HashMap<usize, Option<Arc<T>>> {
-        let mut hm = HashMap::new();
-        for (id, state) in &self.execute_states {
-            let output = match state.get_output() {
-                Some(content) => content.into_inner(),
-                None => None,
-            };
-            hm.insert(*id, output);
-        }
+        let hm = self
+            .execute_states
+            .iter()
+            .map(|(&id, state)| {
+                let output = match state.get_output() {
+                    Some(content) => content.into_inner(),
+                    None => None,
+                };
+                (id, output)
+            })
+            .collect();
         hm
     }
 
