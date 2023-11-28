@@ -86,18 +86,21 @@ impl Dag {
     /// Create a dag by adding a series of tasks.
     pub fn with_tasks(tasks: Vec<impl Task + 'static>) -> Dag {
         let mut dag = Dag::new();
-        tasks.into_iter().for_each(|task| {
-            dag.tasks.insert(task.id(), Box::new(task));
-        });
+
+        dag.tasks = tasks
+            .into_iter()
+            .map(|task| (task.id(), Box::new(task) as Box<dyn Task>))
+            .collect();
+
         dag
     }
 
     /// Create a dag by adding a series of tasks that implement the [`Task`] trait.
     pub fn with_tasks_dyn(tasks: Vec<Box<dyn Task>>) -> Dag {
         let mut dag = Dag::new();
-        tasks.into_iter().for_each(|task| {
-            dag.tasks.insert(task.id(), task);
-        });
+
+        dag.tasks = tasks.into_iter().map(|task| (task.id(), task)).collect();
+
         dag
     }
 
@@ -128,11 +131,11 @@ impl Dag {
         parser: Box<dyn Parser>,
         specific_actions: HashMap<String, Action>,
     ) -> Result<Dag, DagError> {
-        let mut dag = Dag::new();
         let tasks = parser.parse_tasks(file, specific_actions)?;
-        tasks.into_iter().for_each(|task| {
-            dag.tasks.insert(task.id(), task);
-        });
+
+        let mut dag = Dag::new();
+        dag.tasks = tasks.into_iter().map(|task| (task.id(), task)).collect();
+
         Ok(dag)
     }
 
@@ -146,8 +149,7 @@ impl Dag {
         // Add Node (create id - index mapping)
         self.tasks
             .iter()
-            .map(|(&n, _)| self.rely_graph.add_node(n))
-            .count();
+            .for_each(|(&n, _)| self.rely_graph.add_node(n));
 
         // Form Graph
         for (&id, task) in self.tasks.iter() {
@@ -216,16 +218,19 @@ impl Dag {
     /// error is encountered during task execution.
     pub(crate) async fn run(&self) -> bool {
         debug!("[Start]{} -> [End]", {
-            let mut exe_seq = String::new();
             self.exe_sequence
                 .iter()
-                .for_each(|id| exe_seq.push_str(&format!(" -> {}", self.tasks[id].name())));
-            exe_seq
+                .map(|id| self.tasks[id].name())
+                .collect::<Vec<&str>>()
+                .join(" -> ")
         });
-        let mut handles = Vec::new();
-        self.exe_sequence.iter().for_each(|id| {
-            handles.push((*id, self.execute_task(self.tasks[id].as_ref())));
-        });
+
+        let handles = self
+            .exe_sequence
+            .iter()
+            .map(|id| (*id, self.execute_task(self.tasks[id].as_ref())))
+            .collect::<Vec<_>>();
+
         // Wait for the status of each task to execute. If there is an error in the execution of a task,
         // the engine will fail to execute and give up executing tasks that have not yet been executed.
         for (tid, handle) in handles {
@@ -263,7 +268,7 @@ impl Dag {
 
         tokio::spawn(async move {
             // Wait for the execution result of the predecessor task
-            let mut inputs = Vec::new();
+            let mut inputs = Vec::with_capacity(wait_for_input.len());
             for wait_for in wait_for_input {
                 wait_for.semaphore().acquire().await.unwrap().forget();
                 // When the task execution result of the predecessor can be obtained, judge whether
@@ -328,8 +333,7 @@ impl Dag {
             .position(|tid| *tid == error_task_id)
             .unwrap();
 
-        for i in index..self.exe_sequence.len() {
-            let tid = self.exe_sequence.get(i).unwrap();
+        for tid in self.exe_sequence.iter().skip(index) {
             let out_degree = self.rely_graph.get_node_out_degree(tid);
             self.execute_states
                 .get(tid)
@@ -345,23 +349,27 @@ impl Dag {
             None
         } else {
             let last_id = self.exe_sequence.last().unwrap();
-            match self.execute_states[last_id].get_output() {
-                Some(content) => content.into_inner(),
-                None => None,
+            if let Some(content) = self.execute_states[last_id].get_output() {
+                content.into_inner()
+            } else {
+                None
             }
         }
     }
 
     /// Get the output of all tasks.
     pub fn get_results<T: Send + Sync + 'static>(&self) -> HashMap<usize, Option<Arc<T>>> {
-        let mut hm = HashMap::new();
-        for (id, state) in &self.execute_states {
-            let output = match state.get_output() {
-                Some(content) => content.into_inner(),
-                None => None,
-            };
-            hm.insert(*id, output);
-        }
+        let hm = self
+            .execute_states
+            .iter()
+            .map(|(&id, state)| {
+                let output = match state.get_output() {
+                    Some(content) => content.into_inner(),
+                    None => None,
+                };
+                (id, output)
+            })
+            .collect();
         hm
     }
 

@@ -52,7 +52,8 @@ impl Graph {
     pub(crate) fn set_graph_size(&mut self, size: usize) {
         self.size = size;
         self.adj.resize(size, Vec::new());
-        self.in_degree.resize(size, 0)
+        self.in_degree.resize(size, 0);
+        self.nodes.reserve(size);
     }
 
     /// Add a node into the graph
@@ -74,12 +75,12 @@ impl Graph {
 
     /// Find a task's index by its ID
     pub(crate) fn find_index_by_id(&self, id: &usize) -> Option<usize> {
-        self.nodes.get_by_left(id).map(|i| i.to_owned())
+        self.nodes.get_by_left(id).copied()
     }
 
     /// Find a task's ID by its index
     pub(crate) fn find_id_by_index(&self, index: usize) -> Option<usize> {
-        self.nodes.get_by_right(&index).map(|n| n.to_owned())
+        self.nodes.get_by_right(&index).copied()
     }
 
     /// Do topo sort in graph, returns a possible execution sequence if DAG.
@@ -101,37 +102,29 @@ impl Graph {
     /// 4. Just repeat step 2, 3 until no more zero degree nodes can be generated.
     ///    If all tasks have been executed, then it's a DAG, or there must be a loop in the graph.
     pub(crate) fn topo_sort(&self) -> Option<Vec<usize>> {
-        let mut queue = Vec::new();
-        let mut in_degree = self.in_degree.clone();
-        let mut count = 0;
-        let mut sequence = vec![];
-
-        in_degree
+        let mut queue = self
+            .in_degree
             .iter()
             .enumerate()
-            .map(|(index, &degree)| {
-                if degree == 0 {
-                    queue.push(index)
-                }
-            })
-            .count();
+            .filter_map(|(index, &degree)| if degree == 0 { Some(index) } else { None })
+            .collect::<Vec<_>>();
+
+        let mut in_degree = self.in_degree.clone();
+
+        let mut sequence = Vec::with_capacity(self.size);
 
         while let Some(v) = queue.pop() {
             sequence.push(v);
-            count += 1;
 
-            self.adj[v]
-                .iter()
-                .map(|&index| {
-                    in_degree[index] -= 1;
-                    if in_degree[index] == 0 {
-                        queue.push(index)
-                    }
-                })
-                .count();
+            for &index in self.adj[v].iter() {
+                in_degree[index] -= 1;
+                if in_degree[index] == 0 {
+                    queue.push(index)
+                }
+            }
         }
 
-        if count < self.size {
+        if sequence.len() < self.size {
             None
         } else {
             Some(sequence)
