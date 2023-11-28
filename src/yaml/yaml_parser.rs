@@ -40,8 +40,7 @@ impl YamlParser {
         if let Some(after_tasks) = item["after"].as_vec() {
             after_tasks
                 .iter()
-                .map(|task_id| precursors.push(task_id.as_str().unwrap().to_owned()))
-                .count();
+                .for_each(|task_id| precursors.push(task_id.as_str().unwrap().to_owned()));
         }
 
         if let Some(action) = specific_action {

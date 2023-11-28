@@ -146,8 +146,7 @@ impl Dag {
         // Add Node (create id - index mapping)
         self.tasks
             .iter()
-            .map(|(&n, _)| self.rely_graph.add_node(n))
-            .count();
+            .for_each(|(&n, _)| self.rely_graph.add_node(n));
 
         // Form Graph
         for (&id, task) in self.tasks.iter() {
