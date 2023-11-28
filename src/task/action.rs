@@ -62,6 +62,7 @@ pub trait Complex {
 /// Attributes that must exist in each task are used to store specific execution logic. Specific
 /// execution logic can be given in two forms: given a closure or a specific type that implements
 /// a Complex trait.
+#[derive(Clone)]
 pub enum Action {
     Closure(Arc<Simple>),
     Structure(Arc<dyn Complex + Send + Sync>),
@@ -72,15 +73,6 @@ impl Action {
         match self {
             Self::Closure(closure) => closure(input, env),
             Self::Structure(structure) => structure.run(input, env),
-        }
-    }
-}
-
-impl Clone for Action {
-    fn clone(&self) -> Self {
-        match self {
-            Self::Closure(closure) => Self::Closure(closure.clone()),
-            Self::Structure(structure) => Self::Structure(structure.clone()),
         }
     }
 }
