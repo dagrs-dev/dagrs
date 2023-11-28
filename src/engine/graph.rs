@@ -103,7 +103,6 @@ impl Graph {
     pub(crate) fn topo_sort(&self) -> Option<Vec<usize>> {
         let mut queue = Vec::new();
         let mut in_degree = self.in_degree.clone();
-        let mut count = 0;
         let mut sequence = vec![];
 
         in_degree
@@ -118,7 +117,6 @@ impl Graph {
 
         while let Some(v) = queue.pop() {
             sequence.push(v);
-            count += 1;
 
             self.adj[v]
                 .iter()
@@ -131,7 +129,7 @@ impl Graph {
                 .count();
         }
 
-        if count < self.size {
+        if sequence.len() < self.size {
             None
         } else {
             Some(sequence)
