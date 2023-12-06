@@ -81,7 +81,7 @@ impl Engine {
     /// Execute all the Dags in the Engine in sequence according to the order numbers of the Dags in
     /// the sequence from small to large. The return value is the execution status of all tasks.
     pub fn run_sequential(&mut self) -> Vec<bool> {
-        let mut res = Vec::new();
+        let mut res = Vec::with_capacity(self.sequence.len());
         for seq in 1..self.sequence.len() + 1 {
             let name = self.sequence.get(&seq).unwrap().clone();
             res.push(self.run_dag(name.as_str()));
@@ -91,7 +91,7 @@ impl Engine {
 
     /// Given the name of the Dag, get the execution result of the specified Dag.
     pub fn get_dag_result<T: Send + Sync + Clone + 'static>(&self, name: &str) -> Option<Arc<T>> {
-        self.dags.get(name).map(|dag| dag.get_result()).flatten()
+        self.dags.get(name).and_then(|dag| dag.get_result())
     }
 }
 
