@@ -77,17 +77,15 @@ impl Parser for YamlParser {
             .as_hash()
             .ok_or(YamlTaskError::StartWordError)?;
 
-        let mut tasks = Vec::new();
-        let mut map = HashMap::new();
+        let mut tasks = Vec::with_capacity(yaml_tasks.len());
+        let mut map = HashMap::with_capacity(yaml_tasks.len());
         // Read tasks
         for (v, w) in yaml_tasks {
             let id = v.as_str().unwrap();
-            let task = if specific_actions.contains_key(id) {
-                let action = specific_actions.remove(id).unwrap();
-                self.parse_one(id, w, Some(action))?
-            } else {
-                self.parse_one(id, w, None)?
-            };
+            let task = specific_actions.remove(id).map_or_else(
+                || self.parse_one(id, w, None),
+                |action| self.parse_one(id, w, Some(action)),
+            )?;
             map.insert(id, task.id());
             tasks.push(task);
         }
