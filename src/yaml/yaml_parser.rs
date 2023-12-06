@@ -82,12 +82,10 @@ impl Parser for YamlParser {
         // Read tasks
         for (v, w) in yaml_tasks {
             let id = v.as_str().unwrap();
-            let task = if specific_actions.contains_key(id) {
-                let action = specific_actions.remove(id).unwrap();
-                self.parse_one(id, w, Some(action))?
-            } else {
-                self.parse_one(id, w, None)?
-            };
+            let task = specific_actions.remove(id).map_or_else(
+                || self.parse_one(id, w, None),
+                |action| self.parse_one(id, w, Some(action)),
+            )?;
             map.insert(id, task.id());
             tasks.push(task);
         }
