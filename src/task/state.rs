@@ -81,9 +81,6 @@ pub(crate) struct ExecState {
     success: AtomicBool,
     /// Output produced by a task.
     output: AtomicPtr<Output>,
-    /// Task output identified by id.
-    tid: usize,
-    task_name: String,
     /// The semaphore is used to control the synchronous blocking of subsequent tasks to obtain the
     /// execution results of this task.
     /// When a task is successfully executed, the permits inside the semaphore will be increased to
@@ -105,15 +102,13 @@ pub enum Output {
 #[derive(Debug)]
 pub struct Input(Vec<Content>);
 
-#[allow(dead_code)]
 impl ExecState {
     /// Construct a new [`ExeState`].
-    pub(crate) fn new(task_id: usize, task_name: String) -> Self {
+    pub(crate) fn new() -> Self {
+        // initialize the task to failure without output.
         Self {
             success: AtomicBool::new(false),
             output: AtomicPtr::new(std::ptr::null_mut()),
-            tid: task_id,
-            task_name,
             semaphore: Semaphore::new(0),
         }
     }
@@ -143,23 +138,6 @@ impl ExecState {
 
     pub(crate) fn exe_success(&self) {
         self.success.store(true, Ordering::Relaxed)
-    }
-
-    pub(crate) fn get_err(&self) -> Option<String> {
-        if let Some(out) = unsafe { self.output.load(Ordering::Relaxed).as_ref() } {
-            out.get_err()
-        } else {
-            None
-        }
-    }
-
-    /// Use id to indicate the output of which task.
-    pub(crate) fn tid(&self) -> usize {
-        self.tid
-    }
-
-    pub(crate) fn task_name(&self) -> &str {
-        &self.task_name
     }
 
     /// The semaphore is used to control the synchronous acquisition of task output results.

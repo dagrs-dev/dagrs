@@ -174,11 +174,10 @@ impl Dag {
     /// - Create a graph from task dependencies.
     /// - Generate task heart sequence according to topological sorting of graph.
     pub(crate) fn init(&mut self) -> Result<(), DagError> {
+        self.execute_states.reserve(self.tasks.len());
         self.tasks.values().for_each(|task| {
-            self.execute_states.insert(
-                task.id(),
-                Arc::new(ExecState::new(task.id(), task.name().to_string())),
-            );
+            self.execute_states
+                .insert(task.id(), Arc::new(ExecState::new()));
         });
 
         self.create_graph()?;
