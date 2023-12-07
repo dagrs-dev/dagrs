@@ -82,10 +82,9 @@ impl Display for MyTask {
 struct ConfigParser;
 
 impl ConfigParser {
-    fn load_file(&self, file: &str) -> Result<Vec<String>, ParseError> {
+    fn load_file(&self, file: &str) -> Result<String, ParseError> {
         let contents = fs::read_to_string(file).map_err(|e| e.to_string())?;
-        let lines: Vec<String> = contents.lines().map(|line| line.to_string()).collect();
-        Ok(lines)
+        Ok(contents)
     }
 
     fn parse_one(&self, item: String) -> MyTask {
@@ -109,12 +108,20 @@ impl Parser for ConfigParser {
     fn parse_tasks(
         &self,
         file: &str,
-        _specific_actions: HashMap<String, Action>,
+        specific_actions: HashMap<String, Action>,
     ) -> Result<Vec<Box<dyn Task>>, ParseError> {
         let content = self.load_file(file)?;
+        self.parse_tasks_from_str(&content, specific_actions)
+    }
+    fn parse_tasks_from_str(
+        &self,
+        content: &str,
+        _specific_actions: HashMap<String, Action>,
+    ) -> Result<Vec<Box<dyn Task>>, ParseError> {
+        let lines: Vec<String> = content.lines().map(|line| line.to_string()).collect();
         let mut map = HashMap::new();
         let mut tasks = Vec::new();
-        content.into_iter().for_each(|line| {
+        lines.into_iter().for_each(|line| {
             let task = self.parse_one(line);
             map.insert(task.str_id(), task.id());
             tasks.push(task);
