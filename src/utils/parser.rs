@@ -25,6 +25,12 @@ pub trait Parser {
         file: &str,
         specific_actions: HashMap<String, Action>,
     ) -> Result<Vec<Box<dyn Task>>, ParseError>;
+
+    fn parse_tasks_from_str(
+        &self,
+        content: &str,
+        specific_actions: HashMap<String, Action>,
+    ) -> Result<Vec<Box<dyn Task>>, ParseError>;
 }
 
 /// Errors that may occur during configuration file parsing.
@@ -38,5 +44,11 @@ pub struct ParseError(pub String);
 impl From<String> for ParseError {
     fn from(value: String) -> Self {
         ParseError(value)
+    }
+}
+
+impl From<std::io::Error> for ParseError {
+    fn from(value: std::io::Error) -> Self {
+        ParseError(value.to_string())
     }
 }
