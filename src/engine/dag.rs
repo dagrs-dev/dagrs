@@ -65,6 +65,8 @@ pub struct Dag {
     /// when all tasks in the dag are executed, the flag will also be set to false, indicating that
     /// the task cannot be run repeatedly.
     can_continue: Arc<AtomicBool>,
+    /// A flag that indicates whether the task should continue to execute as much as possible.
+    keep_going: bool,
     /// The execution sequence of tasks.
     exe_sequence: Vec<usize>,
 }
@@ -80,6 +82,7 @@ impl Dag {
             env: Arc::new(EnvVar::new()),
             can_continue: Arc::new(AtomicBool::new(true)),
             exe_sequence: Vec::new(),
+            keep_going: false,
         }
     }
 
@@ -142,6 +145,14 @@ impl Dag {
         specific_actions: HashMap<String, Action>,
     ) -> Result<Dag, DagError> {
         Dag::read_tasks_from_str(content, parser, specific_actions)
+    }
+
+    /// Set the flag that indicates whether the task should continue to execute as much as possible.
+    /// This means that even if an error occurs during the execution of a task, the subsequent independent tasks
+    /// will continue to execute unless a dependency error occurs.
+    pub fn keep_going(mut self) -> Dag {
+        self.keep_going = true;
+        self
     }
 
     /// Parse the content of the configuration file into a series of tasks and generate a dag.
@@ -299,6 +310,7 @@ impl Dag {
             .collect();
         let action = task.action();
         let can_continue = self.can_continue.clone();
+        let keep_going = self.keep_going;
 
         tokio::spawn(async move {
             // Wait for the execution result of the predecessor task
@@ -308,7 +320,7 @@ impl Dag {
                 // When the task execution result of the predecessor can be obtained, judge whether
                 // the continuation flag is set to false, if it is set to false, cancel the specific
                 // execution logic of the task and return immediately.
-                if !can_continue.load(Ordering::Acquire) || !wait_for.success() {
+                if (!keep_going && !can_continue.load(Ordering::Acquire)) || !wait_for.success() {
                     return true;
                 }
                 if let Some(content) = wait_for.get_output() {
