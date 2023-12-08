@@ -25,7 +25,7 @@ task1->task2->task3->task4->task5->task6->task7->task8->task9
 
 use bimap::BiMap;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 /// Graph Struct
 pub(crate) struct Graph {
     size: usize,
