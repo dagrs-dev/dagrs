@@ -2,6 +2,8 @@ use crate::{Complex, EnvVar, Input, Output};
 use std::process::Command;
 use std::sync::Arc;
 
+use crate::task::Content;
+
 /// [`CommandAction`] is a specific implementation of [`Complex`], used to execute operating system commands.
 pub struct CommandAction {
     command: String,
@@ -33,19 +35,38 @@ impl Complex for CommandAction {
                 args.push(inp)
             }
         });
-        let out = match cmd.args(args).output() {
-            Ok(o) => o,
-            Err(e) => return Output::Err(e.to_string()),
-        };
-
-        if out.status.success() {
-            let mut out = String::from_utf8(out.stdout).unwrap();
-            if cfg!(target_os = "windows") {
-                out = out.replace("\r\n", " ").replace('\n', " ");
+        let(code,out) = match cmd.args(args).output() {
+            Ok(o) => {
+                (0,o)
+            },
+            Err(e) => {
+                return Output::Err(
+                    e.raw_os_error(),
+                    Some(Content::new(e.to_string()))
+                )
             }
-            Output::new(out)
+        };
+        let stdout: Vec<String> = {
+            let out = String::from_utf8(out.stdout).unwrap_or("".to_string());
+            if cfg!(target_os = "windows") {
+                out.rsplit_terminator("\r\n").map(str::to_string).collect()
+            } else {
+                out.split_terminator('\n').map(str::to_string).collect()
+            }
+        };
+        let stderr: Vec<String> = {
+            let out = String::from_utf8(out.stderr).unwrap_or("".to_string());
+            if cfg!(target_os = "windows") {
+                out.rsplit_terminator("\r\n").map(str::to_string).collect()
+            } else {
+                out.split_terminator('\n').map(str::to_string).collect()
+            }
+        };
+        let output = Content::new((stdout,stderr));
+        if out.status.success() {
+            Output::new(output)
         } else {
-            Output::Err(String::from_utf8(out.stderr).unwrap())
+            Output::Err(Some(code),Some(output))
         }
     }
 }

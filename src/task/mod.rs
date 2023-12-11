@@ -30,7 +30,8 @@ use std::sync::atomic::AtomicUsize;
 pub use self::action::{Action, Complex, Simple};
 pub use self::cmd::CommandAction;
 pub use self::default_task::DefaultTask;
-pub(crate) use self::state::{Content, ExecState};
+pub use self::state::Content;
+pub(crate) use self::state::ExecState;
 pub use self::state::{Input, Output};
 
 mod action;
