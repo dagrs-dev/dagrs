@@ -5,6 +5,7 @@
 
 mod env;
 mod parser;
+pub mod file;
 
 pub use self::env::EnvVar;
 pub use self::parser::{ParseError, Parser};

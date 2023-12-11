@@ -1,21 +1,14 @@
 //! Default yaml configuration file parser.
 
 use super::{FileContentError, FileNotFound, YamlTask, YamlTaskError};
-use crate::{utils::ParseError, Action, CommandAction, Parser, Task};
-use std::{collections::HashMap, fs::File, io::Read, sync::Arc};
+use crate::{utils::ParseError, Action, CommandAction, Parser, Task, utils::file::load_file};
+use std::{collections::HashMap, sync::Arc};
 use yaml_rust::{Yaml, YamlLoader};
 
 /// An implementation of [`Parser`]. It is the default yaml configuration file parser.
 pub struct YamlParser;
 
 impl YamlParser {
-    /// Given file path, and load configuration file.
-    fn load_file(&self, file: &str) -> Result<String, ParseError> {
-        let mut content = String::new();
-        let mut yaml = File::open(file).map_err(FileNotFound)?;
-        yaml.read_to_string(&mut content).unwrap();
-        Ok(content)
-    }
     /// Parses an item in the configuration file into a task.
     /// An item refers to:
     ///
@@ -63,15 +56,22 @@ impl Parser for YamlParser {
     fn parse_tasks(
         &self,
         file: &str,
+        specific_actions: HashMap<String, Action>,
+    ) -> Result<Vec<Box<dyn Task>>, ParseError> {
+        let content = load_file(file)?;
+        self.parse_tasks_from_str(&content,specific_actions)
+    }
+
+    fn parse_tasks_from_str(
+        &self,
+        content: &str,
         mut specific_actions: HashMap<String, Action>,
     ) -> Result<Vec<Box<dyn Task>>, ParseError> {
-        let content = self.load_file(file)?;
         // Parse Yaml
         let yaml_tasks =
             YamlLoader::load_from_str(&content).map_err(FileContentError::IllegalYamlContent)?;
-        // empty file error
         if yaml_tasks.is_empty() {
-            return Err(FileContentError::Empty(file.to_string()).into());
+            return Err(ParseError("No Tasks found".to_string()));
         }
         let yaml_tasks = yaml_tasks[0]["dagrs"]
             .as_hash()

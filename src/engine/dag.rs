@@ -115,6 +115,17 @@ impl Dag {
         Dag::read_tasks(file, parser, specific_actions)
     }
 
+    /// Given a yaml configuration file parsing task to generate a dag.
+    #[cfg(feature = "yaml")]
+    pub fn with_yaml_str(
+        content: &str,
+        specific_actions: HashMap<String, Action>,
+    ) -> Result<Dag, DagError> {
+        use crate::YamlParser;
+        let parser = Box::new(YamlParser);
+        Dag::read_tasks_from_str(content, parser, specific_actions)
+    }
+
     /// Generates a dag with the user given path to a custom parser and task config file.
     pub fn with_config_file_and_parser(
         file: &str,
@@ -122,6 +133,15 @@ impl Dag {
         specific_actions: HashMap<String, Action>,
     ) -> Result<Dag, DagError> {
         Dag::read_tasks(file, parser, specific_actions)
+    }
+
+    /// Generates a dag with the user given path to a custom parser and task config file.
+    pub fn with_config_str_and_parser(
+        content: &str,
+        parser: Box<dyn Parser>,
+        specific_actions: HashMap<String, Action>,
+    ) -> Result<Dag, DagError> {
+        Dag::read_tasks_from_str(content, parser, specific_actions)
     }
 
     /// Parse the content of the configuration file into a series of tasks and generate a dag.
@@ -132,6 +152,21 @@ impl Dag {
         specific_actions: HashMap<String, Action>,
     ) -> Result<Dag, DagError> {
         let tasks = parser.parse_tasks(file, specific_actions)?;
+
+        let mut dag = Dag::new();
+        dag.tasks = tasks.into_iter().map(|task| (task.id(), task)).collect();
+
+        Ok(dag)
+    }
+
+    /// Parse the content of the configuration file into a series of tasks and generate a dag.
+
+    fn read_tasks_from_str(
+        content: &str,
+        parser: Box<dyn Parser>,
+        specific_actions: HashMap<String, Action>,
+    ) -> Result<Dag, DagError> {
+        let tasks = parser.parse_tasks_from_str(content, specific_actions)?;
 
         let mut dag = Dag::new();
         dag.tasks = tasks.into_iter().map(|task| (task.id(), task)).collect();
