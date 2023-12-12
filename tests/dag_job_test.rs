@@ -2,8 +2,11 @@
 
 use std::{collections::HashMap, env::set_var, sync::Arc};
 
-use dagrs::{Complex, Dag, DagError, DefaultTask, EnvVar, Input, Output};
-use dagrs::task::Content;
+use dagrs::{
+    task::{reset_id_allocator, Content},
+    Complex, Dag, DagError, DefaultTask, EnvVar, Input, Output,
+};
+use pretty_assertions::assert_eq;
 
 #[test]
 fn yaml_task_correct_execute() {
@@ -73,7 +76,7 @@ struct FailedActionD(usize);
 
 impl Complex for FailedActionD {
     fn run(&self, _input: Input, _env: Arc<EnvVar>) -> Output {
-        Output::Err(None,Some(Content::new("error".to_string())))
+        Output::Err(None, Some(Content::new("error".to_string())))
     }
 }
 
@@ -84,6 +87,7 @@ macro_rules! generate_task {
             fn run(&self, input: Input, env: Arc<EnvVar>) -> Output {
                 let base = env.get::<usize>("base").unwrap();
                 let mut sum = self.0;
+                std::thread::sleep(std::time::Duration::from_millis(100));
                 input
                     .get_iter()
                     .for_each(|i| sum += i.get::<usize>().unwrap() * base);
@@ -94,41 +98,17 @@ macro_rules! generate_task {
     }};
 }
 
-#[test]
-fn task_failed_execute() {
+fn test_dag(keep_going: bool, expected_outputs: Vec<(usize, Option<Arc<usize>>)>) {
+    // tests are independent, so reset the id allocator
+    unsafe {
+        reset_id_allocator();
+    }
+
     let a = generate_task!(A(1), "Compute A");
     let mut b = generate_task!(B(2), "Compute B");
     let mut c = DefaultTask::with_action("Compute C", FailedActionC(0));
     let mut d = DefaultTask::with_action("Compute D", FailedActionD(1));
-    let mut e = generate_task!(E(16), "Compute E");
-    let mut f = generate_task!(F(32), "Compute F");
-    let mut g = generate_task!(G(64), "Compute G");
-
-    b.set_predecessors(&[&a]);
-    c.set_predecessors(&[&a]);
-    d.set_predecessors(&[&a]);
-    e.set_predecessors(&[&b, &c]);
-    f.set_predecessors(&[&c, &d]);
-    g.set_predecessors(&[&b, &e, &f]);
-
-    let mut env = EnvVar::new();
-    env.set("base", 2usize);
-
-    let mut job = Dag::with_tasks(vec![a, b, c, d, e, f, g]);
-    job.set_env(env);
-    assert!(!job.start().unwrap());
-
-    let output = job.get_results::<usize>();
-    dbg!(&output);
-}
-
-#[test]
-fn task_keep_going() {
-    let a = generate_task!(A(1), "Compute A");
-    let mut b = generate_task!(B(2), "Compute B");
-    let mut c = DefaultTask::with_action("Compute C", FailedActionC(0));
-    let mut d = DefaultTask::with_action("Compute D", FailedActionD(1));
-    let mut e = generate_task!(E(16), "Compute E");
+    let mut e: DefaultTask = generate_task!(E(16), "Compute E");
     let mut f = generate_task!(F(32), "Compute F");
     let mut g = generate_task!(G(64), "Compute G");
     let h = generate_task!(H(64), "Compute H");
@@ -150,24 +130,62 @@ fn task_keep_going() {
     let mut env = EnvVar::new();
     env.set("base", 2usize);
 
-    let mut job = Dag::with_tasks(vec![a, b, c, d, e, f, g, h, i, j, k, l, m]).keep_going();
+    let mut job = Dag::with_tasks(vec![a, b, c, d, e, f, g, h, i, j, k, l, m]);
+    if keep_going {
+        job = job.keep_going();
+    }
+
     job.set_env(env);
     assert!(!job.start().unwrap()); // reports a failure
 
     // but the results for independent tasks are still available
     let output = job.get_results::<usize>();
 
-    let id_to_expected: Vec<(usize, usize)> = vec![
-        (1, 1),
-        (2, 4),
-        (8, 64),
-        (10, 64),
-        (11, 64),
-        (12, 64),
-        (13, 64),
+    // sort the results
+    let mut output_ordered = output.into_iter().collect::<Vec<(_, _)>>();
+    output_ordered.sort_by_key(|(k, _)| *k);
+
+    assert_eq!(output_ordered, expected_outputs);
+}
+
+#[test]
+fn task_failed_execute() {
+    let expected_output = vec![
+        (1, Some(Arc::new(1))),
+        (2, Some(Arc::new(4))),
+        (3, None),
+        (4, None),
+        (5, None),
+        (6, None),
+        (7, None),
+        (8, Some(Arc::new(64))),
+        (9, Some(Arc::new(64))),
+        (10, Some(Arc::new(64))),
+        (11, Some(Arc::new(64))),
+        (12, Some(Arc::new(64))),
+        (13, Some(Arc::new(64))),
     ];
 
-    for (id, val) in id_to_expected {
-        assert_eq!(output.get(&id).unwrap().as_ref().unwrap(), &val.into());
-    }
+    test_dag(false, expected_output);
+}
+
+#[test]
+fn task_keep_going() {
+    let expected_output = vec![
+        (1, Some(Arc::new(1))),
+        (2, Some(Arc::new(4))),
+        (3, None),
+        (4, None),
+        (5, None),
+        (6, None),
+        (7, None),
+        (8, Some(Arc::new(64))),
+        (9, Some(Arc::new(64))),
+        (10, Some(Arc::new(64))),
+        (11, Some(Arc::new(64))),
+        (12, Some(Arc::new(64))),
+        (13, Some(Arc::new(64))),
+    ];
+
+    test_dag(true, expected_output);
 }
