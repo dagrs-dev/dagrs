@@ -67,6 +67,8 @@ pub struct Dag {
     can_continue: Arc<AtomicBool>,
     /// A flag that indicates whether the task should continue to execute as much as possible.
     keep_going: bool,
+    /// When `keep_going` is true, and an error occurs during the execution of a task, this flag will be set to true.
+    kept_going_faced_error: Arc<AtomicBool>,
     /// The execution sequence of tasks.
     exe_sequence: Vec<usize>,
 }
@@ -83,6 +85,7 @@ impl Dag {
             can_continue: Arc::new(AtomicBool::new(true)),
             exe_sequence: Vec::new(),
             keep_going: false,
+            kept_going_faced_error: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -294,6 +297,7 @@ impl Dag {
         self.can_continue
             .compare_exchange(true, false, Ordering::Relaxed, Ordering::Relaxed)
             .is_ok()
+            || (self.keep_going && !self.kept_going_faced_error.load(Ordering::Relaxed))
     }
 
     /// Execute a given task asynchronously.
@@ -310,7 +314,6 @@ impl Dag {
             .collect();
         let action = task.action();
         let can_continue = self.can_continue.clone();
-        let keep_going = self.keep_going;
 
         tokio::spawn(async move {
             // Wait for the execution result of the predecessor task
@@ -320,7 +323,7 @@ impl Dag {
                 // When the task execution result of the predecessor can be obtained, judge whether
                 // the continuation flag is set to false, if it is set to false, cancel the specific
                 // execution logic of the task and return immediately.
-                if (!keep_going && !can_continue.load(Ordering::Acquire)) || !wait_for.success() {
+                if !can_continue.load(Ordering::Acquire) || !wait_for.success() {
                     return true;
                 }
                 if let Some(content) = wait_for.get_output() {
@@ -365,12 +368,18 @@ impl Dag {
     /// After that, the follow-up task finds that the flag that can continue to execute is set
     /// to false, and the specific behavior of executing the task will be cancelled.
     async fn handle_error(&self, error_task_id: usize) {
+        if self.keep_going {
+            self.kept_going_faced_error.store(true, Ordering::SeqCst);
+        }
+
         if self
             .can_continue
             .compare_exchange(true, false, Ordering::SeqCst, Ordering::Relaxed)
             .is_err()
         {
-            return;
+            if !self.keep_going {
+                return;
+            }
         }
         // Find the position of the faulty task in the execution sequence.
         let index = self
