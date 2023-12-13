@@ -1,6 +1,6 @@
 //! Default yaml configuration file parser.
 
-use super::{FileContentError, FileNotFound, YamlTask, YamlTaskError};
+use super::{FileContentError, YamlTask, YamlTaskError};
 use crate::{utils::ParseError, Action, CommandAction, Parser, Task, utils::file::load_file};
 use std::{collections::HashMap, sync::Arc};
 use yaml_rust::{Yaml, YamlLoader};
@@ -81,7 +81,7 @@ impl Parser for YamlParser {
         let mut map = HashMap::with_capacity(yaml_tasks.len());
         // Read tasks
         for (v, w) in yaml_tasks {
-            let id = v.as_str().unwrap();
+            let id = v.as_str().ok_or(ParseError("Invalid YAML Node Type".to_string()))?;
             let task = specific_actions.remove(id).map_or_else(
                 || self.parse_one(id, w, None),
                 |action| self.parse_one(id, w, Some(action)),

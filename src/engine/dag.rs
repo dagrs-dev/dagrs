@@ -330,7 +330,7 @@ impl Dag {
                                 "Execution failed [name: {}, id: {}]\nerr: {}",
                                 task_name,
                                 task_id,
-                                out.get_err().unwrap()
+                                out.get_err().unwrap_or("".to_string())
                             );
                             false
                         } else {
