@@ -35,6 +35,8 @@ impl Complex for CommandAction {
                 args.push(inp)
             }
         });
+
+        log::debug!("cmd: {:?}, args: {:?}",cmd.get_program(),args);
         let(code,out) = match cmd.args(args).output() {
             Ok(o) => {
                 (0,o)
