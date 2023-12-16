@@ -314,6 +314,7 @@ impl Dag {
             .collect();
         let action = task.action();
         let can_continue = self.can_continue.clone();
+        let keep_going = self.keep_going;
 
         tokio::spawn(async move {
             // Wait for the execution result of the predecessor task
@@ -323,7 +324,7 @@ impl Dag {
                 // When the task execution result of the predecessor can be obtained, judge whether
                 // the continuation flag is set to false, if it is set to false, cancel the specific
                 // execution logic of the task and return immediately.
-                if !can_continue.load(Ordering::Acquire) || !wait_for.success() {
+                if !keep_going && (!can_continue.load(Ordering::Acquire) || !wait_for.success()) {
                     return true;
                 }
                 if let Some(content) = wait_for.get_output() {
@@ -375,26 +376,37 @@ impl Dag {
         if self
             .can_continue
             .compare_exchange(true, false, Ordering::SeqCst, Ordering::Relaxed)
-            .is_err()
-        {
-            if !self.keep_going {
-                return;
-            }
+            .is_err() && !self.keep_going {
+            return;
         }
-        // Find the position of the faulty task in the execution sequence.
-        let index = self
-            .exe_sequence
-            .iter()
-            .position(|tid| *tid == error_task_id)
-            .unwrap();
 
-        for tid in self.exe_sequence.iter().skip(index) {
-            let out_degree = self.rely_graph.get_node_out_degree(tid);
-            self.execute_states
-                .get(tid)
-                .unwrap()
-                .semaphore()
-                .add_permits(out_degree);
+        if self.keep_going {
+            // Add permits for the tasks that rely on the error task
+            for successor in self
+                .rely_graph
+                .get_node_successors(&error_task_id)
+                .into_iter()
+            {
+                let tid = self.rely_graph.find_id_by_index(successor).unwrap();
+                self.execute_states[&tid].semaphore().add_permits(1);
+            }
+        } else {
+            // Find the position of the faulty task in the execution sequence.
+            let index = self
+                .exe_sequence
+                .iter()
+                .position(|tid| *tid == error_task_id)
+                .unwrap();
+
+            // Add permits for all the subsequent tasks
+            for tid in self.exe_sequence.iter().skip(index) {
+                let out_degree = self.rely_graph.get_node_out_degree(tid);
+                self.execute_states
+                    .get(tid)
+                    .unwrap()
+                    .semaphore()
+                    .add_permits(out_degree);
+            }
         }
     }
 
