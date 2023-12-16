@@ -285,12 +285,12 @@ impl Dag {
             match handle.await {
                 Ok(succeed) => {
                     if !succeed {
-                        self.handle_error(tid).await;
+                        self.handle_error(tid);
                     }
                 }
                 Err(err) => {
                     error!("Task execution encountered an unexpected error! {}", err);
-                    self.handle_error(tid).await;
+                    self.handle_error(tid);
                 }
             }
         }
@@ -367,7 +367,7 @@ impl Dag {
     /// know that some tasks have errors and cannot continue to execute.
     /// After that, the follow-up task finds that the flag that can continue to execute is set
     /// to false, and the specific behavior of executing the task will be cancelled.
-    async fn handle_error(&self, error_task_id: usize) {
+    fn handle_error(&self, error_task_id: usize) {
         if self.keep_going {
             self.kept_going_faced_error.store(true, Ordering::SeqCst);
         }
