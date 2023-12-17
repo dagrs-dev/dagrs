@@ -141,6 +141,10 @@ impl ExecState {
         self.success.store(true, Ordering::Relaxed)
     }
 
+    pub(crate) fn exe_fail(&self) {
+        self.success.store(false, Ordering::Relaxed)
+    }
+
     /// The semaphore is used to control the synchronous acquisition of task output results.
     /// Under normal circumstances, first use the semaphore to obtain a permit, and then call
     /// the `get_output` function to obtain the output. If the current task is not completed
