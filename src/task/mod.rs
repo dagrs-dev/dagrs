@@ -95,13 +95,3 @@ static ID_ALLOCATOR: IDAllocator = IDAllocator {
 pub fn alloc_id() -> usize {
     ID_ALLOCATOR.alloc()
 }
-
-/// public function to reset task's id allocator.
-///
-/// # Safety
-/// Using this function may cause conflicts in the task ids. It should be used when no DAG creation is in progress.
-pub unsafe fn reset_id_allocator() {
-    ID_ALLOCATOR
-        .id
-        .store(1, std::sync::atomic::Ordering::SeqCst);
-}

@@ -2,11 +2,7 @@
 
 use std::{collections::HashMap, env::set_var, sync::Arc};
 
-use dagrs::{
-    task::{reset_id_allocator, Content},
-    Complex, Dag, DagError, DefaultTask, EnvVar, Input, Output,
-};
-use pretty_assertions::assert_eq;
+use dagrs::{task::Content, Complex, Dag, DagError, DefaultTask, EnvVar, Input, Output};
 
 #[test]
 fn yaml_task_correct_execute() {
@@ -99,11 +95,6 @@ macro_rules! generate_task {
 }
 
 fn test_dag(keep_going: bool, num_some_output: Option<usize>) {
-    // tests are independent, so reset the id allocator
-    unsafe {
-        reset_id_allocator();
-    }
-
     let a = generate_task!(A(1), "Compute A");
     let mut b = generate_task!(B(2), "Compute B");
     let mut c = DefaultTask::with_action("Compute C", FailedActionC(0));
