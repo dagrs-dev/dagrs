@@ -36,16 +36,11 @@ impl Complex for CommandAction {
             }
         });
 
-        log::debug!("cmd: {:?}, args: {:?}",cmd.get_program(),args);
-        let(code,out) = match cmd.args(args).output() {
-            Ok(o) => {
-                (0,o)
-            },
+        log::debug!("cmd: {:?}, args: {:?}", cmd.get_program(), args);
+        let (code, out) = match cmd.args(args).output() {
+            Ok(o) => (0, o),
             Err(e) => {
-                return Output::Err(
-                    e.raw_os_error(),
-                    Some(Content::new(e.to_string()))
-                )
+                return Output::ErrWithExitCode(e.raw_os_error(), Some(Content::new(e.to_string())))
             }
         };
         let stdout: Vec<String> = {
@@ -64,11 +59,11 @@ impl Complex for CommandAction {
                 out.split_terminator('\n').map(str::to_string).collect()
             }
         };
-        let output = Content::new((stdout,stderr));
+        let output = Content::new((stdout, stderr));
         if out.status.success() {
             Output::new(output)
         } else {
-            Output::Err(Some(code),Some(output))
+            Output::ErrWithExitCode(Some(code), Some(output))
         }
     }
 }

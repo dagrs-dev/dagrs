@@ -1,7 +1,7 @@
 //! Default yaml configuration file parser.
 
 use super::{FileContentError, YamlTask, YamlTaskError};
-use crate::{utils::ParseError, Action, CommandAction, Parser, Task, utils::file::load_file};
+use crate::{utils::file::load_file, utils::ParseError, Action, CommandAction, Parser, Task};
 use std::{collections::HashMap, sync::Arc};
 use yaml_rust::{Yaml, YamlLoader};
 
@@ -59,7 +59,7 @@ impl Parser for YamlParser {
         specific_actions: HashMap<String, Action>,
     ) -> Result<Vec<Box<dyn Task>>, ParseError> {
         let content = load_file(file)?;
-        self.parse_tasks_from_str(&content,specific_actions)
+        self.parse_tasks_from_str(&content, specific_actions)
     }
 
     fn parse_tasks_from_str(
@@ -69,7 +69,7 @@ impl Parser for YamlParser {
     ) -> Result<Vec<Box<dyn Task>>, ParseError> {
         // Parse Yaml
         let yaml_tasks =
-            YamlLoader::load_from_str(&content).map_err(FileContentError::IllegalYamlContent)?;
+            YamlLoader::load_from_str(content).map_err(FileContentError::IllegalYamlContent)?;
         if yaml_tasks.is_empty() {
             return Err(ParseError("No Tasks found".to_string()));
         }
@@ -81,7 +81,9 @@ impl Parser for YamlParser {
         let mut map = HashMap::with_capacity(yaml_tasks.len());
         // Read tasks
         for (v, w) in yaml_tasks {
-            let id = v.as_str().ok_or(ParseError("Invalid YAML Node Type".to_string()))?;
+            let id = v
+                .as_str()
+                .ok_or(ParseError("Invalid YAML Node Type".to_string()))?;
             let task = specific_actions.remove(id).map_or_else(
                 || self.parse_one(id, w, None),
                 |action| self.parse_one(id, w, Some(action)),

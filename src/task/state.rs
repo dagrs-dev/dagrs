@@ -23,7 +23,7 @@
 //! ```rust
 //! use dagrs::Output;
 //! use dagrs::task::Content;
-//! let err_out = Output::Err(None,Some(Content::new("some error messages!".to_string())));
+//! let err_out = Output::Err("some error messages!".to_string());
 //! ```
 //!
 //! # [`Input`]
@@ -96,7 +96,8 @@ pub(crate) struct ExecState {
 #[derive(Debug)]
 pub enum Output {
     Out(Option<Content>),
-    Err(Option<i32>,Option<Content>),
+    Err(String),
+    ErrWithExitCode(Option<i32>, Option<Content>),
 }
 
 /// Task's input value.
@@ -170,14 +171,19 @@ impl Output {
     }
 
     /// Construct an [`Output`]` with an error message.
-    pub fn error(code: Option<i32>, msg: String) -> Self {
-        Self::Err(code,Some(Content::new(msg)))
+    pub fn error(msg: String) -> Self {
+        Self::Err(msg)
+    }
+
+    /// Construct an [`Output`]` with an exit code and an error message.
+    pub fn error_with_exit_code(code: Option<i32>, msg: String) -> Self {
+        Self::ErrWithExitCode(code, Some(Content::new(msg)))
     }
 
     /// Determine whether [`Output`] stores error information.
     pub(crate) fn is_err(&self) -> bool {
         match self {
-            Self::Err(_,_) => true,
+            Self::Err(_) | Self::ErrWithExitCode(_, _) => true,
             Self::Out(_) => false,
         }
     }
@@ -186,7 +192,7 @@ impl Output {
     pub(crate) fn get_out(&self) -> Option<Content> {
         match self {
             Self::Out(ref out) => out.clone(),
-            Self::Err(_,_) => None,
+            Self::Err(_) | Self::ErrWithExitCode(_, _) => None,
         }
     }
 
@@ -194,7 +200,8 @@ impl Output {
     pub(crate) fn get_err(&self) -> Option<String> {
         match self {
             Self::Out(_) => None,
-            Self::Err(_,err) => {
+            Self::Err(err) => Some(err.to_string()),
+            Self::ErrWithExitCode(_, err) => {
                 if let Some(e) = err {
                     Some(e.get::<String>()?.to_string())
                 } else {

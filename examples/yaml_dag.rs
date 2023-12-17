@@ -2,9 +2,9 @@
 
 extern crate dagrs;
 
-use dagrs::Dag;
 use dagrs::task::Content;
 use dagrs::utils::file::load_file;
+use dagrs::Dag;
 use std::collections::HashMap;
 
 fn main() {
@@ -16,7 +16,7 @@ fn main() {
     let mut job = Dag::with_yaml_str(&content, HashMap::new()).unwrap();
     assert!(job.start().unwrap());
     let out = job.get_results::<Content>();
-    for (k,v) in out {
-        println!("{k} {:#?}",v.unwrap().get::<(Vec<String>,Vec<String>)>());
+    for (k, v) in out {
+        println!("{k} {:#?}", v.unwrap().get::<(Vec<String>, Vec<String>)>());
     }
 }

@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::{Read,Error};
+use std::io::{Error, Read};
 
 /// Given file path, and load configuration file.
 pub fn load_file(file: &str) -> Result<String, Error> {

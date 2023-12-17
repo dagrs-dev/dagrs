@@ -2,7 +2,7 @@
 
 use std::{collections::HashMap, env::set_var, sync::Arc};
 
-use dagrs::{task::Content, Complex, Dag, DagError, DefaultTask, EnvVar, Input, Output};
+use dagrs::{Complex, Dag, DagError, DefaultTask, EnvVar, Input, Output};
 
 #[test]
 fn yaml_task_correct_execute() {
@@ -72,7 +72,7 @@ struct FailedActionD(usize);
 
 impl Complex for FailedActionD {
     fn run(&self, _input: Input, _env: Arc<EnvVar>) -> Output {
-        Output::Err(None, Some(Content::new("error".to_string())))
+        Output::Err("error".to_string())
     }
 }
 
