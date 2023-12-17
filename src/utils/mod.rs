@@ -4,8 +4,8 @@
 //! variables, task generation macros.
 
 mod env;
-mod parser;
 pub mod file;
+mod parser;
 
 pub use self::env::EnvVar;
 pub use self::parser::{ParseError, Parser};
