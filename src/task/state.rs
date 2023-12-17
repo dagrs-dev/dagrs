@@ -175,9 +175,9 @@ impl Output {
         Self::Err(msg)
     }
 
-    /// Construct an [`Output`]` with an exit code and an error message.
-    pub fn error_with_exit_code(code: Option<i32>, msg: String) -> Self {
-        Self::ErrWithExitCode(code, Some(Content::new(msg)))
+    /// Construct an [`Output`]` with an exit code and an optional error message.
+    pub fn error_with_exit_code(code: Option<i32>, msg: Option<Content>) -> Self {
+        Self::ErrWithExitCode(code, msg)
     }
 
     /// Determine whether [`Output`] stores error information.

@@ -40,7 +40,10 @@ impl Complex for CommandAction {
         let (code, out) = match cmd.args(args).output() {
             Ok(o) => (0, o),
             Err(e) => {
-                return Output::ErrWithExitCode(e.raw_os_error(), Some(Content::new(e.to_string())))
+                return Output::error_with_exit_code(
+                    e.raw_os_error(),
+                    Some(Content::new(e.to_string())),
+                )
             }
         };
         let stdout: Vec<String> = {
@@ -63,7 +66,7 @@ impl Complex for CommandAction {
         if out.status.success() {
             Output::new(output)
         } else {
-            Output::ErrWithExitCode(Some(code), Some(output))
+            Output::error_with_exit_code(Some(code), Some(output))
         }
     }
 }
