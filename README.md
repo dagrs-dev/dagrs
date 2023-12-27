@@ -53,7 +53,7 @@ Users need to program to implement the `Action` trait to define the specific log
 First, users need to define some specific task logic. There are two ways to define task logic:
 
 - Create a closure whose type is `Simple`, which is suitable for simple scenarios.
-- Create a type and implement the `Complex` trait, which is suitable for more complex situations. For example, if the logic of the task is to execute a system command, the command string needs to be recorded in some way. You can create a `Commad` structure with a string attribute inside to store the command string.
+- Create a type and implement the `Complex` trait, which is suitable for more complex situations. For example, if the logic of the task is to execute a system command, the command string needs to be recorded in some way. You can create a `Command` structure with a string attribute inside to store the command string.
 
 You can refer to examples：`examples/actions.rs`.
 
