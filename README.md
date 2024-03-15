@@ -30,11 +30,11 @@ This graph represents the dependencies between tasks, and the graph composed of 
   ```mermaid
   flowchart LR
   	A-->C
-  	A((Task 1))-->B
-  	subgraph "Task B, C, and D form a loop"
-  	B((Task 2))-->C
-  	C((Task 3))-->D
-  	D((Task 4))-->B
+  	A((Task a))-->B
+  	subgraph "Task b, c, and d form a loop"
+  	B((Task b))-->C
+  	C((Task c))-->D
+  	D((Task d))-->B
   	end
   ```
 
