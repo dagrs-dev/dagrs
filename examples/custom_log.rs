@@ -14,5 +14,5 @@ fn main() {
     let _ = SimpleLogger::init(LevelFilter::Info, Config::default());
 
     let mut dag = Dag::with_yaml("tests/config/correct.yaml", HashMap::new()).unwrap();
-    assert!(dag.start().unwrap());
+    assert!(dag.start().is_ok());
 }
