@@ -39,8 +39,8 @@ use std::{
     any::Any,
     slice::Iter,
     sync::{
-        atomic::{AtomicBool, AtomicPtr, Ordering},
-        Arc,
+        atomic::{AtomicBool, Ordering},
+        Arc, Mutex,
     },
 };
 
@@ -81,7 +81,7 @@ pub(crate) struct ExecState {
     /// The execution succeed or not.
     success: AtomicBool,
     /// Output produced by a task.
-    output: AtomicPtr<Output>,
+    output: Arc<Mutex<Output>>,
     /// The semaphore is used to control the synchronous blocking of subsequent tasks to obtain the
     /// execution results of this task.
     /// When a task is successfully executed, the permits inside the semaphore will be increased to
@@ -110,7 +110,7 @@ impl ExecState {
         // initialize the task to failure without output.
         Self {
             success: AtomicBool::new(false),
-            output: AtomicPtr::new(std::ptr::null_mut()),
+            output: Arc::new(Mutex::new(Output::empty())),
             semaphore: Semaphore::new(0),
         }
     }
@@ -118,18 +118,13 @@ impl ExecState {
     /// After the task is successfully executed, set the execution result.
     pub(crate) fn set_output(&self, output: Output) {
         self.success.store(true, Ordering::Relaxed);
-        self.output
-            .store(Box::leak(Box::new(output)), Ordering::Relaxed);
+        *self.output.lock().unwrap() = output;
     }
 
     /// [`Output`] for fetching internal storage.
     /// This function is generally not called directly, but first uses the semaphore for synchronization control.
     pub(crate) fn get_output(&self) -> Option<Content> {
-        if let Some(out) = unsafe { self.output.load(Ordering::Relaxed).as_ref() } {
-            out.get_out()
-        } else {
-            None
-        }
+        self.output.lock().unwrap().get_out()
     }
 
     /// The task execution succeed or not.
