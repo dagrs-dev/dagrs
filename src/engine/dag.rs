@@ -89,6 +89,17 @@ impl Dag {
         }
     }
 
+    /// Reset the graph state but keep the tasks.
+    pub fn reset(&mut self) {
+        self.rely_graph = Graph::new();
+        self.execute_states = HashMap::new();
+        self.env = Arc::new(EnvVar::new());
+        self.can_continue = Arc::new(AtomicBool::new(true));
+        self.exe_sequence = Vec::new();
+        self.keep_going = false;
+        self.keep_going_errored = Arc::new(AtomicBool::new(false));
+    }
+
     /// Create a dag by adding a series of tasks.
     pub fn with_tasks(tasks: Vec<impl Task + 'static>) -> Dag {
         let mut dag = Dag::new();
