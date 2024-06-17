@@ -8,4 +8,4 @@ pub mod file;
 mod parser;
 
 pub use self::env::EnvVar;
-pub use self::parser::{ParseError, Parser};
+pub use self::parser::Parser;

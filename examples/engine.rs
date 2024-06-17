@@ -76,7 +76,7 @@ fn main() {
     // Add dag3 to engine.
     engine.append_dag("graph3", dag3);
     // Execute dag in order, the order should be dag1, dag2, dag3.
-    assert_eq!(engine.run_sequential(), vec![true, true, true]);
+    assert!(engine.run_sequential().is_ok());
     // Get the execution results of dag1 and dag2.
     assert_eq!(
         engine.get_dag_result::<usize>("graph1").unwrap().as_ref(),

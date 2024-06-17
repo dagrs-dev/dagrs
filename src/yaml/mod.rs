@@ -55,12 +55,11 @@
 mod yaml_parser;
 mod yaml_task;
 
+use crate::DagError;
 use thiserror::Error;
 
 pub use self::yaml_parser::YamlParser;
 pub use self::yaml_task::YamlTask;
-
-use crate::ParseError;
 
 /// Errors about task configuration items.
 #[derive(Debug, Error)]
@@ -95,20 +94,20 @@ pub enum FileContentError {
 #[error("File not found. [{0}]")]
 pub struct FileNotFound(pub std::io::Error);
 
-impl From<YamlTaskError> for ParseError {
+impl From<YamlTaskError> for DagError {
     fn from(value: YamlTaskError) -> Self {
-        value.to_string().into()
+        DagError::ParserError(value.to_string())
     }
 }
 
-impl From<FileContentError> for ParseError {
+impl From<FileContentError> for DagError {
     fn from(value: FileContentError) -> Self {
-        value.to_string().into()
+        DagError::ParserError(value.to_string())
     }
 }
 
-impl From<FileNotFound> for ParseError {
+impl From<FileNotFound> for DagError {
     fn from(value: FileNotFound) -> Self {
-        value.to_string().into()
+        DagError::ParserError(value.to_string().into())
     }
 }

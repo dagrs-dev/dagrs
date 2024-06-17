@@ -43,7 +43,7 @@ use tokio::task::JoinHandle;
 ///     Output::new(1)
 /// });
 /// let mut dag=Dag::with_tasks(vec![task]);
-/// assert!(dag.start().unwrap())
+/// assert!(dag.start().is_ok())
 ///
 /// ```
 #[derive(Debug)]
@@ -248,23 +248,24 @@ impl Dag {
     }
 
     /// This function is used for the execution of a single dag.
-    pub fn start(&mut self) -> Result<bool, DagError> {
+    pub fn start(&mut self) -> Result<(), DagError> {
         // If the current continuable state is false, the task will start failing.
         if self.can_continue.load(Ordering::Acquire) {
             self.init().map_or_else(Err, |_| {
-                Ok(tokio::runtime::Runtime::new()
+                tokio::runtime::Runtime::new()
                     .unwrap()
-                    .block_on(async { self.run().await }))
+                    .block_on(async { self.run().await })
             })
         } else {
-            Ok(false)
+            // TODO: Change this error
+            Err(DagError::EmptyJob)
         }
     }
 
     /// Execute tasks sequentially according to the execution sequence given by
     /// topological sorting, and cancel the execution of subsequent tasks if an
     /// error is encountered during task execution.
-    pub(crate) async fn run(&self) -> bool {
+    pub(crate) async fn run(&self) -> Result<(), DagError> {
         debug!("[Start]{} -> [End]", {
             self.exe_sequence
                 .iter()
@@ -284,7 +285,7 @@ impl Dag {
         for (tid, handle) in handles {
             match handle.await {
                 Ok(succeed) => {
-                    if !succeed {
+                    if succeed.is_err() {
                         self.handle_error(tid);
                     }
                 }
@@ -294,20 +295,27 @@ impl Dag {
                 }
             }
         }
-
         if self.keep_going {
             // when keep_going is true, the task will continue to execute as much as possible.
             // So, the success is evaluated by keep_going_errored.
-            !self.keep_going_errored.load(Ordering::Relaxed)
+            if !self.keep_going_errored.load(Ordering::Relaxed) {
+                Ok(())
+            } else {
+                Err(DagError::EmptyJob)
+            }
+        } else if self
+            .can_continue
+            .compare_exchange(true, false, Ordering::Relaxed, Ordering::Relaxed)
+            .is_ok()
+        {
+            Ok(())
         } else {
-            self.can_continue
-                .compare_exchange(true, false, Ordering::Relaxed, Ordering::Relaxed)
-                .is_ok()
+            Err(DagError::EmptyJob)
         }
     }
 
     /// Execute a given task asynchronously.
-    fn execute_task(&self, task: &dyn Task) -> JoinHandle<bool> {
+    fn execute_task(&self, task: &dyn Task) -> JoinHandle<Result<(), DagError>> {
         let env = self.env.clone();
         let task_id = task.id();
         let task_name = task.name().to_string();
@@ -330,7 +338,7 @@ impl Dag {
                 // the continuation flag is set to false, if it is set to false, cancel the specific
                 // execution logic of the task and return immediately.
                 if !can_continue.load(Ordering::Acquire) || !wait_for.success() {
-                    return true;
+                    return Ok(());
                 }
                 if let Some(content) = wait_for.get_output() {
                     inputs.push(content);
@@ -342,24 +350,24 @@ impl Dag {
                 .map_or_else(
                     |_| {
                         error!("Execution failed [name: {}, id: {}]", task_name, task_id);
-                        false
+                        // TODO: Change this error
+                        Err(DagError::EmptyJob)
                     },
                     |out| {
                         // Store execution results
                         if out.is_err() {
+                            let error = out.get_err().unwrap_or("".to_string());
                             error!(
                                 "Execution failed [name: {}, id: {}]\nerr: {}",
-                                task_name,
-                                task_id,
-                                out.get_err().unwrap_or("".to_string())
+                                task_name, task_id, error
                             );
-                            false
+                            Err(DagError::TaskError(error))
                         } else {
                             execute_state.set_output(out);
                             execute_state.exe_success();
                             execute_state.semaphore().add_permits(task_out_degree);
                             debug!("Execution succeed [name: {}, id: {}]", task_name, task_id);
-                            true
+                            Ok(())
                         }
                     },
                 )

@@ -24,7 +24,7 @@ fn compute_dag(tasks: Vec<DefaultTask>) {
     env.set("base", 2usize);
     dag.set_env(env);
 
-    assert!(dag.start().unwrap());
+    assert!(dag.start().is_ok());
     // Get execution result.
     let _res = dag.get_result::<usize>().unwrap();
 }

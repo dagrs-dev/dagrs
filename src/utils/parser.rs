@@ -1,7 +1,6 @@
 //! Task configuration file parser interface
-use thiserror::Error;
 
-use crate::{task::Task, Action};
+use crate::{task::Task, Action, DagError};
 use std::collections::HashMap;
 
 /// Generic parser traits. If users want to customize the configuration file parser, they must implement this trait.
@@ -24,31 +23,11 @@ pub trait Parser {
         &self,
         file: &str,
         specific_actions: HashMap<String, Action>,
-    ) -> Result<Vec<Box<dyn Task>>, ParseError>;
+    ) -> Result<Vec<Box<dyn Task>>, DagError>;
 
     fn parse_tasks_from_str(
         &self,
         content: &str,
         specific_actions: HashMap<String, Action>,
-    ) -> Result<Vec<Box<dyn Task>>, ParseError>;
-}
-
-/// Errors that may occur during configuration file parsing.
-/// This structure stores error information. Users need to customize error types and implement conversion
-/// from custom error types to [`ParseError`].
-/// By default, a conversion from `String` type to [`ParseError`] is provided.
-#[derive(Debug, Error)]
-#[error("{0}")]
-pub struct ParseError(pub String);
-
-impl From<String> for ParseError {
-    fn from(value: String) -> Self {
-        ParseError(value)
-    }
-}
-
-impl From<std::io::Error> for ParseError {
-    fn from(value: std::io::Error) -> Self {
-        ParseError(value.to_string())
-    }
+    ) -> Result<Vec<Box<dyn Task>>, DagError>;
 }
