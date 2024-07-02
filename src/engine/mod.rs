@@ -16,7 +16,6 @@ use thiserror::Error;
 mod dag;
 mod graph;
 
-use crate::ParseError;
 use std::{collections::HashMap, sync::Arc};
 use tokio::runtime::Runtime;
 
@@ -37,7 +36,7 @@ pub struct Engine {
 pub enum DagError {
     /// Yaml file parsing error.
     #[error("Parsing error: {0}")]
-    ParserError(ParseError),
+    ParserError(String),
     /// Task dependency error.
     #[error("Task[{0}] dependency task not exist.")]
     RelyTaskIllegal(String),
@@ -47,6 +46,9 @@ pub enum DagError {
     /// There are no tasks in the job.
     #[error("There are no tasks in the job.")]
     EmptyJob,
+    /// Task error
+    #[error("Task error: {0}")]
+    TaskError(String),
 }
 
 impl Engine {
@@ -69,24 +71,22 @@ impl Engine {
 
     /// Given a Dag name, execute this Dag.
     /// Returns true if the given Dag executes successfully, otherwise false.
-    pub fn run_dag(&mut self, name: &str) -> bool {
+    pub fn run_dag(&mut self, name: &str) -> Result<(), DagError> {
         if let Some(dag) = self.dags.get(name) {
             self.runtime.block_on(dag.run())
         } else {
             error!("No job named '{}'", name);
-            false
+            Err(DagError::EmptyJob)
         }
     }
 
     /// Execute all the Dags in the Engine in sequence according to the order numbers of the Dags in
-    /// the sequence from small to large. The return value is the execution status of all tasks.
-    pub fn run_sequential(&mut self) -> Vec<bool> {
-        let mut res = Vec::with_capacity(self.sequence.len());
+    pub fn run_sequential(&mut self) -> Result<(), DagError> {
         for seq in 1..self.sequence.len() + 1 {
             let name = self.sequence.get(&seq).unwrap().clone();
-            res.push(self.run_dag(name.as_str()));
+            self.run_dag(name.as_str())?;
         }
-        res
+        Ok(())
     }
 
     /// Given the name of the Dag, get the execution result of the specified Dag.
@@ -102,11 +102,5 @@ impl Default for Engine {
             runtime: Runtime::new().unwrap(),
             sequence: HashMap::new(),
         }
-    }
-}
-
-impl From<ParseError> for DagError {
-    fn from(value: ParseError) -> Self {
-        Self::ParserError(value)
     }
 }

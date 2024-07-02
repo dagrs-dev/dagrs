@@ -83,7 +83,7 @@ fn main() {
     env.set("base", 2usize);
     dag.set_env(env);
     // Start executing this dag
-    assert!(dag.start().unwrap());
+    assert!(dag.start().is_ok());
     // Get execution result.
     let res = dag.get_result::<usize>().unwrap();
     println!("The result is {}.", res);

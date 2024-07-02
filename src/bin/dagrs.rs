@@ -24,7 +24,7 @@ fn main() {
 
     let yaml_path = args.yaml;
     let mut dag = Dag::with_yaml(yaml_path.as_str(), HashMap::new()).unwrap();
-    assert!(dag.start().unwrap());
+    assert!(dag.start().is_ok());
 }
 
 fn init_logger(args: &Args) {

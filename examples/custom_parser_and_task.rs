@@ -20,7 +20,7 @@ use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::{fs, sync::Arc};
 
-use dagrs::{Action, CommandAction, Dag, ParseError, Parser, Task};
+use dagrs::{Action, CommandAction, Dag, DagError, Parser, Task};
 
 struct MyTask {
     tid: (String, usize),
@@ -82,8 +82,9 @@ impl Display for MyTask {
 struct ConfigParser;
 
 impl ConfigParser {
-    fn load_file(&self, file: &str) -> Result<String, ParseError> {
-        let contents = fs::read_to_string(file).map_err(|e| e.to_string())?;
+    fn load_file(&self, file: &str) -> Result<String, DagError> {
+        let contents =
+            fs::read_to_string(file).map_err(|e| DagError::ParserError(e.to_string()))?;
         Ok(contents)
     }
 
@@ -109,7 +110,7 @@ impl Parser for ConfigParser {
         &self,
         file: &str,
         specific_actions: HashMap<String, Action>,
-    ) -> Result<Vec<Box<dyn Task>>, ParseError> {
+    ) -> Result<Vec<Box<dyn Task>>, DagError> {
         let content = self.load_file(file)?;
         self.parse_tasks_from_str(&content, specific_actions)
     }
@@ -117,7 +118,7 @@ impl Parser for ConfigParser {
         &self,
         content: &str,
         _specific_actions: HashMap<String, Action>,
-    ) -> Result<Vec<Box<dyn Task>>, ParseError> {
+    ) -> Result<Vec<Box<dyn Task>>, DagError> {
         let lines: Vec<String> = content.lines().map(|line| line.to_string()).collect();
         let mut map = HashMap::new();
         let mut tasks = Vec::new();
@@ -149,5 +150,5 @@ fn main() {
     let file = "tests/config/custom_file_task.txt";
     let mut dag =
         Dag::with_config_file_and_parser(file, Box::new(ConfigParser), HashMap::new()).unwrap();
-    assert!(dag.start().unwrap());
+    assert!(dag.start().is_ok());
 }
