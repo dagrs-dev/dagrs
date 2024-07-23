@@ -40,8 +40,8 @@ use std::{
     slice::Iter,
     sync::{
         atomic::{AtomicBool, Ordering},
-        Arc, Mutex,
-    },
+        Arc, Mutex
+    }
 };
 
 use tokio::sync::Semaphore;
@@ -93,7 +93,7 @@ pub(crate) struct ExecState {
 }
 
 /// Output produced by a task.
-#[derive(Debug)]
+#[derive(Clone,Debug)]
 pub enum Output {
     Out(Option<Content>),
     Err(String),
@@ -125,6 +125,9 @@ impl ExecState {
     /// This function is generally not called directly, but first uses the semaphore for synchronization control.
     pub(crate) fn get_output(&self) -> Option<Content> {
         self.output.lock().unwrap().get_out()
+    }
+    pub(crate) fn get_full_output(&self) -> Output {
+        self.output.lock().unwrap().clone()
     }
 
     /// The task execution succeed or not.

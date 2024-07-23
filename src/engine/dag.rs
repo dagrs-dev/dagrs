@@ -3,6 +3,7 @@ use crate::{
     task::{ExecState, Input, Task},
     utils::EnvVar,
     Action, Parser,
+    Output,
 };
 use log::{debug, error};
 use std::{
@@ -52,7 +53,7 @@ pub struct Dag {
     ///
     /// Arc but no mutex, because only one thread will change [`TaskWrapper`]at a time.
     /// And no modification to [`TaskWrapper`] happens during the execution of it.
-    tasks: HashMap<usize, Box<dyn Task>>,
+    pub tasks: HashMap<usize, Box<dyn Task>>,
     /// Store dependency relations.
     rely_graph: Graph,
     /// Store a task's running result.Execution results will be read and written asynchronously by several threads.
@@ -372,6 +373,7 @@ impl Dag {
                                 "Execution failed [name: {}, id: {}]\nerr: {}",
                                 task_name, task_id, error
                             );
+                            execute_state.set_output(out);
                             Err(DagError::TaskError(error))
                         } else {
                             execute_state.set_output(out);
@@ -471,7 +473,7 @@ impl Dag {
 
     /// Get the output of all tasks.
     pub fn get_results<T: Send + Sync + 'static>(&self) -> HashMap<usize, Option<Arc<T>>> {
-        let hm = self
+        self
             .execute_states
             .iter()
             .map(|(&id, state)| {
@@ -481,8 +483,17 @@ impl Dag {
                 };
                 (id, output)
             })
-            .collect();
-        hm
+            .collect()
+    }
+    pub fn get_outputs(&self) -> HashMap<usize, Output> {
+        self
+            .execute_states
+            .iter()
+            .map(|(&id, state)| {
+                let t = state.get_full_output();
+                (id, t)
+            })
+            .collect()
     }
 
     /// Before the dag starts executing, set the dag's global environment variable.
