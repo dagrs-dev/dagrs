@@ -199,9 +199,9 @@ impl Output {
         match self {
             Self::Out(_) => None,
             Self::Err(err) => Some(err.to_string()),
-            Self::ErrWithExitCode(_, err) => {
-                if let Some(e) = err {
-                    Some(e.get::<String>()?.to_string())
+            Self::ErrWithExitCode(code, err) => {
+                if code.is_some() || err.is_some() {
+                    Some(format!("code: {code:?} - {err:?}"))
                 } else {
                     None
                 }
