@@ -370,7 +370,7 @@ impl Dag {
                         if out.is_err() {
                             let error = out.get_err().unwrap_or("".to_string());
                             error!(
-                                "Execution failed [name: {}, id: {}]\nerr: {}",
+                                "Execution failed [name: {}, id: {}] - err: {}",
                                 task_name, task_id, error
                             );
                             execute_state.set_output(out);
