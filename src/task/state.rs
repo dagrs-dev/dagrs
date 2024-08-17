@@ -199,12 +199,9 @@ impl Output {
         match self {
             Self::Out(_) => None,
             Self::Err(err) => Some(err.to_string()),
-            Self::ErrWithExitCode(_, err) => {
-                if let Some(e) = err {
-                    Some(e.get::<String>()?.to_string())
-                } else {
-                    None
-                }
+            Self::ErrWithExitCode(code, err) => {
+                let error_code = code.map_or("".to_string(), |v| v.to_string());
+                Some(format!("code: {error_code}"))
             }
         }
     }
