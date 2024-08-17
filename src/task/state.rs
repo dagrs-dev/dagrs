@@ -199,7 +199,7 @@ impl Output {
         match self {
             Self::Out(_) => None,
             Self::Err(err) => Some(err.to_string()),
-            Self::ErrWithExitCode(code, err) => {
+            Self::ErrWithExitCode(code, _) => {
                 let error_code = code.map_or("".to_string(), |v| v.to_string());
                 Some(format!("code: {error_code}"))
             }
