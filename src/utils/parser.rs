@@ -10,10 +10,10 @@ pub trait Parser {
     /// Parameter Description:
     /// - file: path information of the configuration file
     /// - specific_actions: When parsing the configuration file, the specific execution logic
-    /// of some tasks does not need to be specified in the configuration file, but is given
-    /// through this map. In the map's key-value pair, the key represents the unique identifier
-    /// of the task in the task's configuration file, and the value represents the execution
-    /// logic given by the user.
+    ///   of some tasks does not need to be specified in the configuration file, but is given
+    ///   through this map. In the map's key-value pair, the key represents the unique identifier
+    ///   of the task in the task's configuration file, and the value represents the execution
+    ///   logic given by the user.
     ///
     /// Return value description:
     /// If an error is encountered during the parsing process, the return result is ParserError.

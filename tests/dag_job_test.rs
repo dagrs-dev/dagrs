@@ -152,3 +152,23 @@ fn task_failed_execute() {
 fn task_keep_going() {
     test_dag(true, Some(8));
 }
+
+#[test]
+fn error_with_exitcode() {
+    let mut job = Dag::with_yaml("tests/config/error_with_exitcode.yaml", HashMap::new()).unwrap();
+    _ = job.start();
+    // hacky as ID_ALLOCATOR is static, so I don't know which id to use
+    // to get the output of this single task
+    match &job.get_outputs()[job.get_outputs().keys().next().unwrap()] {
+        dagrs::Output::ErrWithExitCode(code, content) => {
+            if let Some(output) = content {
+                let (stdout, _stderr) = output.get::<(Vec<String>, Vec<String>)>().unwrap();
+                assert_eq!("testing 123", stdout[0]);
+                assert_eq!(1, code.unwrap());
+                return assert!(true);
+            }
+        }
+        _ => {}
+    }
+    panic!("Should not be here");
+}

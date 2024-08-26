@@ -36,7 +36,7 @@ impl Complex for CommandAction {
             }
         });
 
-        log::debug!("cmd: {:?}, args: {:?}", cmd.get_program(), args);
+        log::info!("cmd: {:?}, args: {:?}", cmd.get_program(), args);
         let out = match cmd.args(args).output() {
             Ok(o) => o,
             Err(e) => {
