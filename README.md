@@ -118,3 +118,8 @@ Freighter is licensed under this Licensed:
 ## Contact us
 
 QIUZHILEI email: 2925212608@qq.com/QZL2503687@gmail.com
+
+### Discord
+
+Welcome to join our discord channel https://discord.gg/xaHZXwnn 
+
