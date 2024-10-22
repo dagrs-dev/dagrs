@@ -16,3 +16,5 @@ Cargo.lock
 
 # Exclude execute log
 /*.log
+
+.vscode
