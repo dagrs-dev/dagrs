@@ -10,15 +10,10 @@ repository = "https://github.com/open-rust-initiative/dagrs"
 keywords = ["DAG", "task", "async", "parallel", "concurrent"]
 
 [workspace]
-members = ["derive", "."]
+members = ["."]
 
 [dependencies]
-yaml-rust = { version = "0.4.5", optional = true }
-bimap = "0.6.1"
-clap = { version = "4.2.2", features = ["derive"] }
 tokio = { version = "1.28", features = ["rt", "sync", "rt-multi-thread"] }
-derive = { path = "derive", version = "0.3.0", optional = true }
-thiserror = "1.0.50"
 log = "0.4"
 env_logger = "0.10.1"
 
@@ -27,50 +22,6 @@ simplelog = "0.12"
 criterion = { version = "0.5.1", features = ["html_reports"] }
 
 [target.'cfg(unix)'.dev-dependencies]
-pprof = { version = "0.13.0" }
+
 
 [features]
-yaml = ["dep:yaml-rust"]
-derive = ["derive/derive"]
-bench-prost-codec = [
-    "pprof/criterion",
-    "pprof/prost-codec",
-    "pprof/_protobuf",
-    "pprof/protobuf-codec",
-]
-
-[[bin]]
-name = "dagrs"
-required-features = ["yaml"]
-
-[[example]]
-name = "custom_log"
-required-features = ["yaml"]
-
-[[example]]
-name = "engine"
-required-features = ["yaml"]
-
-[[example]]
-name = "derive_task"
-required-features = ["derive"]
-
-[[example]]
-name = "dependencies"
-required-features = ["derive"]
-
-[[example]]
-name = "yaml_dag"
-required-features = ["yaml"]
-
-[[test]]
-name = "dag_job_test"
-required-features = ["yaml"]
-
-[[test]]
-name = "yaml_parser_test"
-required-features = ["yaml"]
-
-[[bench]]
-name = "compute_dag_bench"
-harness = false
