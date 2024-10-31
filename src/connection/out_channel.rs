@@ -16,7 +16,10 @@ impl OutChannels {
     /// Perform a blocking send on the outcoming channel from `NodeId`.
     pub fn blocking_send_to(&self, id: &NodeId, content: Content) -> Result<(), SendErr> {
         match self.get(id) {
-            Some(channel) => channel.blocking_send(content),
+            Some(channel) => match channel.blocking_send(content){
+                Ok(()) => Ok(()),
+                Err(_) => Err(SendErr::ClosedChannel(content)),
+            },
             None => Err(SendErr::NoSuchChannel),
         }
     }
@@ -24,7 +27,10 @@ impl OutChannels {
     /// Perform a asynchronous send on the outcoming channel from `NodeId`.
     pub async fn send_to(&self, id: &NodeId, content: Content) -> Result<(), SendErr> {
         match self.get(id) {
-            Some(channel) => channel.send(content).await,
+            Some(channel) => match channel.send(content).await {
+                Ok(()) => Ok(()),
+                Err(_) => Err(SendErr::ClosedChannel(content)),
+            },
             None => Err(SendErr::NoSuchChannel),
         }
     }
@@ -91,8 +97,7 @@ impl OutChannel {
 
 /// # Output Channel Error Types
 /// - NoSuchChannel: try to get a channel with an invalid `NodeId`.
-/// - MpscError: An error related to mpsc channel.
-/// - BcstError: An error related to broadcast channel.
+/// - ClosedChannel: the channel is closed alredy.
 ///
 /// In cases of getting errs of type `MpscError` and `BcstError`, the sender
 /// will find there are no active receivers left, so try to send messages is
@@ -100,6 +105,5 @@ impl OutChannel {
 #[derive(Debug)]
 pub enum SendErr {
     NoSuchChannel,
-    MpscError(mpsc::error::SendError<Content>),
-    BcstError(broadcast::error::SendError<Content>),
+    ClosedChannel(Content),
 }
