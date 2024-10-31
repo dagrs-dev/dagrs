@@ -9,34 +9,22 @@ use super::information_packet::Content;
 /// # Input Channels
 /// A hash-table mapping `NodeId` to `InChannel`. In **Dagrs**, each `Node` stores input
 /// channels in this map, enabling `Node` to receive information packets from other `Node`s.
-/// ## Implementaions
-/// - `blocking_recv_from`: call `blocking_recv` of the receiver by the given `NodeId`. Returns `Ok(Content)`
-/// if message received; returns `Err(RecvErr)` if the given `NodeId` is invalid, no message is available to recv,
-/// or err occurs.
-/// - `recv_from`: receives the next value for this receiver by the given `NodeId` asynchronously. Returns `Ok(Content)`
-/// if message received; returns `Err(RecvErr)` if the given `NodeId` is invalid, or no message is available to recv,
-/// or err occurs.
-/// - `close`: close the channel by the given `NodeId`, and remove the channel in this map.
 #[derive(Default)]
 pub struct InChannels(pub HashMap<NodeId, Arc<Mutex<InChannel>>>);
 
 impl InChannels {
-    /// Call `blocking_recv` of the receiver of the given `NodeId`. Returns `Ok(Content)`
-    /// if message received; returns `Err(RecvErr)` if the given `NodeId` is invalid, no message is available to recv,
-    /// or err occurs.
+    /// Perform a blocking receive on the incoming channel from `NodeId`.
     pub fn blocking_recv_from(&mut self, id: &NodeId) -> Result<Content, RecvErr> {
         match self.get(id) {
             Some(channel) => channel.blocking_lock().blocking_recv(),
-            None => Err(RecvErr::ChannelNExist),
+            None => Err(RecvErr::NoSuchChannel),
         }
     }
-    /// Receives the next value for this receiver of the given `NodeId` asynchronously. Returns `Ok(Content)`
-    /// if message received; returns `Err(RecvErr)` if the given `NodeId` is invalid, or no message is available to recv,
-    /// or err occurs.
+    /// Perform a asynchronous receive on the incoming channel from `NodeId`.
     pub async fn recv_from(&mut self, id: &NodeId) -> Result<Content, RecvErr> {
         match self.get(id) {
             Some(channel) => channel.lock().await.recv().await,
-            None => Err(RecvErr::ChannelNExist),
+            None => Err(RecvErr::NoSuchChannel),
         }
     }
 
@@ -60,15 +48,6 @@ impl InChannels {
 /// Wrapper of receivers of `tokio::sync::mpsc` and `tokio::sync::broadcast`. **Dagrs** will
 /// decide the inner type of channel when building the graph.
 /// Learn more about [Tokio Channels](https://tokio.rs/tokio/tutorial/channels).
-///
-/// ## Implements
-/// - `blocking_recv`: call `blocking_recv` of the receiver. Returns `Ok(Content)`
-/// if message received; returns `Err(RecvErr)` if no message is available to recv,
-/// or err occurs.
-/// - `recv`: receives the next value for this receiver asynchronously. Returns `Ok(Content)`
-/// if message received; returns `Err(RecvErr)` if no message is available to recv,
-/// or err occurs.
-/// - `close`: close the channel and drop the messages inside.
 pub enum InChannel {
     /// Receiver of a `tokio::sync::mpsc` channel.
     Mpsc(mpsc::Receiver<Content>),
@@ -77,9 +56,7 @@ pub enum InChannel {
 }
 
 impl InChannel {
-    /// Call `blocking_recv` of the receiver, returns `Ok(Content)`
-    /// if message received; returns `Err(RecvErr)` if no message is available to recv,
-    /// or err occurs.
+    /// Perform a blocking receive on this channel.
     fn blocking_recv(&mut self) -> Result<Content, RecvErr> {
         match self {
             InChannel::Mpsc(receiver) => {
@@ -99,9 +76,7 @@ impl InChannel {
         }
     }
 
-    /// Receives the next value for this receiver asynchronously. Returns `Ok(Content)`
-    /// if message received; returns `Err(RecvErr)` if no message is available to recv,
-    /// or err occurs.
+    /// Perform a asynchronous receive on this channel.
     async fn recv(&mut self) -> Result<Content, RecvErr> {
         match self {
             InChannel::Mpsc(receiver) => {
@@ -132,13 +107,13 @@ impl InChannel {
 }
 
 /// # Input Channel Error Types
-/// - ChannelNExist: try to get a channel with an invalid `NodeId`.
+/// - NoSuchChannel: try to get a channel with an invalid `NodeId`.
 /// - Closed: the channel to receive messages from is closed and empty already.
 /// - Lagged(x): the channel encounters a cache overflow and `x` information
 /// pakages are dropped on this receiver's side.
 #[derive(Debug)]
 pub enum RecvErr {
-    ChannelNExist,
+    NoSuchChannel,
     Closed,
     Lagged(u64),
 }
