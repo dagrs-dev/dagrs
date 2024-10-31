@@ -9,33 +9,23 @@ use super::information_packet::Content;
 /// # Output Channels
 /// A hash-table mapping `NodeId` to `OutChannel`. In **Dagrs**, each `Node` stores output
 /// channels in this map, enabling `Node` to send information packets to other `Node`s.
-/// ## Implementaions
-/// - `blocking_send_to`: call `blocking_send` of the sender by the given `NodeId`. Returns `Ok()`
-/// if message sent; returns `Err(SendErr)` if the given `NodeId` is invalid or err occurs.
-/// - `send_to`: receives the next value for this sender by the given `NodeId` asynchronously. Returns `Ok()`
-/// if message sent; returns `Err(SendErr)` if the given `NodeId` is invalid, or err occurs.
-/// - `close`: close the channel by the given `NodeId`, and remove the channel in this map.
 #[derive(Default)]
 pub struct OutChannels(pub HashMap<NodeId, Arc<OutChannel>>);
 
 impl OutChannels {
-    /// call `blocking_send` of the sender by the given `NodeId`. Returns `Ok()`
-    /// if message sent; returns `Err(SendErr)` if the given `NodeId` is invalid, no message is available to recv,
-    /// or err occurs.
+    /// Perform a blocking send on the outcoming channel from `NodeId`.
     pub fn blocking_send_to(&self, id: &NodeId, content: Content) -> Result<(), SendErr> {
         match self.get(id) {
             Some(channel) => channel.blocking_send(content),
-            None => Err(SendErr::ChannelNExist),
+            None => Err(SendErr::NoSuchChannel),
         }
     }
 
-    /// Receives the next value for this sender by the given `NodeId` asynchronously. Returns `Ok()`
-    /// if message sent; returns `Err(SendErr)` if the given `NodeId` is invalid, or no message is available to recv,
-    /// or err occurs.
+    /// Perform a asynchronous send on the outcoming channel from `NodeId`.
     pub async fn send_to(&self, id: &NodeId, content: Content) -> Result<(), SendErr> {
         match self.get(id) {
             Some(channel) => channel.send(content).await,
-            None => Err(SendErr::ChannelNExist),
+            None => Err(SendErr::NoSuchChannel),
         }
     }
 
@@ -70,6 +60,7 @@ pub enum OutChannel {
 }
 
 impl OutChannel {
+    /// Perform a blocking send on this channel.
     fn blocking_send(&self, value: Content) -> Result<(), SendErr> {
         match self {
             OutChannel::Mpsc(sender) => match sender.blocking_send(value) {
@@ -83,6 +74,7 @@ impl OutChannel {
         }
     }
 
+    /// Perform a asynchronous send on this channel.
     async fn send(&self, value: Content) -> Result<(), SendErr> {
         match self {
             OutChannel::Mpsc(sender) => match sender.send(value).await {
@@ -98,7 +90,7 @@ impl OutChannel {
 }
 
 /// # Output Channel Error Types
-/// - ChannelNExist: try to get a channel with an invalid `NodeId`.
+/// - NoSuchChannel: try to get a channel with an invalid `NodeId`.
 /// - MpscError: An error related to mpsc channel.
 /// - BcstError: An error related to broadcast channel.
 ///
@@ -107,7 +99,7 @@ impl OutChannel {
 /// meaningless for now.
 #[derive(Debug)]
 pub enum SendErr {
-    ChannelNExist,
+    NoSuchChannel,
     MpscError(mpsc::error::SendError<Content>),
     BcstError(broadcast::error::SendError<Content>),
 }
