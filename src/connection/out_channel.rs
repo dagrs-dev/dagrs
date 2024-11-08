@@ -45,13 +45,9 @@ impl OutChannels {
 }
 
 /// # Output Channel
-/// Wrapper of senders of `tokio::sync::mpsc` and `tokio::sync::broadcast`. **Dagrs** will
+/// Wrapper of senderrs of `tokio::sync::mpsc` and `tokio::sync::broadcast`. **Dagrs** will
 /// decide the inner type of channel when building the graph.
-/// ## Implements
-/// - `blocking_send`: sends the message, blocked if no capacity left in the channel. Returns `Ok()`
-/// if message sent; returns `Err(SendErr)` if error occurs.
-/// - `send`: sends the message, waiting until there is capacity asynchronously. Returns `Ok()`
-/// if message sent; returns `Err(SendErr)` if error occurs.
+/// Learn more about [Tokio Channels](https://tokio.rs/tokio/tutorial/channels).
 enum OutChannel {
     /// Sender of a `tokio::sync::mpsc` channel.
     Mpsc(mpsc::Sender<Content>),
