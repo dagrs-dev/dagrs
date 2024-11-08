@@ -26,7 +26,7 @@ jobs:
         with:
           node-version: 16
 
-  test:
+  check_fmt:
     name: Fmt Check
     runs-on: ubuntu-latest
     steps:
@@ -40,6 +40,21 @@ jobs:
         with:
           command: fmt
           args: --check
+
+  test:
+    name: Unit test & Doc test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --all
 
   # test:
   #   name: Test Suite

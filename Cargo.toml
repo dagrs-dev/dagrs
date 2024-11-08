@@ -16,6 +16,7 @@ members = ["."]
 tokio = { version = "1.28", features = ["rt", "sync", "rt-multi-thread"] }
 log = "0.4"
 env_logger = "0.10.1"
+async-trait = "0.1.83"
 
 [dev-dependencies]
 simplelog = "0.12"

@@ -2,7 +2,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use tokio::sync::{broadcast, mpsc, Mutex};
 
-use crate::graph::node::NodeId;
+use crate::node::node::NodeId;
 
 use super::information_packet::Content;
 
@@ -10,7 +10,7 @@ use super::information_packet::Content;
 /// A hash-table mapping `NodeId` to `InChannel`. In **Dagrs**, each `Node` stores input
 /// channels in this map, enabling `Node` to receive information packets from other `Node`s.
 #[derive(Default)]
-pub struct InChannels(pub HashMap<NodeId, Arc<Mutex<InChannel>>>);
+pub struct InChannels(HashMap<NodeId, Arc<Mutex<InChannel>>>);
 
 impl InChannels {
     /// Perform a blocking receive on the incoming channel from `NodeId`.
@@ -48,7 +48,7 @@ impl InChannels {
 /// Wrapper of receivers of `tokio::sync::mpsc` and `tokio::sync::broadcast`. **Dagrs** will
 /// decide the inner type of channel when building the graph.
 /// Learn more about [Tokio Channels](https://tokio.rs/tokio/tutorial/channels).
-pub enum InChannel {
+enum InChannel {
     /// Receiver of a `tokio::sync::mpsc` channel.
     Mpsc(mpsc::Receiver<Content>),
     /// Receiver of a `tokio::sync::broadcast` channel.
