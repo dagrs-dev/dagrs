@@ -2,7 +2,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use tokio::sync::{broadcast, mpsc};
 
-use crate::graph::node::NodeId;
+use crate::node::node::NodeId;
 
 use super::information_packet::Content;
 
@@ -10,16 +10,13 @@ use super::information_packet::Content;
 /// A hash-table mapping `NodeId` to `OutChannel`. In **Dagrs**, each `Node` stores output
 /// channels in this map, enabling `Node` to send information packets to other `Node`s.
 #[derive(Default)]
-pub struct OutChannels(pub HashMap<NodeId, Arc<OutChannel>>);
+pub struct OutChannels(HashMap<NodeId, Arc<OutChannel>>);
 
 impl OutChannels {
     /// Perform a blocking send on the outcoming channel from `NodeId`.
     pub fn blocking_send_to(&self, id: &NodeId, content: Content) -> Result<(), SendErr> {
         match self.get(id) {
-            Some(channel) => match channel.blocking_send(content){
-                Ok(()) => Ok(()),
-                Err(_) => Err(SendErr::ClosedChannel(content)),
-            },
+            Some(channel) => channel.blocking_send(content),
             None => Err(SendErr::NoSuchChannel),
         }
     }
@@ -27,17 +24,14 @@ impl OutChannels {
     /// Perform a asynchronous send on the outcoming channel from `NodeId`.
     pub async fn send_to(&self, id: &NodeId, content: Content) -> Result<(), SendErr> {
         match self.get(id) {
-            Some(channel) => match channel.send(content).await {
-                Ok(()) => Ok(()),
-                Err(_) => Err(SendErr::ClosedChannel(content)),
-            },
+            Some(channel) => channel.send(content).await,
             None => Err(SendErr::NoSuchChannel),
         }
     }
 
     /// Close the channel by the given `NodeId`, and remove the channel in this map.
     pub fn close(&mut self, id: &NodeId) {
-        if let Some(c) = self.get(id) {
+        if let Some(_) = self.get(id) {
             self.0.remove(id);
         }
     }
@@ -58,7 +52,7 @@ impl OutChannels {
 /// if message sent; returns `Err(SendErr)` if error occurs.
 /// - `send`: sends the message, waiting until there is capacity asynchronously. Returns `Ok()`
 /// if message sent; returns `Err(SendErr)` if error occurs.
-pub enum OutChannel {
+enum OutChannel {
     /// Sender of a `tokio::sync::mpsc` channel.
     Mpsc(mpsc::Sender<Content>),
     /// Sender of a `tokio::sync::broadcast` channel.
@@ -71,11 +65,11 @@ impl OutChannel {
         match self {
             OutChannel::Mpsc(sender) => match sender.blocking_send(value) {
                 Ok(_) => Ok(()),
-                Err(e) => Err(SendErr::MpscError(e)),
+                Err(e) => Err(SendErr::ClosedChannel(e.0)),
             },
             OutChannel::Bcst(sender) => match sender.send(value) {
                 Ok(_) => Ok(()),
-                Err(e) => Err(SendErr::BcstError(e)),
+                Err(e) => Err(SendErr::ClosedChannel(e.0)),
             },
         }
     }
@@ -85,11 +79,11 @@ impl OutChannel {
         match self {
             OutChannel::Mpsc(sender) => match sender.send(value).await {
                 Ok(_) => Ok(()),
-                Err(e) => Err(SendErr::MpscError(e)),
+                Err(e) => Err(SendErr::ClosedChannel(e.0)),
             },
             OutChannel::Bcst(sender) => match sender.send(value) {
                 Ok(_) => Ok(()),
-                Err(e) => Err(SendErr::BcstError(e)),
+                Err(e) => Err(SendErr::ClosedChannel(e.0)),
             },
         }
     }
