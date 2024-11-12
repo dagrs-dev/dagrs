@@ -53,7 +53,7 @@ pub struct DefaultNode {
 
 impl Node for DefaultNode {
     fn id(&self) -> NodeId {
-        self.id.clone()
+        self.id
     }
 
     fn name(&self) -> NodeName {
