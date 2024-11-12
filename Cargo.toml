@@ -10,13 +10,14 @@ repository = "https://github.com/open-rust-initiative/dagrs"
 keywords = ["DAG", "task", "async", "parallel", "concurrent"]
 
 [workspace]
-members = ["."]
+members = [".", "derive"]
 
 [dependencies]
 tokio = { version = "1.28", features = ["rt", "sync", "rt-multi-thread"] }
 log = "0.4"
 env_logger = "0.10.1"
 async-trait = "0.1.83"
+derive = { path = "derive", optional = true }
 
 [dev-dependencies]
 simplelog = "0.12"
@@ -24,5 +25,10 @@ criterion = { version = "0.5.1", features = ["html_reports"] }
 
 [target.'cfg(unix)'.dev-dependencies]
 
-
 [features]
+default = ["derive"]
+derive = ["derive/derive"]
+
+[[example]]
+name = "auto_node"
+required-features = ["derive"]

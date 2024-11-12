@@ -29,7 +29,7 @@ pub trait Node: Send + Sync {
     fn run(&mut self, env: Arc<EnvVar>) -> Output;
 }
 
-#[derive(Debug, Hash, PartialEq, Eq, Clone)]
+#[derive(Debug, Hash, PartialEq, Eq, Clone, Copy)]
 pub struct NodeId(pub(crate) usize);
 
 pub type NodeName = String;
