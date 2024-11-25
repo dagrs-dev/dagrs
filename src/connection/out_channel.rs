@@ -10,7 +10,7 @@ use super::information_packet::Content;
 /// A hash-table mapping `NodeId` to `OutChannel`. In **Dagrs**, each `Node` stores output
 /// channels in this map, enabling `Node` to send information packets to other `Node`s.
 #[derive(Default)]
-pub struct OutChannels(HashMap<NodeId, Arc<OutChannel>>);
+pub struct OutChannels(pub(crate) HashMap<NodeId, Arc<OutChannel>>);
 
 impl OutChannels {
     /// Perform a blocking send on the outcoming channel from `NodeId`.
@@ -42,13 +42,17 @@ impl OutChannels {
             None => None,
         }
     }
+
+    pub fn insert(&mut self, node_id: NodeId, channel: Arc<OutChannel>) {
+        self.0.insert(node_id, channel);
+    }
 }
 
 /// # Output Channel
 /// Wrapper of senderrs of `tokio::sync::mpsc` and `tokio::sync::broadcast`. **Dagrs** will
 /// decide the inner type of channel when building the graph.
 /// Learn more about [Tokio Channels](https://tokio.rs/tokio/tutorial/channels).
-enum OutChannel {
+pub enum OutChannel {
     /// Sender of a `tokio::sync::mpsc` channel.
     Mpsc(mpsc::Sender<Content>),
     /// Sender of a `tokio::sync::broadcast` channel.
