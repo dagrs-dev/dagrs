@@ -1,5 +1,7 @@
+use std::hash::Hash;
+use std::sync::mpsc::channel;
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     panic::{self, AssertUnwindSafe},
     sync::{atomic::AtomicBool, Arc},
 };
@@ -8,6 +10,7 @@ use crate::{
     connection::{in_channel::InChannel, information_packet::Content, out_channel::OutChannel},
     node::node::{Node, NodeId, NodeTable},
     utils::{env::EnvVar, execstate::ExecState},
+    Output,
 };
 
 use log::{debug, error};
@@ -46,6 +49,8 @@ pub struct Graph {
     /// Mark whether the net task can continue to execute.
     /// When an error occurs during the execution of any task, This flag will still be set to true
     is_active: Arc<AtomicBool>,
+    /// Node's in_degree, used for check loop
+    in_degree: HashMap<NodeId, usize>,
 }
 
 impl Graph {
@@ -57,6 +62,7 @@ impl Graph {
             execute_states: HashMap::new(),
             env: Arc::new(EnvVar::new(NodeTable::default())),
             is_active: Arc::new(AtomicBool::new(true)),
+            in_degree: HashMap::new(),
         }
     }
 
@@ -70,15 +76,18 @@ impl Graph {
     /// Adds a new node to the `Graph`
     pub fn add_node(&mut self, node: Box<dyn Node>) {
         self.node_count = self.node_count + 1;
-        self.nodes.insert(node.id(), node);
+        let id = node.id();
+        self.nodes.insert(id, node);
+        self.in_degree.insert(id, 0);
     }
     /// Adds an edge between two nodes in the `Graph`.
     /// If the outgoing port of the sending node is empty and the number of receiving nodes is > 1, use the broadcast channel
     /// An MPSC channel is used if the outgoing port of the sending node is empty and the number of receiving nodes is equal to 1
     /// If the outgoing port of the sending node is not empty, adding any number of receiving nodes will change all relevant channels to broadcast
-    pub fn add_edge(&mut self, from_id: NodeId, to_ids: Vec<NodeId>) {
+    pub fn add_edge(&mut self, from_id: NodeId, all_to_ids: Vec<NodeId>) {
         let from_node = self.nodes.get_mut(&from_id).unwrap();
         let from_channel = from_node.output_channels();
+        let to_ids = Self::remove_duplicates(all_to_ids);
         if from_channel.0.is_empty() {
             if to_ids.len() > 1 {
                 let (bcst_sender, _) = broadcast::channel::<Content>(32);
@@ -86,6 +95,10 @@ impl Graph {
                     for to_id in &to_ids {
                         from_channel
                             .insert(*to_id, Arc::new(OutChannel::Bcst(bcst_sender.clone())));
+                        self.in_degree
+                            .entry(*to_id)
+                            .and_modify(|e| *e += 1)
+                            .or_insert(0);
                     }
                 }
                 for to_id in &to_ids {
@@ -99,6 +112,10 @@ impl Graph {
                 let (tx, rx) = mpsc::channel::<Content>(32);
                 {
                     from_channel.insert(*to_id, Arc::new(OutChannel::Mpsc(tx.clone())));
+                    self.in_degree
+                        .entry(*to_id)
+                        .and_modify(|e| *e += 1)
+                        .or_insert(0);
                 }
                 if let Some(to_node) = self.nodes.get_mut(to_id) {
                     let to_channel = to_node.input_channels();
@@ -106,20 +123,31 @@ impl Graph {
                 }
             }
         } else {
-            let (bcst_sender, _) = broadcast::channel::<Content>(32);
+            if to_ids.len() > 1
+                || (to_ids.len() == 1 && !from_channel.0.contains_key(to_ids.get(0).unwrap()))
             {
-                for _channel in from_channel.0.values_mut() {
-                    *_channel = Arc::new(OutChannel::Bcst(bcst_sender.clone()));
+                let (bcst_sender, _) = broadcast::channel::<Content>(32);
+                {
+                    for _channel in from_channel.0.values_mut() {
+                        *_channel = Arc::new(OutChannel::Bcst(bcst_sender.clone()));
+                    }
+                    for to_id in &to_ids {
+                        if !from_channel.0.contains_key(to_id) {
+                            self.in_degree
+                                .entry(*to_id)
+                                .and_modify(|e| *e += 1)
+                                .or_insert(0);
+                        }
+                        from_channel
+                            .insert(*to_id, Arc::new(OutChannel::Bcst(bcst_sender.clone())));
+                    }
                 }
                 for to_id in &to_ids {
-                    from_channel.insert(*to_id, Arc::new(OutChannel::Bcst(bcst_sender.clone())));
-                }
-            }
-            for to_id in &to_ids {
-                if let Some(to_node) = self.nodes.get_mut(to_id) {
-                    let to_channel = to_node.input_channels();
-                    let receiver = bcst_sender.subscribe();
-                    to_channel.insert(from_id, Arc::new(Mutex::new(InChannel::Bcst(receiver))));
+                    if let Some(to_node) = self.nodes.get_mut(to_id) {
+                        let to_channel = to_node.input_channels();
+                        let receiver = bcst_sender.subscribe();
+                        to_channel.insert(from_id, Arc::new(Mutex::new(InChannel::Bcst(receiver))));
+                    }
                 }
             }
         }
@@ -136,6 +164,10 @@ impl Graph {
     /// This function is used for the execution of a single net.
     pub fn run(&mut self) {
         self.init();
+        let is_loop = self.check_loop();
+        if is_loop {
+            panic!("Graph contains a loop.");
+        }
         if !self.is_active.load(std::sync::atomic::Ordering::Relaxed) {
             eprintln!("Graph is not active. Aborting execution.");
             return;
@@ -178,6 +210,70 @@ impl Graph {
         }
         self.is_active
             .store(false, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    ///See if the graph has loop
+    pub fn check_loop(&mut self) -> bool {
+        let mut queue: Vec<NodeId> = self
+            .in_degree
+            .iter()
+            .filter_map(|(&node_id, &degree)| if degree == 0 { Some(node_id) } else { None })
+            .collect();
+
+        let mut in_degree = self.in_degree.clone();
+        let mut processed_count = 0;
+
+        while let Some(node_id) = queue.pop() {
+            processed_count += 1;
+            let node = self.nodes.get_mut(&node_id).unwrap();
+            let out = node.output_channels();
+            for (id, channel) in out.0.iter() {
+                if let Some(degree) = in_degree.get_mut(id) {
+                    *degree -= 1;
+                    if *degree == 0 {
+                        queue.push(id.clone());
+                    }
+                }
+            }
+        }
+        processed_count < self.node_count
+    }
+
+    /// Get the output of all tasks.
+    pub fn get_results<T: Send + Sync + 'static>(&self) -> HashMap<NodeId, Option<Arc<T>>> {
+        self.execute_states
+            .iter()
+            .map(|(&id, state)| {
+                let output = match state.get_output() {
+                    Some(content) => content.into_inner(),
+                    None => None,
+                };
+                (id, output)
+            })
+            .collect()
+    }
+    pub fn get_outputs(&self) -> HashMap<NodeId, Output> {
+        self.execute_states
+            .iter()
+            .map(|(&id, state)| {
+                let t = state.get_full_output();
+                (id, t)
+            })
+            .collect()
+    }
+
+    /// Before the dag starts executing, set the dag's global environment variable.
+    pub fn set_env(&mut self, env: EnvVar) {
+        self.env = Arc::new(env);
+    }
+
+    ///Remove duplicate elements
+    fn remove_duplicates<T>(vec: Vec<T>) -> Vec<T>
+    where
+        T: Eq + Hash + Clone,
+    {
+        let mut seen = HashSet::new();
+        vec.into_iter().filter(|x| seen.insert(x.clone())).collect()
     }
 }
 

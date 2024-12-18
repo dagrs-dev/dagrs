@@ -18,6 +18,7 @@ log = "0.4"
 env_logger = "0.10.1"
 async-trait = "0.1.83"
 derive = { path = "derive", optional = true }
+proc-macro2 = "1.0"
 
 [dev-dependencies]
 simplelog = "0.12"
