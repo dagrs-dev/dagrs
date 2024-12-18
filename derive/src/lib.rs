@@ -1,7 +1,7 @@
 use proc_macro::TokenStream;
-
 #[cfg(feature = "derive")]
 mod auto_node;
+mod relay;
 
 /// [`auto_node`] is a macro that may be used when customizing nodes. It can only be
 /// marked on named struct or unit struct.
@@ -37,4 +37,16 @@ mod auto_node;
 pub fn auto_node(args: TokenStream, input: TokenStream) -> TokenStream {
     use crate::auto_node::auto_node;
     auto_node(args, input).into()
+}
+
+/// The [`dependencies!`] macro allows users to specify all task dependencies in an easy-to-understand
+/// way. It will return the generated graph structure based on a set of defined dependencies
+#[cfg(feature = "derive")]
+#[proc_macro]
+pub fn dependencies(input: TokenStream) -> TokenStream {
+    use relay::add_relay;
+    use relay::Relaies;
+    let relaies = syn::parse_macro_input!(input as Relaies);
+    let token = add_relay(relaies);
+    token.into()
 }
