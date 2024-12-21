@@ -1,5 +1,6 @@
 use std::{collections::HashMap, sync::Arc};
 
+use futures::future::join_all;
 use tokio::sync::{broadcast, mpsc};
 
 use crate::node::node::NodeId;
@@ -29,6 +30,24 @@ impl OutChannels {
         }
     }
 
+    /// Broadcasts the `content` to all the [`OutChannel`]s asynchronously.
+    pub async fn broadcast(&self, content: Content) -> Vec<Result<(), SendErr>> {
+        let futures = self
+            .0
+            .iter()
+            .map(|(_, c)| async { c.send(content.clone()).await });
+
+        join_all(futures).await
+    }
+
+    /// Blocking broadcasts the `content` to all the [`OutChannel`]s.
+    pub fn blocking_broadcast(&self, content: Content) -> Vec<Result<(), SendErr>> {
+        self.0
+            .iter()
+            .map(|(_, c)| c.blocking_send(content.clone()))
+            .collect()
+    }
+
     /// Close the channel by the given `NodeId`, and remove the channel in this map.
     pub fn close(&mut self, id: &NodeId) {
         if let Some(_) = self.get(id) {
@@ -43,7 +62,7 @@ impl OutChannels {
         }
     }
 
-    pub fn insert(&mut self, node_id: NodeId, channel: Arc<OutChannel>) {
+    pub(crate) fn insert(&mut self, node_id: NodeId, channel: Arc<OutChannel>) {
         self.0.insert(node_id, channel);
     }
 }

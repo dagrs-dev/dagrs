@@ -1,5 +1,6 @@
 use std::{collections::HashMap, sync::Arc};
 
+use futures::future::join_all;
 use tokio::sync::{broadcast, mpsc, Mutex};
 
 use crate::node::node::NodeId;
@@ -28,6 +29,31 @@ impl InChannels {
         }
     }
 
+    /// Calls `blocking_recv` for all the [`InChannel`]s, and applies transformation `f` to
+    /// the return values of the call.
+    pub fn blocking_map<F, T>(&mut self, mut f: F) -> Vec<T>
+    where
+        F: FnMut(Result<Content, RecvErr>) -> T,
+    {
+        self.keys()
+            .into_iter()
+            .map(|id| f(self.blocking_recv_from(&id)))
+            .collect()
+    }
+
+    /// Calls `recv` for all the [`InChannel`]s, and applies transformation `f` to
+    /// the return values of the call asynchronously.
+    pub async fn map<F, T>(&mut self, mut f: F) -> Vec<T>
+    where
+        F: FnMut(Result<Content, RecvErr>) -> T,
+    {
+        let futures = self
+            .0
+            .iter_mut()
+            .map(|(_, c)| async { c.lock().await.recv().await });
+        join_all(futures).await.into_iter().map(|x| f(x)).collect()
+    }
+
     /// Close the channel by the given `NodeId`, and remove the channel in this map.
     pub fn close(&mut self, id: &NodeId) {
         if let Some(c) = self.get(id) {
@@ -36,14 +62,19 @@ impl InChannels {
         }
     }
 
+    pub(crate) fn insert(&mut self, node_id: NodeId, channel: Arc<Mutex<InChannel>>) {
+        self.0.insert(node_id, channel);
+    }
+
     fn get(&self, id: &NodeId) -> Option<Arc<Mutex<InChannel>>> {
         match self.0.get(id) {
             Some(c) => Some(c.clone()),
             None => None,
         }
     }
-    pub fn insert(&mut self, node_id: NodeId, channel: Arc<Mutex<InChannel>>) {
-        self.0.insert(node_id, channel);
+
+    fn keys(&self) -> Vec<NodeId> {
+        self.0.keys().map(|x| *x).collect()
     }
 }
 

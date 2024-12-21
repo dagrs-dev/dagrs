@@ -68,7 +68,7 @@ impl Output {
     }
 
     /// Get the contents of [`Output`].
-    pub(crate) fn get_out(&self) -> Option<Content> {
+    pub fn get_out(&self) -> Option<Content> {
         match self {
             Self::Out(ref out) => out.clone(),
             Self::Err(_) | Self::ErrWithExitCode(_, _) => None,
@@ -76,7 +76,7 @@ impl Output {
     }
 
     /// Get error information stored in [`Output`].
-    pub(crate) fn get_err(&self) -> Option<String> {
+    pub fn get_err(&self) -> Option<String> {
         match self {
             Self::Out(_) => None,
             Self::Err(err) => Some(err.to_string()),

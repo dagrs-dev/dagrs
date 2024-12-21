@@ -14,6 +14,7 @@ pub use node::{
     node::*,
 };
 
+pub use async_trait;
 pub use graph::graph::*;
 pub use tokio;
 pub use utils::{env::EnvVar, output::Output};

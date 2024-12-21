@@ -48,12 +48,6 @@ impl ExecState {
         self.output.lock().unwrap().clone()
     }
 
-    /// The task execution succeed or not.
-    /// `true` means no panic occurs.
-    pub(crate) fn success(&self) -> bool {
-        self.success.load(Ordering::Relaxed)
-    }
-
     pub(crate) fn exe_success(&self) {
         self.success.store(true, Ordering::Relaxed)
     }
