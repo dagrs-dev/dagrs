@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use proc_macro2::Ident;
 use syn::{parse::Parse, Token};
@@ -77,16 +77,16 @@ pub(crate) fn add_relay(relaies: Relaies) -> proc_macro2::TokenStream {
     }
     for relay in relaies.0.iter() {
         let task = relay.task.clone();
-        if (!cache.contains(&task)) {
+        if !cache.contains(&task) {
             token.extend(quote::quote!(
-                graph.add_node(Box::new(#task));
+                graph.add_node(#task);
             ));
             cache.insert(task);
         }
         for successor in relay.successors.iter() {
-            if (!cache.contains(successor)) {
+            if !cache.contains(successor) {
                 token.extend(quote::quote!(
-                    graph.add_node(Box::new(#successor));
+                    graph.add_node(#successor);
                 ));
                 cache.insert(successor.clone());
             }

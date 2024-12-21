@@ -1,5 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
 
+use async_trait::async_trait;
+
 use crate::{
     connection::{in_channel::InChannels, out_channel::OutChannels},
     utils::{env::EnvVar, output::Output},
@@ -15,6 +17,7 @@ use super::id_allocate::alloc_id;
 /// Nodes can communicate with others asynchronously through [`InChannels`] and [`OutChannels`].
 ///
 /// In addition to the above properties, users can also customize some other attributes.
+#[async_trait]
 pub trait Node: Send + Sync {
     /// id is the unique identifier of each node, it will be assigned by the [`NodeTable`]
     /// when creating a new node, you can find this node through this identifier.
@@ -26,7 +29,7 @@ pub trait Node: Send + Sync {
     /// Output Channels of this node.
     fn output_channels(&mut self) -> &mut OutChannels;
     /// Execute a run of this node.
-    fn run(&mut self, env: Arc<EnvVar>) -> Output;
+    async fn run(&mut self, env: Arc<EnvVar>) -> Output;
 }
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, Copy)]
@@ -56,10 +59,12 @@ impl NodeTable {
         id
     }
 
+    /// Get the [`NodeId`] of the node corresponding to its name.
     pub fn get(&self, name: &str) -> Option<&NodeId> {
         self.0.get(name)
     }
 
+    /// Create an empty [`NodeTable`].
     pub fn new() -> Self {
         Self::default()
     }

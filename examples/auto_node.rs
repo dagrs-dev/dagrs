@@ -1,3 +1,7 @@
+//! # Example: auto_node
+//! The procedural macro `auto_node` simplifies the implementation of `Node` trait for custom types.
+//! It works on structs except [tuple structs](https://doc.rust-lang.org/book/ch05-01-defining-structs.html#using-tuple-structs-without-named-fields-to-create-different-types).
+
 use std::sync::Arc;
 
 use dagrs::{auto_node, EmptyAction, EnvVar, InChannels, Node, NodeTable, OutChannels};
@@ -7,6 +11,7 @@ struct MyNode {/*Put customized fields here.*/}
 
 #[auto_node]
 struct _MyNodeGeneric<T, 'a> {
+    /*Put customized fields here.*/
     my_field: Vec<T>,
     my_name: &'a str,
 }
@@ -30,7 +35,9 @@ fn main() {
     assert_eq!(&s.id(), node_table.get(&node_name).unwrap());
     assert_eq!(&s.name(), &node_name);
 
-    let output = s.run(Arc::new(EnvVar::new(NodeTable::default())));
+    let output = tokio::runtime::Runtime::new()
+        .unwrap()
+        .block_on(async { s.run(Arc::new(EnvVar::new(NodeTable::default()))).await });
     match output {
         dagrs::Output::Out(content) => assert!(content.is_none()),
         _ => panic!(),

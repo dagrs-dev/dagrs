@@ -116,6 +116,7 @@ fn auto_impl_node(
     ]);
 
     quote::quote!(
+        #[async_trait::async_trait]
         impl #generics dagrs::Node for #struct_ident #generics {
             #impl_tokens
         }
@@ -169,12 +170,10 @@ fn impl_run(
     let in_channels_ident = &field_in_channels.ident;
     let out_channels_ident = &field_out_channels.ident;
     quote::quote!(
-        fn run(&mut self, env: std::sync::Arc<dagrs::EnvVar>) -> dagrs::Output {
-            tokio::runtime::Runtime::new().unwrap().block_on(async {
-                self.#ident
-                    .run(&mut self.#in_channels_ident, &self.#out_channels_ident, env)
-                    .await
-            })
+        async fn run(&mut self, env: std::sync::Arc<dagrs::EnvVar>) -> dagrs::Output {
+            self.#ident
+                .run(&mut self.#in_channels_ident, &self.#out_channels_ident, env)
+                .await
         }
     )
 }
