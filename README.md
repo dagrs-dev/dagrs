@@ -1,63 +1,45 @@
 # Dagrs
 
-`dagrs` are suitable for the execution of multiple tasks with graph-like dependencies. `dagrs` has the characteristics of high performance and asynchronous execution. It provides users with a convenient programming interface.
+Welcome to **Dagrs**! Dagrs is an easy-to-use, high-performance asynchronous task programming framework written in Rust.
+Dagrs follows the concept of Flow based Programming, and aims to provide users with convenient programming interface.
+
+[Website](https://dagrs.com/) | [Guides](https://dagrs.com/docs/getting-started/introduction) | [Chat](https://discord.gg/4JzaNkRP)
+
+## Project Overview
+
+### Dagrs's role in your project
+
+When you orchestrate multitasking applications asynchronously, you can make them scale better by reducing the cost of performing multiple operations simultaneously. 
+However, writing correct asynchronous code and managing communication between different tasks is annoying. 
+Dagrs provides convenient task abstraction and asynchronous running & communication mechanisms to reduce development costs.
 
 The development of `dagrs` follows the concept of Flow-based Programming.
 
-## Flow-based Programming
-
-Flow-based Programming (FBP) was invented by J. Paul Morrison in the early 1970s. It was initially implemented in software for a Canadian bank. Over the years, it’s had various names but has always maintained its core principles of reducing development time and managing processes efficiently.
+### Flow based Programming
+[Flow-based Programming](https://en.wikipedia.org/wiki/Flow-based_programming)(FBP) was invented by J. Paul Morrison in the early 1970s. It was initially implemented in software for a Canadian bank. 
+Over the years, it’s had various names but has always maintained its core principles of reducing development time and managing processes efficiently.
 
 FBP treats applications as networks of 'black box' processes that communicate by sending and receiving data, referred to as Information Packets, over predefined connections. It’s a component-oriented approach that fits well with modular software architecture.
 
-FBP features 
+### Key Features of FBP
 
-- Encapsulated processes and information packets.
-- The external definition of connections
-- Asynchronous
-- Information packets with unique ownership and defined lifetimes
-- Bounded connections with a finite capacity and reserve pressure.
-
-## What can `dagrs` do
-
-`dagrs` allows users to easily execute multiple sets of tasks with complex graph dependencies. It only requires:
-The user defines tasks and specifies the dependencies of the tasks, and `dagrs` can execute the tasks sequentially in the topological sequence of the graph.
-For example:
-
-```mermaid
-flowchart LR
-	A((Task a))-->B
-	A-->C
-	B((Task b))-->D
-	C((Task c))-->D
-	B-->F
-	C-->E
-	D((Task d))-->G
-	E((Task e))-->G
-	F((Task f))-->G((Task g))
-```
-
-This graph represents the dependencies between tasks, and the graph composed of tasks must satisfy two points:
-
-- A graph allows only one point with zero in-degree and zero out-degree(Only one start task and one end task are allowed).
-
-- The graph itself is directed, and the user must ensure that there are no loops in the graph, that is, the dependencies of tasks cannot form a closed loop, otherwise the engine will refuse to execute all tasks, for example:
-
-  ```mermaid
-  flowchart LR
-  	A-->C
-  	A((Task a))-->B
-  	subgraph "Task b, c, and d form a loop"
-  	B((Task b))-->C
-  	C((Task c))-->D
-  	D((Task d))-->B
-  	end
-  ```
-
-Among them, each task may produce output, and may also require the output of some tasks as its input.
+| **Feature**                   | **Description**                                          |
+|-------------------------------|----------------------------------------------------------|
+| "Black box" Processes         | Encapsulated processes and information packets. |
+| Independent Network Construction |The external definition of connections.|
+| Asynchronism                   | Asynchronous execution of processes and asynchronous communication.                |
+| Ownership and Lifetime        | Information packets with unique ownership and lifetime. |
+| Bounded and Finite Connction| Connections between processes are bounded, with a finite capacity.|
+| Reverse Pressure | Congestion control when there are too many packets. |
 
 
+## Technology & Libraries
 
+Dagrs leverages cutting-edge technologies to ensure functionality and performance:
+
+- **[Rust](https://www.rust-lang.org/)** - A language empowering everyone to build reliable and efficient software.
+- **[tokio](https://crates.io/crates/tokio)** - An event-driven, non-blocking I/O platform for writing asynchronous I/O backed applications.
+- **[async_trait](https://crates.io/crates/async-trait)** - Type erasure for async trait methods.
 
 
 ## Contribution
@@ -117,11 +99,9 @@ Freighter is licensed under this Licensed:
 
 ## Contact us
 
-Quanyi Ma (email: genedna@gmail.com)
-
-Xiaolong Fu (email: njufxl@gmail.com)
+QIUZHILEI email: 2925212608@qq.com/QZL2503687@gmail.com
 
 ### Discord
 
-Welcome to join our discord channel  https://discord.gg/z3d7d26U
+Welcome to join our discord channel https://discord.gg/4JzaNkRP
 
