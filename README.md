@@ -9,14 +9,14 @@ Dagrs follows the concept of Flow based Programming, and aims to provide users w
 
 ### Dagrs's role in your project
 
-When you orchestrate multitasking applications asynchronously, you can make them scale better by reducing the cost of performing multiple operations simultaneously. 
-However, writing correct asynchronous code and managing communication between different tasks is annoying. 
+When you orchestrate multitasking applications asynchronously, you can make them scale better by reducing the cost of performing multiple operations simultaneously.
+However, writing correct asynchronous code and managing communication between different tasks is annoying.
 Dagrs provides convenient task abstraction and asynchronous running & communication mechanisms to reduce development costs.
 
 The development of `dagrs` follows the concept of Flow-based Programming.
 
 ### Flow based Programming
-[Flow-based Programming](https://en.wikipedia.org/wiki/Flow-based_programming)(FBP) was invented by J. Paul Morrison in the early 1970s. It was initially implemented in software for a Canadian bank. 
+[Flow-based Programming](https://en.wikipedia.org/wiki/Flow-based_programming)(FBP) was invented by J. Paul Morrison in the early 1970s. It was initially implemented in software for a Canadian bank.
 Over the years, it’s had various names but has always maintained its core principles of reducing development time and managing processes efficiently.
 
 FBP treats applications as networks of 'black box' processes that communicate by sending and receiving data, referred to as Information Packets, over predefined connections. It’s a component-oriented approach that fits well with modular software architecture.
@@ -99,9 +99,8 @@ Freighter is licensed under this Licensed:
 
 ## Contact us
 
-QIUZHILEI email: 2925212608@qq.com/QZL2503687@gmail.com
+Email: Quanyi Ma <eli@patch.sh>, Xiaolong Fu <njufxl@gmail.com>
 
 ### Discord
 
 Welcome to join our discord channel https://discord.gg/4JzaNkRP
-
