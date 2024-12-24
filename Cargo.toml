@@ -11,7 +11,7 @@ license = "MIT OR Apache-2.0"
 description = "Dagrs follows the concept of Flow-based Programming and is suitable for the execution of multiple tasks with graph-like dependencies. Dagrs has the characteristics of high performance and asynchronous execution. It provides users with a convenient programming interface."
 readme = "README.md"
 repository = "https://github.com/dagrs-dev/dagrs"
-keywords = ["DAG", "task", "async", "fbp", "flow-based-programming"]
+keywords = ["DAG", "task", "async", "fbp", "tokio"]
 
 [workspace]
 members = [".", "dagrs-derive"]
