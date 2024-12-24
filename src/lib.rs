@@ -20,4 +20,4 @@ pub use tokio;
 pub use utils::{env::EnvVar, output::Output};
 
 #[cfg(feature = "derive")]
-pub use derive::*;
+pub use dagrs_derive::*;

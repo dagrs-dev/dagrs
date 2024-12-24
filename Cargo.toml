@@ -22,14 +22,14 @@ keywords = [
 ]
 
 [workspace]
-members = [".", "derive"]
+members = [".", "dagrs-derive"]
 
 [dependencies]
 tokio = { version = "1.28", features = ["rt", "sync", "rt-multi-thread"] }
 log = "0.4"
 env_logger = "0.10.1"
 async-trait = "0.1.83"
-derive = { path = "derive", optional = true }
+dagrs-derive = { path = "dagrs-derive", optional = true }
 proc-macro2 = "1.0"
 futures = "0.3.31"
 
@@ -41,8 +41,21 @@ criterion = { version = "0.5.1", features = ["html_reports"] }
 
 [features]
 default = ["derive"]
-derive = ["derive/derive"]
+derive = ["dagrs-derive/derive"]
 
 [[example]]
 name = "auto_node"
 required-features = ["derive"]
+
+[[example]]
+name = "auto_relay"
+required-features = ["derive"]
+
+[[example]]
+name = "compute_dag"
+
+[[example]]
+name = "custom_node"
+
+[[example]]
+name = "hello_dagrs"
