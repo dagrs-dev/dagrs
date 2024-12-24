@@ -5,9 +5,21 @@ authors = [
     "Xiaolong Fu <njufxl@gmail.com>",
     "Zhilei Qiu <qzl2503687@gmail.com>",
 ]
-version = "0.4.0"
+version = "0.4.2"
 edition = "2021"
 license = "MIT OR Apache-2.0"
+description = "Dagrs follows the concept of Flow-based Programming and is suitable for the execution of multiple tasks with graph-like dependencies. Dagrs has the characteristics of high performance and asynchronous execution. It provides users with a convenient programming interface."
+readme = "README.md"
+repository = "https://github.com/dagrs-dev/dagrs"
+keywords = [
+    "DAG",
+    "task",
+    "async",
+    "parallel",
+    "concurrent",
+    "tokio",
+    "flow-based-programming",
+]
 
 [dependencies]
 syn = { version = "2.0", features = ["full"] }
