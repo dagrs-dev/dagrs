@@ -29,7 +29,7 @@ tokio = { version = "1.28", features = ["rt", "sync", "rt-multi-thread"] }
 log = "0.4"
 env_logger = "0.10.1"
 async-trait = "0.1.83"
-dagrs-derive = { path = "dagrs-derive", optional = true }
+dagrs-derive = { path = "dagrs-derive", optional = true, version = "0.4.0" }
 proc-macro2 = "1.0"
 futures = "0.3.31"
 

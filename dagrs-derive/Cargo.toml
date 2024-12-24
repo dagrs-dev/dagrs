@@ -1,5 +1,10 @@
 [package]
 name = "dagrs-derive"
+authors = [
+    "Quanyi Ma <eli@patch.sh>",
+    "Xiaolong Fu <njufxl@gmail.com>",
+    "Zhilei Qiu <qzl2503687@gmail.com>",
+]
 version = "0.4.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
