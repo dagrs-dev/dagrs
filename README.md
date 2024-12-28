@@ -29,7 +29,7 @@ FBP treats applications as networks of 'black box' processes that communicate by
 | Independent Network Construction |The external definition of connections.|
 | Asynchronism                   | Asynchronous execution of processes and asynchronous communication.                |
 | Ownership and Lifetime        | Information packets with unique ownership and lifetime. |
-| Bounded and Finite Connction| Connections between processes are bounded, with a finite capacity.|
+| Bounded and Finite Connection| Connections between processes are bounded, with a finite capacity.|
 | Reverse Pressure | Congestion control when there are too many packets. |
 
 
