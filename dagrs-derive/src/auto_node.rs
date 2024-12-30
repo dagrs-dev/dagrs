@@ -116,7 +116,7 @@ fn auto_impl_node(
     ]);
 
     quote::quote!(
-        #[async_trait::async_trait]
+        #[dagrs::async_trait::async_trait]
         impl #generics dagrs::Node for #struct_ident #generics {
             #impl_tokens
         }

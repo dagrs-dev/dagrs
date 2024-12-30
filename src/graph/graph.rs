@@ -5,6 +5,7 @@ use std::{
     sync::{atomic::AtomicBool, Arc},
 };
 
+use crate::node::cyclic_node::Cycle;
 use crate::{
     connection::{in_channel::InChannel, information_packet::Content, out_channel::OutChannel},
     node::node::{Node, NodeId, NodeTable},

@@ -50,7 +50,7 @@ impl InChannels {
         let futures = self
             .0
             .iter_mut()
-            .map(|(_, c)| async { c.lock().await.recv().await });
+            .map(|(_id, c)| async { c.lock().await.recv().await });
         join_all(futures).await.into_iter().map(|x| f(x)).collect()
     }
 

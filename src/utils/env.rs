@@ -19,7 +19,7 @@ pub type Variable = Content;
 /// - [NodeTable] : a mapping from node's name to `NodeId`.
 /// During the runtime of a `Graph`, [`NodeTable`] allows
 /// each `Node` to look up the id of a specific node by its name.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct EnvVar {
     variables: HashMap<String, Variable>,
 }
