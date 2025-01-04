@@ -93,14 +93,20 @@ fn main() {
     graph.set_env(env);
 
     // Start executing this dag.
-    graph.start();
+    match graph.start() {
+        Ok(_) => {
+            let res = graph
+                .get_results::<usize>()
+                .get(&g_id)
+                .unwrap()
+                .clone()
+                .unwrap();
+            assert_eq!(*res, 272)
+        }
+        Err(e) => {
+            eprintln!("Graph execution failed: {:?}", e);
+        }
+    }
 
     // Verify execution result.
-    let res = graph
-        .get_results::<usize>()
-        .get(&g_id)
-        .unwrap()
-        .clone()
-        .unwrap();
-    assert_eq!(*res, 272)
 }

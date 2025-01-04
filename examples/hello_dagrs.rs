@@ -34,13 +34,18 @@ fn main() {
     let mut graph = Graph::new();
     graph.add_node(hello_node);
 
-    graph.start();
+    match graph.start() {
+        Ok(_) => {
+            // verify the output of this node
+            let outputs = graph.get_outputs();
+            assert_eq!(outputs.len(), 1);
 
-    // verify the output of this node
-    let outputs = graph.get_outputs();
-    assert_eq!(outputs.len(), 1);
-
-    let content = outputs.get(id).unwrap().get_out().unwrap();
-    let node_output = content.get::<String>().unwrap();
-    assert_eq!(node_output, "Hello Dagrs")
+            let content = outputs.get(id).unwrap().get_out().unwrap();
+            let node_output = content.get::<String>().unwrap();
+            assert_eq!(node_output, "Hello Dagrs")
+        }
+        Err(e) => {
+            eprintln!("Graph execution failed: {:?}", e);
+        }
+    }
 }
