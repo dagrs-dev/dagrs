@@ -14,7 +14,7 @@ repository = "https://github.com/dagrs-dev/dagrs"
 keywords = ["DAG", "task", "async", "fbp", "tokio"]
 
 [workspace]
-members = [".", "dagrs-derive", "examples/dagrs-x-notebook"]
+members = [".", "dagrs-derive", "examples/dagrs-sklearn"]
 default-members = [".", "dagrs-derive"]
 
 [dependencies]

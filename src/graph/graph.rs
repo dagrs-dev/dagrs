@@ -6,7 +6,6 @@ use std::{
     sync::{atomic::AtomicBool, Arc},
 };
 
-use crate::node::cyclic_node::Cycle;
 use crate::{
     connection::{in_channel::InChannel, information_packet::Content, out_channel::OutChannel},
     node::node::{Node, NodeId, NodeTable},
@@ -128,7 +127,6 @@ impl Graph {
     }
 
     /// This function is used for the execution of a single dag.
-
     pub fn start(&mut self) -> Result<(), GraphError> {
         self.init();
         let is_loop = self.check_loop();
@@ -157,6 +155,8 @@ impl Graph {
             let task = task::spawn({
                 let errors = Arc::clone(&errors);
                 async move {
+                    // create an Arc pointer to node, used for error handling.
+                    let node_ref = node.clone();
                     // Lock the node before running its method
                     let mut node = node.lock().await;
                     let node_name = node.name();
@@ -188,6 +188,10 @@ impl Graph {
                             }
                         }
                         Err(_) => {
+                            // Close all the channels
+                            node_ref.blocking_lock().input_channels().close_all();
+                            node_ref.blocking_lock().output_channels().close_all();
+
                             error!("Execution failed [name: {}, id: {}]", node_name, node_id,);
                             let mut errors_lock = errors.lock().await;
                             errors_lock.push(GraphError::PanicOccurred(format!(

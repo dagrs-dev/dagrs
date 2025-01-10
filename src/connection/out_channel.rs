@@ -55,6 +55,10 @@ impl OutChannels {
         }
     }
 
+    pub(crate) fn close_all(&mut self) {
+        self.0.clear();
+    }
+
     fn get(&self, id: &NodeId) -> Option<Arc<OutChannel>> {
         match self.0.get(id) {
             Some(c) => Some(c.clone()),

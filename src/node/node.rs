@@ -5,7 +5,6 @@ use async_trait::async_trait;
 use crate::{
     connection::{in_channel::InChannels, out_channel::OutChannels},
     utils::{env::EnvVar, output::Output},
-    Cycle, CyclicMark,
 };
 
 use super::id_allocate::alloc_id;
@@ -31,10 +30,6 @@ pub trait Node: Send + Sync {
     fn output_channels(&mut self) -> &mut OutChannels;
     /// Execute a run of this node.
     async fn run(&mut self, env: Arc<EnvVar>) -> Output;
-
-    fn cycle(&self) -> Option<CyclicMark> {
-        None
-    }
 }
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, Copy)]

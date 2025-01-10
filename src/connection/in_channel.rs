@@ -50,7 +50,7 @@ impl InChannels {
         let futures = self
             .0
             .iter_mut()
-            .map(|(_id, c)| async { c.lock().await.recv().await });
+            .map(|(_, c)| async { c.lock().await.recv().await });
         join_all(futures).await.into_iter().map(|x| f(x)).collect()
     }
 
@@ -64,6 +64,10 @@ impl InChannels {
 
     pub(crate) fn insert(&mut self, node_id: NodeId, channel: Arc<Mutex<InChannel>>) {
         self.0.insert(node_id, channel);
+    }
+
+    pub(crate) fn close_all(&mut self) {
+        self.0.values_mut().for_each(|c| c.blocking_lock().close());
     }
 
     fn get(&self, id: &NodeId) -> Option<Arc<Mutex<InChannel>>> {

@@ -33,5 +33,5 @@ fn main() {
         b -> a
     );
 
-    g.start();
+    g.start().unwrap();
 }

@@ -10,7 +10,6 @@ pub use connection::{
 };
 pub use node::{
     action::{Action, EmptyAction},
-    cyclic_node::*,
     default_node::DefaultNode,
     node::*,
 };
