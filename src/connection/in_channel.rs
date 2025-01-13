@@ -66,6 +66,10 @@ impl InChannels {
         self.0.insert(node_id, channel);
     }
 
+    pub(crate) fn close_all(&mut self) {
+        self.0.values_mut().for_each(|c| c.blocking_lock().close());
+    }
+
     fn get(&self, id: &NodeId) -> Option<Arc<Mutex<InChannel>>> {
         match self.0.get(id) {
             Some(c) => Some(c.clone()),

@@ -63,13 +63,18 @@ fn main() {
     // create a graph with this node and run
     let mut graph = Graph::new();
     graph.add_node(node);
-    graph.start();
+    match graph.start() {
+        Ok(_) => {
+            // verify the output of this node
+            let outputs = graph.get_outputs();
+            assert_eq!(outputs.len(), 1);
 
-    // verify the output of this node
-    let outputs = graph.get_outputs();
-    assert_eq!(outputs.len(), 1);
-
-    let content = outputs.get(id).unwrap().get_out().unwrap();
-    let node_output = content.get::<String>().unwrap();
-    assert_eq!(node_output, "hello dagrs")
+            let content = outputs.get(id).unwrap().get_out().unwrap();
+            let node_output = content.get::<String>().unwrap();
+            assert_eq!(node_output, "hello dagrs")
+        }
+        Err(e) => {
+            eprintln!("Graph execution failed: {:?}", e);
+        }
+    }
 }

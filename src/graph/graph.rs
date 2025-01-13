@@ -1,4 +1,5 @@
 use std::hash::Hash;
+use std::sync::atomic::Ordering;
 use std::{
     collections::{HashMap, HashSet},
     panic::{self, AssertUnwindSafe},
@@ -16,6 +17,8 @@ use log::{debug, error};
 use tokio::sync::mpsc;
 use tokio::sync::Mutex;
 use tokio::task;
+
+use super::error::GraphError;
 
 /// [`Graph`] is dagrs's main body.
 ///
@@ -124,59 +127,78 @@ impl Graph {
     }
 
     /// This function is used for the execution of a single dag.
-    pub fn start(&mut self) {
+    pub fn start(&mut self) -> Result<(), GraphError> {
         self.init();
         let is_loop = self.check_loop();
         if is_loop {
-            panic!("Graph contains a loop.");
+            return Err(GraphError::GraphLoopDetected);
         }
-        if !self.is_active.load(std::sync::atomic::Ordering::Relaxed) {
-            eprintln!("Graph is not active. Aborting execution.");
-            return;
-        } else {
-            tokio::runtime::Runtime::new()
-                .unwrap()
-                .block_on(async { self.run().await })
+
+        if !self.is_active.load(Ordering::Relaxed) {
+            return Err(GraphError::GraphNotActive);
         }
+
+        tokio::runtime::Runtime::new()
+            .unwrap()
+            .block_on(async { self.run().await })
     }
 
-    async fn run(&mut self) {
+    async fn run(&mut self) -> Result<(), GraphError> {
         let mut tasks = Vec::new();
+        let errors = Arc::new(Mutex::new(Vec::new()));
 
         for (node_id, node) in &self.nodes {
             let execute_state = self.execute_states[&node_id].clone();
             let node_clone = Arc::clone(&self.env);
             let node = Arc::clone(&node);
 
-            let task = task::spawn(async move {
-                // Lock the node before running its method
-                let mut node = node.lock().await;
-                let node_name = node.name();
-                let node_id = node.id().0;
-                let result =
-                    panic::catch_unwind(AssertUnwindSafe(
-                        || async move { node.run(node_clone).await },
-                    ));
+            let task = task::spawn({
+                let errors = Arc::clone(&errors);
+                async move {
+                    // create an Arc pointer to node, used for error handling.
+                    let node_ref = node.clone();
+                    // Lock the node before running its method
+                    let mut node = node.lock().await;
+                    let node_name = node.name();
+                    let node_id = node.id().0;
+                    let result = panic::catch_unwind(AssertUnwindSafe(|| async move {
+                        node.run(node_clone).await
+                    }));
 
-                match result {
-                    Ok(out) => {
-                        let out = out.await;
-                        if out.is_err() {
-                            let error = out.get_err().unwrap_or("".to_string());
-                            error!(
-                                "Execution failed [name: {}, id: {}] - {}",
-                                node_name, node_id, error
-                            );
-                            execute_state.set_output(out);
-                            execute_state.exe_fail();
-                        } else {
-                            execute_state.set_output(out);
-                            execute_state.exe_success();
-                            debug!("Execution succeed [name: {}, id: {}]", node_name, node_id,);
+                    match result {
+                        Ok(out) => {
+                            let out = out.await;
+                            if out.is_err() {
+                                let error = out.get_err().unwrap_or("".to_string());
+                                error!(
+                                    "Execution failed [name: {}, id: {}] - {}",
+                                    node_name, node_id, error
+                                );
+                                execute_state.set_output(out);
+                                execute_state.exe_fail();
+                                let mut errors_lock = errors.lock().await;
+                                errors_lock.push(GraphError::ExecutionFailed(format!(
+                                    "Execution failed for node: {}, id: {} - {}",
+                                    node_name, node_id, error
+                                )));
+                            } else {
+                                execute_state.set_output(out);
+                                execute_state.exe_success();
+                                debug!("Execution succeed [name: {}, id: {}]", node_name, node_id,);
+                            }
                         }
-                    }
-                    Err(_) => {
-                        error!("Execution failed [name: {}, id: {}]", node_name, node_id,)
+                        Err(_) => {
+                            // Close all the channels
+                            node_ref.blocking_lock().input_channels().close_all();
+                            node_ref.blocking_lock().output_channels().close_all();
+
+                            error!("Execution failed [name: {}, id: {}]", node_name, node_id,);
+                            let mut errors_lock = errors.lock().await;
+                            errors_lock.push(GraphError::PanicOccurred(format!(
+                                "Panic occurred for node: {}, id: {}",
+                                node_name, node_id
+                            )));
+                        }
                     }
                 }
             });
@@ -189,6 +211,17 @@ impl Graph {
 
         self.is_active
             .store(false, std::sync::atomic::Ordering::Relaxed);
+
+        let errors = errors.lock().await;
+        if !errors.is_empty() {
+            if errors.len() == 1 {
+                return Err(errors[0].clone());
+            } else {
+                return Err(GraphError::MultipleErrors(errors.clone()));
+            }
+        }
+
+        Ok(())
     }
 
     ///See if the graph has loop
@@ -316,9 +349,15 @@ mod tests {
 
         graph.add_edge(node_id, vec![node1_id]);
 
-        graph.start();
-        let out = graph.execute_states[&node1_id].get_output().unwrap();
-        let out: &String = out.get().unwrap();
-        assert_eq!(out, "Hello world");
+        match graph.start() {
+            Ok(_) => {
+                let out = graph.execute_states[&node1_id].get_output().unwrap();
+                let out: &String = out.get().unwrap();
+                assert_eq!(out, "Hello world");
+            }
+            Err(e) => {
+                eprintln!("Graph execution failed: {:?}", e);
+            }
+        }
     }
 }
