@@ -44,6 +44,7 @@ impl Action for NodeAction {
                 code,
                 content.unwrap().get::<(Vec<String>, Vec<String>)>()
             ),
+            _ => panic!(),
         };
         Output::empty()
     }

@@ -33,6 +33,8 @@ pub enum Output {
     Out(Option<Content>),
     Err(String),
     ErrWithExitCode(Option<i32>, Option<Content>),
+    /// ...
+    ConditionResult(bool),
 }
 
 impl Output {
@@ -63,7 +65,7 @@ impl Output {
     pub(crate) fn is_err(&self) -> bool {
         match self {
             Self::Err(_) | Self::ErrWithExitCode(_, _) => true,
-            Self::Out(_) => false,
+            Self::Out(_) | Self::ConditionResult(_) => false,
         }
     }
 
@@ -71,19 +73,30 @@ impl Output {
     pub fn get_out(&self) -> Option<Content> {
         match self {
             Self::Out(ref out) => out.clone(),
-            Self::Err(_) | Self::ErrWithExitCode(_, _) => None,
+            Self::Err(_) | Self::ErrWithExitCode(_, _) | Self::ConditionResult(_) => None,
         }
     }
 
     /// Get error information stored in [`Output`].
     pub fn get_err(&self) -> Option<String> {
         match self {
-            Self::Out(_) => None,
+            Self::Out(_) | Self::ConditionResult(_) => None,
             Self::Err(err) => Some(err.to_string()),
             Self::ErrWithExitCode(code, _) => {
                 let error_code = code.map_or("".to_string(), |v| v.to_string());
                 Some(format!("code: {error_code}"))
             }
+        }
+    }
+
+    /// Get the condition result stored in [`Output`].
+    ///
+    /// Returns `Some(bool)` if this is a `ConditionResult` variant,
+    /// otherwise returns `None`.
+    pub(crate) fn conditional_result(&self) -> Option<bool> {
+        match self {
+            Self::ConditionResult(b) => Some(*b),
+            _ => None,
         }
     }
 }

@@ -30,6 +30,10 @@ pub trait Node: Send + Sync {
     fn output_channels(&mut self) -> &mut OutChannels;
     /// Execute a run of this node.
     async fn run(&mut self, env: Arc<EnvVar>) -> Output;
+    /// Return true if this node is conditional node. By default, it returns false.
+    fn is_condition(&self) -> bool {
+        false
+    }
 }
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, Copy)]
