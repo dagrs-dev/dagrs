@@ -13,7 +13,7 @@ use crate::{
     Output,
 };
 
-use log::{debug, error};
+use log::{debug, error, info};
 use tokio::sync::mpsc;
 use tokio::sync::Mutex;
 use tokio::task;
@@ -53,6 +53,9 @@ pub struct Graph {
     is_active: Arc<AtomicBool>,
     /// Node's in_degree, used for check loop
     in_degree: HashMap<NodeId, usize>,
+    /// Stores the blocks of nodes divided by conditional nodes.
+    /// Each block is a HashSet of NodeIds that represents a group of nodes that will be executed together.
+    blocks: Vec<HashSet<NodeId>>,
 }
 
 impl Graph {
@@ -65,6 +68,7 @@ impl Graph {
             env: Arc::new(EnvVar::new(NodeTable::default())),
             is_active: Arc::new(AtomicBool::new(true)),
             in_degree: HashMap::new(),
+            blocks: vec![],
         }
     }
 
@@ -129,7 +133,7 @@ impl Graph {
     /// This function is used for the execution of a single dag.
     pub fn start(&mut self) -> Result<(), GraphError> {
         self.init();
-        let is_loop = self.check_loop();
+        let is_loop = self.check_loop_and_partition();
         if is_loop {
             return Err(GraphError::GraphLoopDetected);
         }
@@ -143,71 +147,116 @@ impl Graph {
             .block_on(async { self.run().await })
     }
 
+    /// Executes the graph's nodes in a concurrent manner, respecting the block structure.
+    ///
+    /// - Executes nodes in blocks, where blocks are separated by conditional nodes
+    /// - Runs nodes within each block concurrently using Tokio tasks
+    /// - Handles node execution failures and panics
+    /// - Supports conditional execution - if a conditional node returns false, remaining blocks are aborted
+    /// - Tracks execution state and errors for each node
+    ///
+    /// # Returns
+    /// - `Ok(())` if all nodes execute successfully
+    /// - `Err(GraphError)` if any node fails or panics during execution
+    ///   - Returns single error if only one failure occurs
+    ///   - Returns `MultipleErrors` if multiple nodes fail
     async fn run(&mut self) -> Result<(), GraphError> {
-        let mut tasks = Vec::new();
+        // let mut tasks = Vec::new();
+        let mut chunks = vec![];
+        let condition_flag = Arc::new(Mutex::new(true));
         let errors = Arc::new(Mutex::new(Vec::new()));
 
-        for (node_id, node) in &self.nodes {
-            let execute_state = self.execute_states[&node_id].clone();
-            let node_clone = Arc::clone(&self.env);
-            let node = Arc::clone(&node);
+        // Start the nodes by blocks
+        for block in &self.blocks {
+            let mut chunk = vec![];
+            for node_id in block {
+                let node = self.nodes.get(node_id).unwrap();
+                let execute_state = self.execute_states[&node_id].clone();
+                let node_clone = Arc::clone(&self.env);
+                let node = Arc::clone(&node);
+                let condition_flag = condition_flag.clone();
 
-            let task = task::spawn({
-                let errors = Arc::clone(&errors);
-                async move {
-                    // create an Arc pointer to node, used for error handling.
-                    let node_ref = node.clone();
-                    // Lock the node before running its method
-                    let mut node = node.lock().await;
-                    let node_name = node.name();
-                    let node_id = node.id().0;
-                    let result = panic::catch_unwind(AssertUnwindSafe(|| async move {
-                        node.run(node_clone).await
-                    }));
+                let task = task::spawn({
+                    let errors = Arc::clone(&errors);
+                    async move {
+                        // create an Arc pointer to node, used for error handling.
+                        let node_ref = node.clone();
+                        // Lock the node before running its method
+                        let mut node = node.lock().await;
+                        let node_name = node.name();
+                        let node_id = node.id().0;
+                        let result = panic::catch_unwind(AssertUnwindSafe(|| async move {
+                            node.run(node_clone).await
+                        }));
 
-                    match result {
-                        Ok(out) => {
-                            let out = out.await;
-                            if out.is_err() {
-                                let error = out.get_err().unwrap_or("".to_string());
-                                error!(
-                                    "Execution failed [name: {}, id: {}] - {}",
-                                    node_name, node_id, error
-                                );
-                                execute_state.set_output(out);
-                                execute_state.exe_fail();
+                        match result {
+                            Ok(out) => {
+                                let out = out.await;
+                                if out.is_err() {
+                                    let error = out.get_err().unwrap_or("".to_string());
+                                    error!(
+                                        "Execution failed [name: {}, id: {}] - {}",
+                                        node_name, node_id, error
+                                    );
+                                    execute_state.set_output(out);
+                                    execute_state.exe_fail();
+                                    let mut errors_lock = errors.lock().await;
+                                    errors_lock.push(GraphError::ExecutionFailed(format!(
+                                        "Execution failed for node: {}, id: {} - {}",
+                                        node_name, node_id, error
+                                    )));
+                                } else {
+                                    // If the ouput is produced by a ConditionalNode, check the value:
+                                    // - true: go on execution
+                                    // - false: set conditional_exec
+                                    if let Some(false) = out.conditional_result() {
+                                        let mut cf = condition_flag.lock().await;
+                                        *cf = false;
+                                        info!(
+                                            "Condition failed on [name: {}, id: {}]. The rest nodes will abort.",
+                                            node_name, node_id,
+                                        )
+                                    }
+
+                                    // Save the execution state.
+                                    execute_state.set_output(out);
+                                    execute_state.exe_success();
+                                    debug!(
+                                        "Execution succeed [name: {}, id: {}]",
+                                        node_name, node_id,
+                                    );
+                                }
+                            }
+                            Err(_) => {
+                                // Close all the channels
+                                node_ref.blocking_lock().input_channels().close_all();
+                                node_ref.blocking_lock().output_channels().close_all();
+
+                                error!("Execution failed [name: {}, id: {}]", node_name, node_id,);
                                 let mut errors_lock = errors.lock().await;
-                                errors_lock.push(GraphError::ExecutionFailed(format!(
-                                    "Execution failed for node: {}, id: {} - {}",
-                                    node_name, node_id, error
+                                errors_lock.push(GraphError::PanicOccurred(format!(
+                                    "Panic occurred for node: {}, id: {}",
+                                    node_name, node_id
                                 )));
-                            } else {
-                                execute_state.set_output(out);
-                                execute_state.exe_success();
-                                debug!("Execution succeed [name: {}, id: {}]", node_name, node_id,);
                             }
                         }
-                        Err(_) => {
-                            // Close all the channels
-                            node_ref.blocking_lock().input_channels().close_all();
-                            node_ref.blocking_lock().output_channels().close_all();
-
-                            error!("Execution failed [name: {}, id: {}]", node_name, node_id,);
-                            let mut errors_lock = errors.lock().await;
-                            errors_lock.push(GraphError::PanicOccurred(format!(
-                                "Panic occurred for node: {}, id: {}",
-                                node_name, node_id
-                            )));
-                        }
                     }
-                }
-            });
-
-            tasks.push(task);
+                });
+                chunk.push(task);
+            }
+            chunks.push(chunk);
         }
 
-        // Await all tasks to complete
-        let _ = futures::future::join_all(tasks).await;
+        // Await all chunks to complete.
+        for chunk in chunks {
+            // If condition flag is false, abort the rest chuncks.
+            if *condition_flag.lock().await == false {
+                chunk.iter().for_each(|handle| handle.abort());
+            } else {
+                let _ = futures::future::join_all(chunk).await;
+            }
+        }
+        // let _ = futures::future::join_all(tasks).await;
 
         self.is_active
             .store(false, std::sync::atomic::Ordering::Relaxed);
@@ -224,8 +273,18 @@ impl Graph {
         Ok(())
     }
 
-    ///See if the graph has loop
-    pub fn check_loop(&mut self) -> bool {
+    /// 1. Checks if the graph contains any cycles/loops using a topological sorting approach
+    /// 2. Divides the graph into blocks separated by conditional nodes
+    ///
+    /// The algorithm works as follows:
+    /// - Starts with nodes that have no incoming edges (in_degree = 0)
+    /// - Processes nodes one by one, decrementing the in_degree of their neighbors
+    /// - When a neighbor's in_degree becomes 0, adds it to the processing queue
+    /// - Groups nodes into blocks, creating a new block whenever a conditional node is encountered
+    /// - If the number of processed nodes is less than total nodes, a cycle exists
+    ///
+    /// Returns true if the graph contains a cycle, false otherwise.
+    pub fn check_loop_and_partition(&mut self) -> bool {
         let mut queue: Vec<NodeId> = self
             .in_degree
             .iter()
@@ -234,6 +293,7 @@ impl Graph {
 
         let mut in_degree = self.in_degree.clone();
         let mut processed_count = 0;
+        let mut block = HashSet::new();
 
         while let Some(node_id) = queue.pop() {
             processed_count += 1;
@@ -248,7 +308,23 @@ impl Graph {
                     }
                 }
             }
+
+            // Add current node into the block.
+            // The division block cuts off from here if the current node is a conditional node.
+            block.insert(node_id);
+            if node.is_condition() {
+                self.blocks.push(block);
+                block = HashSet::new();
+            }
         }
+
+        // Save the remaining block.
+        if !block.is_empty() {
+            self.blocks.push(block);
+        }
+
+        debug!("Split the graph into blocks: {:?}", self.blocks);
+
         processed_count < self.node_count
     }
 
@@ -265,6 +341,7 @@ impl Graph {
             })
             .collect()
     }
+
     pub fn get_outputs(&self) -> HashMap<NodeId, Output> {
         self.execute_states
             .iter()
@@ -293,6 +370,7 @@ impl Graph {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::node::conditional_node::{Condition, ConditionalNode};
     use crate::node::default_node::DefaultNode;
     use crate::{
         Action, Content, EnvVar, InChannels, Node, NodeName, NodeTable, OutChannels, Output,
@@ -328,7 +406,6 @@ mod tests {
 
     #[test]
     fn test_graph_execution() {
-        env_logger::init();
         let mut graph = Graph::new();
         let mut node_table = NodeTable::new();
 
@@ -357,6 +434,68 @@ mod tests {
             }
             Err(e) => {
                 eprintln!("Graph execution failed: {:?}", e);
+            }
+        }
+    }
+
+    /// A test condition that always fails.
+    ///
+    /// This condition is used in tests to verify the behavior of conditional nodes
+    /// when their condition evaluates to false. The `run` method always returns false,
+    /// simulating a failing condition.
+    struct FailingCondition;
+    #[async_trait::async_trait]
+    impl Condition for FailingCondition {
+        async fn run(&self, _: &mut InChannels, _: &OutChannels, _: Arc<EnvVar>) -> bool {
+            false
+        }
+    }
+
+    /// Step 1: Create a new graph and node table.
+    ///
+    /// Step 2: Create two nodes - a conditional node that will fail and a hello action node.
+    ///
+    /// Step 3: Add nodes to graph and set up dependencies between them.
+    ///
+    /// Step 4: Run the graph and verify the conditional node fails as expected.
+    #[test]
+    fn test_conditional_execution() {
+        let mut graph = Graph::new();
+        let mut node_table = NodeTable::new();
+
+        // Create conditional node that will fail
+        let node_a_name = "Node A";
+        let node_a = ConditionalNode::with_condition(
+            NodeName::from(node_a_name),
+            FailingCondition,
+            &mut node_table,
+        );
+        let node_a_id = node_a.id();
+
+        // Create hello action node
+        let node_b_name = "Node B";
+        let node_b = DefaultNode::with_action(
+            NodeName::from(node_b_name),
+            HelloAction::new(),
+            &mut node_table,
+        );
+        let node_b_id = node_b.id();
+
+        // Add nodes to graph
+        graph.add_node(node_a);
+        graph.add_node(node_b);
+
+        // Add edge from A to B
+        graph.add_edge(node_a_id, vec![node_b_id]);
+
+        // Execute graph
+        match graph.start() {
+            Ok(_) => {
+                // Node A should have failed
+                assert!(graph.execute_states[&node_a_id].get_output().is_none());
+            }
+            Err(e) => {
+                assert!(matches!(e, GraphError::ExecutionFailed(_)));
             }
         }
     }

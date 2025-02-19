@@ -1,18 +1,28 @@
+//! Variant of the example `compute_dag`.
 //! Only use Dag, execute a job. The graph is as follows:
 //!
-//!    ↱----------↴
-//!    B -→ E --→ G
-//!  ↗    ↗     ↗
-//! A --→ C    /
-//!  ↘    ↘  /
-//!   D -→ F
+//!    ┌───────────↴
+//!    B ──→ E ──→ X ──→ G
+//!  ↗     ↗           ↗
+//! A ───→ C          ╱
+//!  ↘     ↘        ╱
+//!    D ───→ F ───╱
 //!
-//! The final execution result is 272.
+//! The node `X` is a conditional node which will return false.
+//!
+//! Dagrs will split the graph into two blocks:     
+//! - A, B, C, D, E, F, X
+//! - G
+//!
+//! Since node X's condition (VerifyGT(128)) is not met,
+//! execution stops at node X and never reaches node G.
+//! Therefore G's result should be None.
 
-use std::sync::Arc;
+use std::{env, sync::Arc};
 
 use async_trait::async_trait;
 use dagrs::{
+    node::conditional_node::{Condition, ConditionalNode},
     Action, Content, DefaultNode, EnvVar, Graph, InChannels, Node, NodeTable, OutChannels, Output,
 };
 
@@ -43,8 +53,34 @@ impl Action for Compute {
     }
 }
 
+struct VerifyGT(usize);
+#[async_trait]
+impl Condition for VerifyGT {
+    async fn run(
+        &self,
+        in_channels: &mut InChannels,
+        out_channels: &OutChannels,
+        _: Arc<EnvVar>,
+    ) -> bool {
+        let mut sum = 0;
+        in_channels
+            .map(|content| content.unwrap().into_inner::<usize>().unwrap())
+            .await
+            .into_iter()
+            .for_each(|x| sum += *x);
+
+        let verify = sum > self.0;
+        if verify {
+            out_channels.broadcast(Content::new(sum)).await;
+        }
+
+        verify
+    }
+}
+
 fn main() {
     // Initialization log.
+    env::set_var("RUST_LOG", "debug");
     env_logger::init();
 
     // Create a new `NodeTable`.
@@ -70,6 +106,10 @@ fn main() {
     let f = DefaultNode::with_action("Compute F".to_string(), Compute(32), &mut node_table);
     let f_id = f.id();
 
+    let x =
+        ConditionalNode::with_condition("Condition X".to_string(), VerifyGT(128), &mut node_table);
+    let x_id = x.id();
+
     let g = DefaultNode::with_action("Compute G".to_string(), Compute(64), &mut node_table);
     let g_id = g.id();
 
@@ -78,13 +118,15 @@ fn main() {
     vec![a, b, c, d, e, f, g]
         .into_iter()
         .for_each(|node| graph.add_node(node));
+    graph.add_node(x);
 
     // Set up task dependencies.
     graph.add_edge(a_id, vec![b_id, c_id, d_id]);
-    graph.add_edge(b_id, vec![e_id, g_id]);
+    graph.add_edge(b_id, vec![e_id, x_id]);
     graph.add_edge(c_id, vec![e_id, f_id]);
     graph.add_edge(d_id, vec![f_id]);
-    graph.add_edge(e_id, vec![g_id]);
+    graph.add_edge(e_id, vec![x_id]);
+    graph.add_edge(x_id, vec![g_id]);
     graph.add_edge(f_id, vec![g_id]);
 
     // Set a global environment variable for this dag.
@@ -95,14 +137,11 @@ fn main() {
     // Start executing this dag.
     match graph.start() {
         Ok(_) => {
-            let res = graph
-                .get_results::<usize>()
-                .get(&g_id)
-                .unwrap()
-                .clone()
-                .unwrap();
-            // Verify execution result.
-            assert_eq!(*res, 272)
+            // Since node X's condition (VerifyGT(128)) is not met,
+            // execution stops at node X and never reaches node G.
+            // Therefore G's result should be None.
+            let res = graph.get_results::<usize>().get(&g_id).unwrap().clone();
+            assert!(res.is_none());
         }
         Err(e) => {
             panic!("Graph execution failed: {:?}", e);
