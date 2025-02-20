@@ -18,6 +18,7 @@ use tokio::sync::mpsc;
 use tokio::sync::Mutex;
 use tokio::task;
 
+use super::abstract_graph::AbstractGraph;
 use super::error::GraphError;
 
 /// [`Graph`] is dagrs's main body.
@@ -39,23 +40,25 @@ use super::error::GraphError;
 
 pub struct Graph {
     /// Define the Net struct that holds all nodes
-    nodes: HashMap<NodeId, Arc<Mutex<dyn Node>>>,
+    pub(crate) nodes: HashMap<NodeId, Arc<Mutex<dyn Node>>>,
     /// Store a task's running result.Execution results will be read
     /// and written asynchronously by several threads.
-    execute_states: HashMap<NodeId, Arc<ExecState>>,
+    pub(crate) execute_states: HashMap<NodeId, Arc<ExecState>>,
     /// Count all the nodes
-    node_count: usize,
+    pub(crate) node_count: usize,
     /// Global environment variables for this Net job.
     /// It should be set before the Net job runs.
-    env: Arc<EnvVar>,
+    pub(crate) env: Arc<EnvVar>,
     /// Mark whether the net task can continue to execute.
     /// When an error occurs during the execution of any task, This flag will still be set to true
-    is_active: Arc<AtomicBool>,
+    pub(crate) is_active: Arc<AtomicBool>,
     /// Node's in_degree, used for check loop
-    in_degree: HashMap<NodeId, usize>,
+    pub(crate) in_degree: HashMap<NodeId, usize>,
     /// Stores the blocks of nodes divided by conditional nodes.
     /// Each block is a HashSet of NodeIds that represents a group of nodes that will be executed together.
-    blocks: Vec<HashSet<NodeId>>,
+    pub(crate) blocks: Vec<HashSet<NodeId>>,
+    /// Abstract representation of the graph structure, used for cycle detection
+    pub(crate) abstract_graph: AbstractGraph,
 }
 
 impl Graph {
@@ -69,6 +72,7 @@ impl Graph {
             is_active: Arc::new(AtomicBool::new(true)),
             in_degree: HashMap::new(),
             blocks: vec![],
+            abstract_graph: AbstractGraph::new(),
         }
     }
 
@@ -77,15 +81,39 @@ impl Graph {
         self.execute_states = HashMap::new();
         self.env = Arc::new(EnvVar::new(NodeTable::default()));
         self.is_active = Arc::new(AtomicBool::new(true));
+        self.blocks.clear();
     }
 
     /// Adds a new node to the `Graph`
     pub fn add_node(&mut self, node: impl Node + 'static) {
-        let id = node.id();
-        let node = Arc::new(Mutex::new(node));
-        self.node_count = self.node_count + 1;
-        self.nodes.insert(id, node);
-        self.in_degree.insert(id, 0);
+        if let Some(loop_structure) = node.loop_structure() {
+            // Expand loop subgraph, and update concrete node id -> abstract node id mapping in abstract_graph
+            let abstract_node_id = node.id();
+
+            log::debug!("Add node {:?} to abstract graph", abstract_node_id);
+            self.abstract_graph.add_folded_node(
+                abstract_node_id,
+                loop_structure
+                    .iter()
+                    .map(|n| n.blocking_lock().id())
+                    .collect(),
+            );
+
+            for node in loop_structure {
+                let concrete_id = node.blocking_lock().id();
+                log::debug!("Add node {:?} to concrete graph", concrete_id);
+                self.nodes.insert(concrete_id, node.clone());
+            }
+        } else {
+            let id = node.id();
+            let node = Arc::new(Mutex::new(node));
+            self.node_count = self.node_count + 1;
+            self.nodes.insert(id, node);
+            self.in_degree.insert(id, 0);
+            self.abstract_graph.add_node(id);
+
+            log::debug!("Add node {:?} to concrete & abstract graph", id);
+        }
     }
     /// Adds an edge between two nodes in the `Graph`.
     /// If the outgoing port of the sending node is empty and the number of receiving nodes is > 1, use the broadcast channel
@@ -94,19 +122,25 @@ impl Graph {
     pub fn add_edge(&mut self, from_id: NodeId, all_to_ids: Vec<NodeId>) {
         let to_ids = Self::remove_duplicates(all_to_ids);
         let mut rx_map: HashMap<NodeId, mpsc::Receiver<Content>> = HashMap::new();
+
+        // Update channels
         {
             let from_node_lock = self.nodes.get_mut(&from_id).unwrap();
             let mut from_node = from_node_lock.blocking_lock();
             let from_channel = from_node.output_channels();
+
             for to_id in &to_ids {
                 if !from_channel.0.contains_key(to_id) {
                     let (tx, rx) = mpsc::channel::<Content>(32);
-                    from_channel.insert(*to_id, Arc::new(OutChannel::Mpsc(tx.clone())));
+                    from_channel.insert(*to_id, Arc::new(Mutex::new(OutChannel::Mpsc(tx.clone()))));
                     rx_map.insert(*to_id, rx);
                     self.in_degree
                         .entry(*to_id)
                         .and_modify(|e| *e += 1)
                         .or_insert(0);
+
+                    // Update abstract graph
+                    self.abstract_graph.add_edge(from_id, *to_id);
                 }
             }
         }
@@ -273,59 +307,50 @@ impl Graph {
         Ok(())
     }
 
-    /// 1. Checks if the graph contains any cycles/loops using a topological sorting approach
-    /// 2. Divides the graph into blocks separated by conditional nodes
-    ///
-    /// The algorithm works as follows:
-    /// - Starts with nodes that have no incoming edges (in_degree = 0)
-    /// - Processes nodes one by one, decrementing the in_degree of their neighbors
-    /// - When a neighbor's in_degree becomes 0, adds it to the processing queue
-    /// - Groups nodes into blocks, creating a new block whenever a conditional node is encountered
-    /// - If the number of processed nodes is less than total nodes, a cycle exists
+    /// Checks for cycles in the abstract graph, and partitions the graph into blocks.
+    /// - Groups nodes into blocks, creating a new block whenever a conditional node / loop is encountered
     ///
     /// Returns true if the graph contains a cycle, false otherwise.
     pub fn check_loop_and_partition(&mut self) -> bool {
-        let mut queue: Vec<NodeId> = self
-            .in_degree
-            .iter()
-            .filter_map(|(&node_id, &degree)| if degree == 0 { Some(node_id) } else { None })
-            .collect();
+        // Check for cycles using abstract graph
+        let has_cycle = self.abstract_graph.check_loop();
 
-        let mut in_degree = self.in_degree.clone();
-        let mut processed_count = 0;
-        let mut block = HashSet::new();
+        // Split into blocks based on conditional nodes
+        let mut current_block = HashSet::new();
 
-        while let Some(node_id) = queue.pop() {
-            processed_count += 1;
-            let node_lock = self.nodes.get_mut(&node_id).unwrap();
-            let mut node = node_lock.blocking_lock();
-            let out = node.output_channels();
-            for (id, _channel) in out.0.iter() {
-                if let Some(degree) = in_degree.get_mut(id) {
-                    *degree -= 1;
-                    if *degree == 0 {
-                        queue.push(id.clone());
-                    }
+        for node_id in self.abstract_graph.in_degree.keys() {
+            if let Some(unfolded_nodes) = self.abstract_graph.unfold_node(*node_id) {
+                // Create new block for unfolded nodes
+                if !current_block.is_empty() {
+                    self.blocks.push(current_block);
+                    current_block = HashSet::new();
                 }
-            }
 
-            // Add current node into the block.
-            // The division block cuts off from here if the current node is a conditional node.
-            block.insert(node_id);
-            if node.is_condition() {
-                self.blocks.push(block);
-                block = HashSet::new();
+                for node_id in unfolded_nodes {
+                    current_block.insert(*node_id);
+                }
+                self.blocks.push(current_block);
+                current_block = HashSet::new();
+            } else {
+                current_block.insert(*node_id);
+
+                // Create new block if conditional node / loop encountered
+                let node = self.nodes.get(node_id).unwrap();
+                if node.blocking_lock().is_condition() {
+                    self.blocks.push(current_block);
+                    current_block = HashSet::new();
+                }
             }
         }
 
-        // Save the remaining block.
-        if !block.is_empty() {
-            self.blocks.push(block);
+        // Add any remaining nodes to final block
+        if !current_block.is_empty() {
+            self.blocks.push(current_block);
         }
 
         debug!("Split the graph into blocks: {:?}", self.blocks);
 
-        processed_count < self.node_count
+        has_cycle
     }
 
     /// Get the output of all tasks.
@@ -383,7 +408,7 @@ mod tests {
     pub struct HelloAction;
     #[async_trait]
     impl Action for HelloAction {
-        async fn run(&self, _: &mut InChannels, _: &OutChannels, _: Arc<EnvVar>) -> Output {
+        async fn run(&self, _: &mut InChannels, _: &mut OutChannels, _: Arc<EnvVar>) -> Output {
             Output::Out(Some(Content::new("Hello world".to_string())))
         }
     }

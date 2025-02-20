@@ -54,6 +54,14 @@ impl InChannels {
         join_all(futures).await.into_iter().map(|x| f(x)).collect()
     }
 
+    /// Close the channel by the given `NodeId` asynchronously, and remove the channel in this map.
+    pub async fn close_async(&mut self, id: &NodeId) {
+        if let Some(c) = self.get(id) {
+            c.lock().await.close();
+            self.0.remove(id);
+        }
+    }
+
     /// Close the channel by the given `NodeId`, and remove the channel in this map.
     pub fn close(&mut self, id: &NodeId) {
         if let Some(c) = self.get(id) {

@@ -27,7 +27,7 @@ use crate::{
 ///
 /// #[async_trait]
 /// impl Action for HelloAction{
-///     async fn run(&self, _: &mut InChannels, _: &OutChannels, _: Arc<EnvVar>) -> Output{
+///     async fn run(&self, _: &mut InChannels, _: &mut OutChannels, _: Arc<EnvVar>) -> Output{
 ///         for i in 0..self.repeat {
 ///             println!("{}",self.statement);
 ///         }
@@ -46,7 +46,7 @@ pub trait Action: Send + Sync {
     async fn run(
         &self,
         in_channels: &mut InChannels,
-        out_channels: &OutChannels,
+        out_channels: &mut OutChannels,
         env: Arc<EnvVar>,
     ) -> Output;
 }
@@ -57,7 +57,7 @@ pub trait Action: Send + Sync {
 pub struct EmptyAction;
 #[async_trait]
 impl Action for EmptyAction {
-    async fn run(&self, _: &mut InChannels, _: &OutChannels, _: Arc<EnvVar>) -> Output {
+    async fn run(&self, _: &mut InChannels, _: &mut OutChannels, _: Arc<EnvVar>) -> Output {
         Output::Out(None)
     }
 }

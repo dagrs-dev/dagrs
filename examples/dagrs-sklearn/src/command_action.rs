@@ -24,7 +24,7 @@ impl Action for CommandAction {
     async fn run(
         &self,
         in_channels: &mut dagrs::InChannels,
-        out_channels: &dagrs::OutChannels,
+        out_channels: &mut dagrs::OutChannels,
         _: std::sync::Arc<dagrs::EnvVar>,
     ) -> dagrs::Output {
         let mut args = Vec::new();

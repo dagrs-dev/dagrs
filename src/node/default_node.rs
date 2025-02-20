@@ -72,7 +72,7 @@ impl Node for DefaultNode {
 
     async fn run(&mut self, env: Arc<EnvVar>) -> Output {
         self.action
-            .run(&mut self.in_channels, &self.out_channels, env)
+            .run(&mut self.in_channels, &mut self.out_channels, env)
             .await
     }
 }
@@ -123,7 +123,7 @@ mod test_default_node {
     pub struct HelloAction;
     #[async_trait]
     impl Action for HelloAction {
-        async fn run(&self, _: &mut InChannels, _: &OutChannels, _: Arc<EnvVar>) -> Output {
+        async fn run(&self, _: &mut InChannels, _: &mut OutChannels, _: Arc<EnvVar>) -> Output {
             Output::Out(Some(Content::new("Hello world".to_string())))
         }
     }

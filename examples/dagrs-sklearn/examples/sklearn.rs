@@ -14,7 +14,7 @@ impl Action for NodeAction {
     async fn run(
         &self,
         _: &mut InChannels,
-        out_channels: &OutChannels,
+        out_channels: &mut OutChannels,
         env: Arc<EnvVar>,
     ) -> Output {
         let data_src: &&str = env.get_ref(ENV_DATA_SRC).unwrap();
@@ -28,7 +28,7 @@ impl Action for NodeAction {
             ],
         );
         let result = cmd_act
-            .run(&mut InChannels::default(), &OutChannels::default(), env)
+            .run(&mut InChannels::default(), &mut OutChannels::default(), env)
             .await;
         match result {
             Output::Out(content) => {
@@ -59,7 +59,12 @@ impl NodeAction {
 struct RootAction;
 #[async_trait]
 impl Action for RootAction {
-    async fn run(&self, in_channels: &mut InChannels, _: &OutChannels, env: Arc<EnvVar>) -> Output {
+    async fn run(
+        &self,
+        in_channels: &mut InChannels,
+        _: &mut OutChannels,
+        env: Arc<EnvVar>,
+    ) -> Output {
         let data_src: &&str = env.get_ref(ENV_DATA_SRC).unwrap();
         let mut thetas: Vec<String> = in_channels
             .map(|theta| {
@@ -75,7 +80,7 @@ impl Action for RootAction {
 
         let cmd_action = CommandAction::new("python", args);
         cmd_action
-            .run(&mut InChannels::default(), &OutChannels::default(), env)
+            .run(&mut InChannels::default(), &mut OutChannels::default(), env)
             .await
     }
 }

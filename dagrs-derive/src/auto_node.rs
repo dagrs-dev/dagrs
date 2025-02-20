@@ -172,7 +172,7 @@ fn impl_run(
     quote::quote!(
         async fn run(&mut self, env: std::sync::Arc<dagrs::EnvVar>) -> dagrs::Output {
             self.#ident
-                .run(&mut self.#in_channels_ident, &self.#out_channels_ident, env)
+                .run(&mut self.#in_channels_ident, &mut self.#out_channels_ident, env)
                 .await
         }
     )
