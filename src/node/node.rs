@@ -1,6 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
 
 use async_trait::async_trait;
+use tokio::sync::Mutex;
 
 use crate::{
     connection::{in_channel::InChannels, out_channel::OutChannels},
@@ -33,6 +34,15 @@ pub trait Node: Send + Sync {
     /// Return true if this node is conditional node. By default, it returns false.
     fn is_condition(&self) -> bool {
         false
+    }
+    /// Returns the list of nodes that are part of this node's loop structure, if any.
+    ///
+    /// This method is used to identify nodes that are part of a loop-like structure, such as a loop subgraph.
+    /// When this method returns Some(nodes), the loop detection check will skip checking these nodes for cycles.
+    ///
+    /// Returns None by default, indicating this is not a loop-containing node.
+    fn loop_structure(&self) -> Option<Vec<Arc<Mutex<dyn Node>>>> {
+        None
     }
 }
 

@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
 
 use futures::future::join_all;
-use tokio::sync::{broadcast, mpsc};
+use tokio::sync::{broadcast, mpsc, Mutex};
 
 use crate::node::node::NodeId;
 
@@ -11,13 +11,13 @@ use super::information_packet::Content;
 /// A hash-table mapping `NodeId` to `OutChannel`. In **Dagrs**, each `Node` stores output
 /// channels in this map, enabling `Node` to send information packets to other `Node`s.
 #[derive(Default)]
-pub struct OutChannels(pub(crate) HashMap<NodeId, Arc<OutChannel>>);
+pub struct OutChannels(pub(crate) HashMap<NodeId, Arc<Mutex<OutChannel>>>);
 
 impl OutChannels {
     /// Perform a blocking send on the outcoming channel from `NodeId`.
     pub fn blocking_send_to(&self, id: &NodeId, content: Content) -> Result<(), SendErr> {
         match self.get(id) {
-            Some(channel) => channel.blocking_send(content),
+            Some(channel) => channel.blocking_lock().blocking_send(content),
             None => Err(SendErr::NoSuchChannel),
         }
     }
@@ -25,7 +25,7 @@ impl OutChannels {
     /// Perform a asynchronous send on the outcoming channel from `NodeId`.
     pub async fn send_to(&self, id: &NodeId, content: Content) -> Result<(), SendErr> {
         match self.get(id) {
-            Some(channel) => channel.send(content).await,
+            Some(channel) => channel.lock().await.send(content).await,
             None => Err(SendErr::NoSuchChannel),
         }
     }
@@ -35,7 +35,7 @@ impl OutChannels {
         let futures = self
             .0
             .iter()
-            .map(|(_, c)| async { c.send(content.clone()).await });
+            .map(|(_, c)| async { c.lock().await.send(content.clone()).await });
 
         join_all(futures).await
     }
@@ -44,7 +44,7 @@ impl OutChannels {
     pub fn blocking_broadcast(&self, content: Content) -> Vec<Result<(), SendErr>> {
         self.0
             .iter()
-            .map(|(_, c)| c.blocking_send(content.clone()))
+            .map(|(_, c)| c.blocking_lock().blocking_send(content.clone()))
             .collect()
     }
 
@@ -59,14 +59,14 @@ impl OutChannels {
         self.0.clear();
     }
 
-    fn get(&self, id: &NodeId) -> Option<Arc<OutChannel>> {
+    fn get(&self, id: &NodeId) -> Option<Arc<Mutex<OutChannel>>> {
         match self.0.get(id) {
             Some(c) => Some(c.clone()),
             None => None,
         }
     }
 
-    pub(crate) fn insert(&mut self, node_id: NodeId, channel: Arc<OutChannel>) {
+    pub(crate) fn insert(&mut self, node_id: NodeId, channel: Arc<Mutex<OutChannel>>) {
         self.0.insert(node_id, channel);
     }
 }

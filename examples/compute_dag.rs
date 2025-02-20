@@ -25,7 +25,7 @@ impl Action for Compute {
     async fn run(
         &self,
         in_channels: &mut InChannels,
-        out_channels: &OutChannels,
+        out_channels: &mut OutChannels,
         env: Arc<EnvVar>,
     ) -> Output {
         let base = env.get::<usize>(BASE).unwrap();

@@ -14,7 +14,7 @@ use dagrs::{
 pub struct HelloAction;
 #[async_trait]
 impl Action for HelloAction {
-    async fn run(&self, _: &mut InChannels, _: &OutChannels, _: Arc<EnvVar>) -> Output {
+    async fn run(&self, _: &mut InChannels, _: &mut OutChannels, _: Arc<EnvVar>) -> Output {
         Output::Out(Some(Content::new("Hello Dagrs".to_string())))
     }
 }
