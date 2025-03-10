@@ -235,10 +235,11 @@ impl Graph {
                                     execute_state.set_output(out);
                                     execute_state.exe_fail();
                                     let mut errors_lock = errors.lock().await;
-                                    errors_lock.push(GraphError::ExecutionFailed(format!(
-                                        "Execution failed for node: {}, id: {} - {}",
-                                        node_name, node_id, error
-                                    )));
+                                    errors_lock.push(GraphError::ExecutionFailed {
+                                        node_name,
+                                        node_id,
+                                        error,
+                                    });
                                 } else {
                                     // If the ouput is produced by a ConditionalNode, check the value:
                                     // - true: go on execution
@@ -520,7 +521,7 @@ mod tests {
                 assert!(graph.execute_states[&node_a_id].get_output().is_none());
             }
             Err(e) => {
-                assert!(matches!(e, GraphError::ExecutionFailed(_)));
+                assert!(matches!(e, GraphError::ExecutionFailed { .. }));
             }
         }
     }
