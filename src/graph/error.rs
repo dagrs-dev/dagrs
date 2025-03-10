@@ -7,7 +7,10 @@ pub enum GraphError {
         node_id: usize,
         error: String,
     },
-    PanicOccurred(String),
+    PanicOccurred {
+        node_name: String,
+        node_id: usize,
+    },
     MultipleErrors(Vec<GraphError>),
 }
 

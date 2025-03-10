@@ -269,10 +269,7 @@ impl Graph {
 
                                 error!("Execution failed [name: {}, id: {}]", node_name, node_id,);
                                 let mut errors_lock = errors.lock().await;
-                                errors_lock.push(GraphError::PanicOccurred(format!(
-                                    "Panic occurred for node: {}, id: {}",
-                                    node_name, node_id
-                                )));
+                                errors_lock.push(GraphError::PanicOccurred { node_name, node_id });
                             }
                         }
                     }
