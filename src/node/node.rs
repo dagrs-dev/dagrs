@@ -46,7 +46,7 @@ pub trait Node: Send + Sync {
     }
 }
 
-#[derive(Debug, Hash, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, Hash, PartialEq, Eq, Clone, Copy, Ord, PartialOrd)]
 pub struct NodeId(pub(crate) usize);
 
 pub type NodeName = String;
