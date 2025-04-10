@@ -17,9 +17,9 @@ The development of `dagrs` follows the concept of Flow-based Programming.
 
 ### Flow based Programming
 [Flow-based Programming](https://en.wikipedia.org/wiki/Flow-based_programming)(FBP) was invented by J. Paul Morrison in the early 1970s. It was initially implemented in software for a Canadian bank.
-Over the years, it’s had various names but has always maintained its core principles of reducing development time and managing processes efficiently.
+Over the years, it's had various names but has always maintained its core principles of reducing development time and managing processes efficiently.
 
-FBP treats applications as networks of 'black box' processes that communicate by sending and receiving data, referred to as Information Packets, over predefined connections. It’s a component-oriented approach that fits well with modular software architecture.
+FBP treats applications as networks of 'black box' processes that communicate by sending and receiving data, referred to as Information Packets, over predefined connections. It's a component-oriented approach that fits well with modular software architecture.
 
 ### Key Features of FBP
 
@@ -40,6 +40,69 @@ Dagrs leverages cutting-edge technologies to ensure functionality and performanc
 - **[Rust](https://www.rust-lang.org/)** - A language empowering everyone to build reliable and efficient software.
 - **[tokio](https://crates.io/crates/tokio)** - An event-driven, non-blocking I/O platform for writing asynchronous I/O backed applications.
 - **[async_trait](https://crates.io/crates/async-trait)** - Type erasure for async trait methods.
+
+
+## Advanced Features
+
+### Conditional Node
+Conditional nodes allow you to control task flow execution based on specific conditions. By implementing the `Condition` trait, you can define custom condition logic to determine whether to continue executing subsequent tasks. For example, you can create a validation node that only continues execution when input data meets specific conditions.
+
+```rust
+struct MyCondition;
+#[async_trait]
+impl Condition for MyCondition {
+    async fn run(&self, _: &mut InChannels, _: &OutChannels, _: Arc<EnvVar>) -> bool {
+        // Implement condition logic here
+        true
+    }
+}
+```
+
+### Loop DAG
+Loop DAG allows you to create task graphs with cyclic dependencies. This is particularly useful when you need to repeatedly execute certain tasks until specific conditions are met. For example, you can create an interactive system where certain tasks need to be executed repeatedly based on user input.
+
+```rust
+let mut lop = LoopSubgraph::new("loop".to_string(), &mut node_table);
+lop.add_node(processor);
+lop.add_node(consumer);
+```
+
+### Customized Configuration Parser
+Dagrs allows you to design your own parser to define task graphs in custom configuration formats. By implementing the `Parser` trait, you can create parsers for various configuration formats (such as JSON, TOML, or your own custom format) to define task names, dependencies, and execution commands.
+
+For example, in the [dagrs-sklearn](examples/dagrs-sklearn) example project, we provide a custom YAML parser implementation that demonstrates how to create a specialized parser for machine learning workflows. This parser extends the basic YAML format to support additional features specific to machine learning tasks.
+
+```rust
+pub struct YamlParser;
+
+impl Parser for YamlParser {
+    fn parse_tasks(
+        &self,
+        file: &str,
+        specific_actions: HashMap<String, Box<dyn Action>>,
+    ) -> Result<(Graph, EnvVar), ParseError> {
+        // Custom parsing logic for machine learning workflow
+        Ok((graph, env_var))
+    }
+}
+```
+
+## Examples
+
+### dagrs-sklearn
+The example [dagrs-sklearn](examples/dagrs-sklearn) shows how dagrs can help implement machine learning algorithms to train classifiers in a parallel manner. It provides:
+1. A custom YAML parser for defining machine learning tasks
+2. Integration with scikit-learn for data processing and model training
+3. Example workflows for common machine learning tasks
+
+This example shows a typical machine learning workflow with three stages:
+- Data preprocessing
+- Model training
+- Model evaluation
+
+Each stage is defined as a task with its dependencies and execution command. The custom YAML parser handles the configuration and builds the corresponding task graph.
+
+For more detailed info about this example, please see the [notebook.ipynb](examples/dagrs-sklearn/examples/notebook.ipynb) jupyter notebook file.
 
 
 ## Contribution
@@ -76,7 +139,7 @@ $ git commit -S -s -m 'This is my commit message'
 
 ### Rebase the branch
 
-If you have a local git environment and meet the criteria below, one option is to rebase the branch and add your Signed-off-by lines in the new commits. Please note that if others have already begun work based upon the commits in this branch, this solution will rewrite history and may cause serious issues for collaborators (described in the git documentation under “The Perils of Rebasing”).
+If you have a local git environment and meet the criteria below, one option is to rebase the branch and add your Signed-off-by lines in the new commits. Please note that if others have already begun work based upon the commits in this branch, this solution will rewrite history and may cause serious issues for collaborators (described in the git documentation under "The Perils of Rebasing").
 
 You should only do this if:
 
@@ -104,3 +167,4 @@ Email: Quanyi Ma <eli@patch.sh>, Xiaolong Fu <njufxl@gmail.com>
 ### Discord
 
 Welcome to join our discord channel https://discord.gg/4JzaNkRP
+
