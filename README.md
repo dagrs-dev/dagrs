@@ -109,6 +109,12 @@ For more detailed info about this example, please see the [notebook.ipynb](examp
 
 The `dagrs` project relies on community contributions and aims to simplify getting started. To develop `dagrs`, clone the repository, then install all dependencies, run the test suite and try it out locally. Pick an issue, make changes, and submit a pull request for community review.
 
+### Version Release Notes
+
+When releasing a new version, please note that both `dagrs` and `dagrs-derive` packages need to be updated synchronously. Since `dagrs` depends on `dagrs-derive`, when there are changes in `dagrs` that involve modifications to `dagrs-derive`, a new version of `dagrs-derive` must be released simultaneously. This ensures correct dependency relationships and prevents compilation errors.
+
+For example, as mentioned in issue [#98](https://github.com/dagrs-dev/dagrs/issues/98), the problem occurred because `dagrs` version 0.4.3 depended on `dagrs-derive` version 0.4.2, but the latter did not include the necessary code changes, resulting in compilation errors. Therefore, when releasing a new version, please ensure that both packages' version numbers are updated in sync.
+
 ### What's the contribution
 
 Here are some guidelines for contributing to this project:
