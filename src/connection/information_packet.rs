@@ -3,7 +3,7 @@ use std::{any::Any, sync::Arc};
 /// Container type to store task output.
 #[derive(Debug, Clone)]
 pub struct Content {
-    inner: Arc<dyn Any + Send + Sync>,
+    pub inner: Arc<dyn Any + Send + Sync>,
 }
 
 impl Content {
