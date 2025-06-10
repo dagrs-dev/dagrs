@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, marker::PhantomData, sync::Arc};
 
 use futures::future::join_all;
 use tokio::sync::{broadcast, mpsc, Mutex};
@@ -141,7 +141,6 @@ impl InChannel {
             },
         }
     }
-
     /// Close the channel and drop the messages inside.
     fn close(&mut self) {
         match self {
@@ -149,6 +148,100 @@ impl InChannel {
             // Broadcast channel will be closed after `self` is dropped.
             InChannel::Bcst(_) => (),
         }
+    }
+}
+
+/// # Typed Input Channels
+/// A hash-table mapping `NodeId` to `InChannel`. This provides type-safe channel communication
+/// between nodes.
+#[derive(Default)]
+pub struct TypedInChannels<T: Send + Sync + 'static>(
+    pub(crate) HashMap<NodeId, Arc<Mutex<InChannel>>>,
+    // maker for type T
+    pub(crate) PhantomData<T>,
+);
+
+impl<T: Send + Sync + 'static> TypedInChannels<T> {
+    /// Perform a blocking receive on the incoming channel from `NodeId`.
+    pub fn blocking_recv_from(&mut self, id: &NodeId) -> Result<Option<Arc<T>>, RecvErr> {
+        match self.get(id) {
+            Some(channel) => {
+                let content: Content = channel.blocking_lock().blocking_recv()?;
+                Ok(content.into_inner())
+            }
+            None => Err(RecvErr::NoSuchChannel),
+        }
+    }
+
+    /// Perform a asynchronous receive on the incoming channel from `NodeId`.
+    pub async fn recv_from(&mut self, id: &NodeId) -> Result<Option<Arc<T>>, RecvErr> {
+        match self.get(id) {
+            Some(channel) => {
+                let content: Content = channel.lock().await.recv().await?;
+                Ok(content.into_inner())
+            }
+            None => Err(RecvErr::NoSuchChannel),
+        }
+    }
+
+    /// Calls `blocking_recv` for all the [`InChannel`]s, and applies transformation `f` to
+    /// the return values of the call.
+    pub fn blocking_map<F, U>(&mut self, mut f: F) -> Vec<U>
+    where
+        F: FnMut(Result<Option<Arc<T>>, RecvErr>) -> U,
+    {
+        self.keys()
+            .into_iter()
+            .map(|id| f(self.blocking_recv_from(&id)))
+            .collect()
+    }
+
+    /// Calls `recv` for all the [`InChannel`]s, and applies transformation `f` to
+    /// the return values of the call asynchronously.
+    pub async fn map<F, U>(&mut self, mut f: F) -> Vec<U>
+    where
+        F: FnMut(Result<Option<Arc<T>>, RecvErr>) -> U,
+    {
+        let futures = self.0.iter_mut().map(|(_, c)| async {
+            let content: Content = c.lock().await.recv().await?;
+            Ok(content.into_inner())
+        });
+        join_all(futures).await.into_iter().map(|x| f(x)).collect()
+    }
+
+    /// Close the channel by the given `NodeId` asynchronously, and remove the channel in this map.
+    pub async fn close_async(&mut self, id: &NodeId) {
+        if let Some(c) = self.get(id) {
+            c.lock().await.close();
+            self.0.remove(id);
+        }
+    }
+
+    /// Close the channel by the given `NodeId`, and remove the channel in this map.
+    pub fn close(&mut self, id: &NodeId) {
+        if let Some(c) = self.get(id) {
+            c.blocking_lock().close();
+            self.0.remove(id);
+        }
+    }
+
+    pub(crate) fn insert(&mut self, node_id: NodeId, channel: Arc<Mutex<InChannel>>) {
+        self.0.insert(node_id, channel);
+    }
+
+    pub(crate) fn close_all(&mut self) {
+        self.0.values_mut().for_each(|c| c.blocking_lock().close());
+    }
+
+    fn get(&self, id: &NodeId) -> Option<Arc<Mutex<InChannel>>> {
+        match self.0.get(id) {
+            Some(c) => Some(c.clone()),
+            None => None,
+        }
+    }
+
+    fn keys(&self) -> Vec<NodeId> {
+        self.0.keys().map(|x| *x).collect()
     }
 }
 

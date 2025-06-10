@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, marker::PhantomData, sync::Arc};
 
 use futures::future::join_all;
 use tokio::sync::{broadcast, mpsc, Mutex};
@@ -123,4 +123,74 @@ impl OutChannel {
 pub enum SendErr {
     NoSuchChannel,
     ClosedChannel(Content),
+}
+
+/// # Typed Output Channels
+/// A hash-table mapping [`NodeId`] to [`OutChannel`]. This provides type-safe channel communication
+/// between nodes.
+#[derive(Default)]
+pub struct TypedOutChannels<T: Send + Sync + 'static>(
+    pub(crate) HashMap<NodeId, Arc<Mutex<OutChannel>>>,
+    // maker for type T
+    pub(crate) PhantomData<T>,
+);
+
+impl<T: Send + Sync + 'static> TypedOutChannels<T> {
+    /// Perform a blocking send on the outcoming channel from `NodeId`.
+    pub fn blocking_send_to(&self, id: &NodeId, content: T) -> Result<(), SendErr> {
+        match self.get(id) {
+            Some(channel) => channel.blocking_lock().blocking_send(Content::new(content)),
+            None => Err(SendErr::NoSuchChannel),
+        }
+    }
+
+    /// Perform a asynchronous send on the outcoming channel from `NodeId`.
+    pub async fn send_to(&self, id: &NodeId, content: T) -> Result<(), SendErr> {
+        match self.get(id) {
+            Some(channel) => channel.lock().await.send(Content::new(content)).await,
+            None => Err(SendErr::NoSuchChannel),
+        }
+    }
+
+    /// Broadcasts the `content` to all the [`TypedOutChannel`]s asynchronously.
+    pub async fn broadcast(&self, content: T) -> Vec<Result<(), SendErr>> {
+        let content = Content::new(content);
+        let futures = self
+            .0
+            .iter()
+            .map(|(_, c)| async { c.lock().await.send(content.clone()).await });
+
+        join_all(futures).await
+    }
+
+    /// Blocking broadcasts the `content` to all the [`TypedOutChannel`]s.
+    pub fn blocking_broadcast(&self, content: T) -> Vec<Result<(), SendErr>> {
+        let content = Content::new(content);
+        self.0
+            .iter()
+            .map(|(_, c)| c.blocking_lock().blocking_send(content.clone()))
+            .collect()
+    }
+
+    /// Close the channel by the given `NodeId`, and remove the channel in this map.
+    pub fn close(&mut self, id: &NodeId) {
+        if let Some(_) = self.get(id) {
+            self.0.remove(id);
+        }
+    }
+
+    pub(crate) fn close_all(&mut self) {
+        self.0.clear();
+    }
+
+    fn get(&self, id: &NodeId) -> Option<Arc<Mutex<OutChannel>>> {
+        match self.0.get(id) {
+            Some(c) => Some(c.clone()),
+            None => None,
+        }
+    }
+
+    pub(crate) fn insert(&mut self, node_id: NodeId, channel: Arc<Mutex<OutChannel>>) {
+        self.0.insert(node_id, channel);
+    }
 }

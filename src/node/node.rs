@@ -44,6 +44,18 @@ pub trait Node: Send + Sync {
     fn loop_structure(&self) -> Option<Vec<Arc<Mutex<dyn Node>>>> {
         None
     }
+
+    /// Returns true if this node has TypedContent input.
+    /// By default, it returns false.
+    fn has_typed_input(&self) -> bool {
+        false
+    }
+
+    /// Returns true if this node has TypedContent output.
+    /// By default, it returns false.
+    fn has_typed_output(&self) -> bool {
+        false
+    }
 }
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, Copy, Ord, PartialOrd)]
