@@ -19,7 +19,7 @@ default-members = [".", "dagrs-derive"]
 
 [dependencies]
 dagrs-derive = { path = "dagrs-derive", optional = true, version = "0.4.3" }
-tokio = { version = "1.28", features = ["rt", "sync", "rt-multi-thread"] }
+tokio = { version = "1.28", features = ["rt", "sync", "rt-multi-thread", "time"] }
 log = "0.4"
 async-trait = "0.1.83"
 futures = "0.3.31"
