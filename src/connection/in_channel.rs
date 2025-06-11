@@ -1,6 +1,7 @@
 use std::{collections::HashMap, marker::PhantomData, sync::Arc};
 
 use futures::future::join_all;
+use futures::future::select_ok;
 use tokio::sync::{broadcast, mpsc, Mutex};
 
 use crate::node::node::NodeId;
@@ -26,6 +27,31 @@ impl InChannels {
         match self.get(id) {
             Some(channel) => channel.lock().await.recv().await,
             None => Err(RecvErr::NoSuchChannel),
+        }
+    }
+
+    /// Receives data from any available channel and returns both the sender's ID and the content.
+    /// This method will wait until any channel has data available.
+    pub async fn recv_any(&mut self) -> Result<(NodeId, Content), RecvErr> {
+        let mut futures = Vec::new();
+        let ids: Vec<NodeId> = self.keys();
+
+        for id in ids {
+            let channel = self.get(&id).ok_or(RecvErr::NoSuchChannel)?;
+            let fut = Box::pin(async move {
+                let content = channel.lock().await.recv().await?;
+                Ok::<_, RecvErr>((id, content))
+            });
+            futures.push(fut);
+        }
+
+        if futures.is_empty() {
+            return Err(RecvErr::NoSuchChannel);
+        }
+
+        match select_ok(futures).await {
+            Ok((result, _)) => Ok(result),
+            Err(_) => Err(RecvErr::Closed),
         }
     }
 
@@ -184,6 +210,31 @@ impl<T: Send + Sync + 'static> TypedInChannels<T> {
         }
     }
 
+    /// Receives typed data from any available channel and returns both the sender's ID and the typed content.
+    /// This method will wait until any channel has data available.
+    pub async fn recv_any(&mut self) -> Result<(NodeId, Option<Arc<T>>), RecvErr> {
+        let mut futures = Vec::new();
+        let ids: Vec<NodeId> = self.keys();
+
+        for id in ids {
+            let channel = self.get(&id).ok_or(RecvErr::NoSuchChannel)?;
+            let fut = Box::pin(async move {
+                let content: Content = channel.lock().await.recv().await?;
+                Ok::<_, RecvErr>((id, content.into_inner()))
+            });
+            futures.push(fut);
+        }
+
+        if futures.is_empty() {
+            return Err(RecvErr::NoSuchChannel);
+        }
+
+        match select_ok(futures).await {
+            Ok((result, _)) => Ok(result),
+            Err(_) => Err(RecvErr::Closed),
+        }
+    }
+
     /// Calls `blocking_recv` for all the [`InChannel`]s, and applies transformation `f` to
     /// the return values of the call.
     pub fn blocking_map<F, U>(&mut self, mut f: F) -> Vec<U>
@@ -223,14 +274,6 @@ impl<T: Send + Sync + 'static> TypedInChannels<T> {
             c.blocking_lock().close();
             self.0.remove(id);
         }
-    }
-
-    pub(crate) fn insert(&mut self, node_id: NodeId, channel: Arc<Mutex<InChannel>>) {
-        self.0.insert(node_id, channel);
-    }
-
-    pub(crate) fn close_all(&mut self) {
-        self.0.values_mut().for_each(|c| c.blocking_lock().close());
     }
 
     fn get(&self, id: &NodeId) -> Option<Arc<Mutex<InChannel>>> {

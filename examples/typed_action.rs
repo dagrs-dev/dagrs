@@ -116,7 +116,7 @@ fn main() {
             assert_eq!(*res, 272)
         }
         Err(e) => {
-            panic!("图执行失败: {:?}", e);
+            panic!("Graph execution failed: {:?}", e);
         }
     }
 }

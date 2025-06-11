@@ -69,6 +69,11 @@ impl OutChannels {
     pub(crate) fn insert(&mut self, node_id: NodeId, channel: Arc<Mutex<OutChannel>>) {
         self.0.insert(node_id, channel);
     }
+
+    /// Returns a list of all available receiver node IDs.
+    pub fn get_receiver_ids(&self) -> Vec<NodeId> {
+        self.0.keys().copied().collect()
+    }
 }
 
 /// # Output Channel
@@ -179,10 +184,6 @@ impl<T: Send + Sync + 'static> TypedOutChannels<T> {
         }
     }
 
-    pub(crate) fn close_all(&mut self) {
-        self.0.clear();
-    }
-
     fn get(&self, id: &NodeId) -> Option<Arc<Mutex<OutChannel>>> {
         match self.0.get(id) {
             Some(c) => Some(c.clone()),
@@ -190,7 +191,8 @@ impl<T: Send + Sync + 'static> TypedOutChannels<T> {
         }
     }
 
-    pub(crate) fn insert(&mut self, node_id: NodeId, channel: Arc<Mutex<OutChannel>>) {
-        self.0.insert(node_id, channel);
+    /// Returns a list of all available receiver node IDs.
+    pub fn get_receiver_ids(&self) -> Vec<NodeId> {
+        self.0.keys().copied().collect()
     }
 }
