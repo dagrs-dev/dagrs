@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-dagrs = {path = "../../", version = "0.4.2"}
+dagrs = {path = "../../"}
 thiserror = "2"
 yaml-rust = "0.4"
 log = "0.4.22"
