@@ -61,6 +61,19 @@ pub trait Node: Send + Sync {
 #[derive(Debug, Hash, PartialEq, Eq, Clone, Copy, Ord, PartialOrd)]
 pub struct NodeId(pub(crate) usize);
 
+impl NodeId {
+    /// Return the numeric identifier wrapped by this `NodeId`.
+    pub fn as_usize(&self) -> usize {
+        self.0
+    }
+}
+
+impl From<NodeId> for usize {
+    fn from(value: NodeId) -> Self {
+        value.0
+    }
+}
+
 pub type NodeName = String;
 
 /// [NodeTable]: a mapping from [Node]'s name to [NodeId].
