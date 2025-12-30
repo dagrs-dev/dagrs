@@ -378,7 +378,6 @@ impl Graph {
                     self.blocks.push(current_block);
                     current_block = HashSet::new();
                 }
-                // node_guard is dropped here
             }
         }
 
