@@ -166,6 +166,12 @@ impl Graph {
 
     /// This function is used for the execution of a single dag.
     pub fn start(&mut self) -> Result<(), GraphError> {
+        tokio::runtime::Runtime::new()
+            .unwrap()
+            .block_on(async { self.async_start().await })
+    }
+    /// This function is used for the execution of a single dag with async.
+    pub async fn async_start(&mut self) -> Result<(), GraphError> {
         self.init();
         let is_loop = self.check_loop_and_partition();
         if is_loop {
@@ -175,10 +181,7 @@ impl Graph {
         if !self.is_active.load(Ordering::Relaxed) {
             return Err(GraphError::GraphNotActive);
         }
-
-        tokio::runtime::Runtime::new()
-            .unwrap()
-            .block_on(async { self.run().await })
+        self.run().await
     }
 
     /// Executes the graph's nodes in a concurrent manner, respecting the block structure.
