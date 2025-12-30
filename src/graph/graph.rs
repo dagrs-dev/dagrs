@@ -170,7 +170,41 @@ impl Graph {
             .map_err(GraphError::RuntimeCreationFailed)?;
         runtime.block_on(async { self.async_start().await })
     }
-    /// This function is used for the execution of a single dag with async.
+    /// Executes a single DAG within an existing async runtime.
+    ///
+    /// Use this method when you are already running inside an async context
+    /// (for example, inside a `tokio::main` function or a task spawned on a
+    /// Tokio runtime) and you do **not** want `Graph` to create and manage
+    /// its own Tokio runtime.
+    ///
+    /// Unlike [`start`], this method:
+    /// - Does not create a new Tokio runtime.
+    /// - Assumes it is called on a thread where a Tokio runtime is already
+    ///   active.
+    /// - Can be `await`-ed like any other async function.
+    ///
+    /// # Requirements
+    ///
+    /// - A Tokio runtime must be active on the current thread when this
+    ///   method is called.
+    /// - The graph must have been properly configured (nodes and edges
+    ///   added) before calling this method.
+    ///
+    /// If those conditions are not met, execution may fail at runtime.
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// #[tokio::main]
+    /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     let mut graph = build_graph_somehow();
+    ///
+    ///     // Use `async_start` because we are already inside a Tokio runtime.
+    ///     graph.async_start().await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
     pub async fn async_start(&mut self) -> Result<(), GraphError> {
         self.init();
         let is_loop = self.check_loop_and_partition().await;
