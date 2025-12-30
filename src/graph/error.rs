@@ -12,6 +12,8 @@ pub enum GraphError {
         node_id: usize,
     },
     MultipleErrors(Vec<GraphError>),
+    /// Contains the original error message when runtime creation failed
+    RuntimeCreationFailed(String),
 }
 
 impl std::fmt::Display for GraphError {

@@ -167,7 +167,7 @@ impl Graph {
     /// This function is used for the execution of a single dag.
     pub fn start(&mut self) -> Result<(), GraphError> {
         let runtime = tokio::runtime::Runtime::new()
-            .map_err(GraphError::RuntimeCreationFailed)?;
+            .map_err(|e| GraphError::RuntimeCreationFailed(e.to_string()))?;
         runtime.block_on(async { self.async_start().await })
     }
     /// Executes a single DAG within an existing async runtime.
