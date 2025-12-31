@@ -104,6 +104,18 @@ Each stage is defined as a task with its dependencies and execution command. The
 
 For more detailed info about this example, please see the [notebook.ipynb](examples/dagrs-sklearn/examples/notebook.ipynb) jupyter notebook file.
 
+## Changelog
+
+### v0.5.2
+
+#### 🚀 New Features
+
+- **Async Execution Interface**: Added `run_async()` method to `Graph`, providing an async API that allows using dagrs within existing Tokio runtime environments. `start()` method now serves as a synchronous wrapper around the async API, maintaining backward compatibility while providing better async support
+
+#### 💡 Usage Recommendations
+
+- In environments with an existing Tokio runtime (e.g., async main functions, web services), use `run_async().await` instead of `start()`
+- In simple standalone applications or testing scenarios, you can continue using the `start()` method
 
 ## Contribution
 
